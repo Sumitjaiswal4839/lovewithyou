@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
+import { useUserStore } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { Heart, X, MapPin, Sparkles, Filter, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";

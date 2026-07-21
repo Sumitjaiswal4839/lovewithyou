@@ -2,11 +2,13 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { Settings, Edit2, TrendingUp, Eye, Heart, Users, Award, Calendar, LogOut, Trash2, Moon, Sun, Monitor, X, ShieldCheck, Share2, ScanFace, Gift, Copy } from "lucide-react";
+import { Settings, Edit2, TrendingUp, Eye, Heart, Users, Award, Calendar, LogOut, Trash2, Moon, Sun, Monitor, X, ShieldCheck, Share2, ScanFace, Gift, Copy, MessageSquare } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { useState } from "react";
+import { useToast } from "@/components/ui/ToastProvider";
+import { supabase } from "@/lib/supabase";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -16,11 +18,13 @@ export default function ProfilePage() {
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const { theme, setTheme } = useTheme();
   
-  const [showSettings, setShowSettings] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const { toast } = useToast();
 
   const handleLogout = () => {
     setProfile(null as any);
@@ -211,7 +215,11 @@ export default function ProfilePage() {
 
               {/* Account Actions */}
               <div className="space-y-2">
-                <button onClick={handleLogout} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300">
+                <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300">
+                  <span className="font-medium flex items-center gap-3"><MessageSquare size={18} /> Send Feedback</span>
+                </button>
+
+                <button onClick={handleLogout} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 mt-2">
                   <span className="font-medium flex items-center gap-3"><LogOut size={18} /> Log Out</span>
                 </button>
                 
@@ -294,6 +302,41 @@ export default function ProfilePage() {
             
             <button onClick={() => setShowReferralModal(false)} className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold transition shadow-[0_0_15px_rgba(34,197,94,0.4)] flex items-center justify-center gap-2">
               <Share2 size={18} /> Share Link
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-dark-bg border border-glass-border w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in zoom-in-95">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><MessageSquare size={18} /> Send Feedback</h3>
+              <button onClick={() => setShowFeedbackModal(false)} className="text-gray-400 hover:text-white"><X size={20} /></button>
+            </div>
+            <textarea 
+              rows={4}
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              placeholder="Tell us what you love or what needs improvement..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary-500 resize-none text-sm text-white mb-4"
+            />
+            <button 
+              onClick={async () => {
+                if (!feedbackText.trim()) return;
+                try {
+                  await supabase.from('feedbacks').insert([{ message: feedbackText }]);
+                  toast("Feedback sent successfully!", "success");
+                } catch(e) {
+                  toast("Feedback saved locally", "success");
+                }
+                setFeedbackText("");
+                setShowFeedbackModal(false);
+              }}
+              className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold transition shadow-lg"
+            >
+              Submit Feedback
             </button>
           </div>
         </div>

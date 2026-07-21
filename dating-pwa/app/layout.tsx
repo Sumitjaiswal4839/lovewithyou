@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopBar } from "@/components/layout/TopBar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { AdminTrigger } from "@/components/AdminTrigger";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
                 {children}
               </main>
               <BottomNav />
+              <AdminTrigger />
             </div>
           </ToastProvider>
         </ThemeProvider>
