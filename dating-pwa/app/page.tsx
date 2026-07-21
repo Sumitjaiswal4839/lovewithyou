@@ -37,6 +37,7 @@ export default function Home() {
   const coins = useUserStore((state) => state.coins);
   const setLocation = useUserStore((state) => state.setLocation);
   const profile = useUserStore((state) => state.profile);
+  const deviceId = useUserStore((state) => state.deviceId);
 
   // Inactive User Filtering (Remove if > 7 days inactive)
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -152,10 +153,10 @@ export default function Home() {
     }
     
     // Save to Supabase DB (Fire and Forget)
-    if (profile?.device_id) {
+    if (deviceId) {
        try {
          await supabase.from("swipes").insert({
-           swiper_id: profile.device_id,
+           swiper_id: deviceId,
            swiped_id: targetProfile.id,
            direction: direction,
            is_super_like: isSuperLike
@@ -166,14 +167,14 @@ export default function Home() {
             const { data: matchSwipe } = await supabase.from("swipes")
               .select("*")
               .eq("swiper_id", targetProfile.id)
-              .eq("swiped_id", profile.device_id)
+              .eq("swiped_id", deviceId)
               .eq("direction", "right")
               .maybeSingle();
               
             if (matchSwipe || targetProfile.id === "1") { 
                // For demo purposes, let's auto-match with Priya (id 1) if swiped right
-               const u1 = profile.device_id < targetProfile.id ? profile.device_id : targetProfile.id;
-               const u2 = profile.device_id > targetProfile.id ? profile.device_id : targetProfile.id;
+               const u1 = deviceId < targetProfile.id ? deviceId : targetProfile.id;
+               const u2 = deviceId > targetProfile.id ? deviceId : targetProfile.id;
                await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
                toast(`It's a Match with ${targetProfile.name}! 🎉`, "success");
             }
@@ -201,10 +202,10 @@ export default function Home() {
     }
     spendCoins(5);
     
-    if (profile?.device_id) {
+    if (deviceId) {
        await supabase.from("swipes")
          .delete()
-         .eq("swiper_id", profile.device_id)
+         .eq("swiper_id", deviceId)
          .eq("swiped_id", lastSwipedProfile.id)
          .eq("direction", "left");
     }
