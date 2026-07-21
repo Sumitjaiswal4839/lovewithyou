@@ -60,6 +60,7 @@ interface UserState {
     currency: string;
     hapticsEnabled: boolean;
   };
+  liveUserCount: number;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
   addCoins: (amount: number) => void;

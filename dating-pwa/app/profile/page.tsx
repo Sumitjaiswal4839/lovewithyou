@@ -124,7 +124,7 @@ export default function ProfilePage() {
 
         {/* Action Banners */}
         <div className="grid grid-cols-2 gap-3">
-          {!profile.isVerified && (
+          {!profile.verified && (
             <button onClick={() => setShowVerifyModal(true)} className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/30 rounded-2xl p-4 flex flex-col items-start gap-2 hover:bg-blue-500/30 transition text-left">
               <ScanFace size={24} className="text-blue-400" />
               <div>
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                 onClick={() => {
                   setIsVerifying(true);
                   setTimeout(() => {
-                    setProfile({ ...profile, isVerified: true });
+                    setProfile({ ...profile, verified: true });
                     setIsVerifying(false);
                     setShowVerifyModal(false);
                   }, 3000);
