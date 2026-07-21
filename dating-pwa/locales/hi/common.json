@@ -1,0 +1,13 @@
+{
+  "common": {
+    "welcome": "हमारे कैंपस डेटिंग ऐप में आपका स्वागत है",
+    "generate_icebreaker": "AI के साथ आइसब्रेकर बनाएँ",
+    "match_found": "नया मैच!",
+    "campus_mode": "केवल कैंपस",
+    "everyone": "सभी",
+    "no_profiles": "और प्रोफाइल नहीं हैं!",
+    "enable_location": "लोकेशन चालू करें",
+    "toast_success": "सफलता",
+    "toast_error": "एक त्रुटि हुई"
+  }
+}

@@ -1,0 +1,15 @@
+# Ignore docs and scripts
+/docs/
+/scripts/
+setup.cmd
+changes_list.md
+
+# Standard Node.js
+node_modules/
+.next/
+out/
+build/
+.env*.local
+
+# Standard Go
+/backend/bin/

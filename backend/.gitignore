@@ -1,0 +1,28 @@
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Go workspaces
+go.work
+go.work.sum
+
+# Binaries
+main
+main.exe
+backend
+backend.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Vendor directory
+vendor/
+
+# OS Specific
+.DS_Store
+Thumbs.db

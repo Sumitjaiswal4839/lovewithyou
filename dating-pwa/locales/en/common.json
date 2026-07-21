@@ -1,0 +1,13 @@
+{
+  "common": {
+    "welcome": "Welcome to our Campus Dating App",
+    "generate_icebreaker": "Generate Icebreaker with AI",
+    "match_found": "New Match!",
+    "campus_mode": "Campus Only",
+    "everyone": "Everyone",
+    "no_profiles": "No more profiles!",
+    "enable_location": "Enable Location",
+    "toast_success": "Success",
+    "toast_error": "An error occurred"
+  }
+}
