@@ -129,6 +129,7 @@ export default function Home() {
   };
 
   const handleSwipe = async (direction: "left" | "right", isSuperLike = false) => {
+    if (!profile) return;
     if (appSettings.hapticsEnabled && window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(50);
     }
@@ -151,7 +152,7 @@ export default function Home() {
     }
     
     // Save to Supabase DB (Fire and Forget)
-    if (profile.device_id) {
+    if (profile?.device_id) {
        try {
          await supabase.from("swipes").insert({
            swiper_id: profile.device_id,
@@ -192,6 +193,7 @@ export default function Home() {
   };
 
   const handleRewind = async () => {
+    if (!profile) return;
     if (!lastSwipedProfile) return;
     if (coins < 5) {
       toast("Not enough coins to Rewind!", "error");
@@ -199,7 +201,7 @@ export default function Home() {
     }
     spendCoins(5);
     
-    if (profile.device_id) {
+    if (profile?.device_id) {
        await supabase.from("swipes")
          .delete()
          .eq("swiper_id", profile.device_id)
