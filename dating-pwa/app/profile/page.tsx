@@ -80,7 +80,7 @@ export default function ProfilePage() {
           <div className="mb-2">
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               {profile.name}, {profile.age}
-              {profile.isVerified && <ShieldCheck size={20} className="text-blue-500 fill-blue-500/20" />}
+              {profile.verified && <ShieldCheck size={20} className="text-blue-500 fill-blue-500/20" />}
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <KarmaBadge score={profile.karma} />
