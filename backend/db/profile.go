@@ -6,20 +6,29 @@ import (
 )
 
 type Profile struct {
-	DeviceID       string   `json:"device_id"`
-	Name           string   `json:"name"`
-	Bio            string   `json:"bio"`
-	Hobbies        []string `json:"hobbies"`
-	Interests      []string `json:"interests"`
-	Location       string   `json:"location"`
-	Campus         string   `json:"campus"`
-	Age            int      `json:"age"`
-	PhotoURL       string   `json:"photo_url"`
-	VoicePromptURL string   `json:"voice_prompt_url"`
-	Gender         string   `json:"gender"`
-	Verified       bool     `json:"verified"`
-	Coins          int      `json:"coins"`
-	Karma          int      `json:"karma"`
+	DeviceID          string                   `json:"device_id"`
+	Name              string                   `json:"name"`
+	Bio               string                   `json:"bio"`
+	Hobbies           []string                 `json:"hobbies"`
+	Interests         []string                 `json:"interests"`
+	Location          string                   `json:"location"`
+	Campus            string                   `json:"campus,omitempty"`
+	Age               int                      `json:"age"`
+	PhotoURL          string                   `json:"photo_url"`
+	VoicePromptURL    string                   `json:"voice_prompt_url,omitempty"`
+	Gender            string                   `json:"gender"`
+	Verified          bool                     `json:"verified"`
+	Coins             int                      `json:"coins"`
+	Karma             int                      `json:"karma"`
+	ZodiacSign        string                   `json:"zodiacSign,omitempty"`
+	Analytics         map[string]int           `json:"analytics,omitempty"`
+	Mode              string                   `json:"mode,omitempty"`
+	IsAnonymous       bool                     `json:"isAnonymous"`
+	Orientation       string                   `json:"orientation,omitempty"`
+	Faith             string                   `json:"faith,omitempty"`
+	PrismaPersonality string                   `json:"prismaPersonality,omitempty"`
+	SpotifyArtists    []string                 `json:"spotifyArtists,omitempty"`
+	Prompts           []map[string]string      `json:"prompts,omitempty"`
 }
 
 // GetProfile fetches a profile from the 'profiles' table in Supabase
