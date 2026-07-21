@@ -18,6 +18,8 @@ export default function ProfilePage() {
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const { theme, setTheme } = useTheme();
   
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
