@@ -9,7 +9,7 @@ interface ThemeProviderState {
   setTheme: (theme: Theme) => void;
 }
 
-const ThemeProviderContext = (globalThis as any).__ThemeContext || createContext<ThemeProviderState | undefined>(undefined);
+const ThemeProviderContext = ((globalThis as any).__ThemeContext as React.Context<ThemeProviderState | undefined>) || createContext<ThemeProviderState | undefined>(undefined);
 if (process.env.NODE_ENV !== "production") {
   (globalThis as any).__ThemeContext = ThemeProviderContext;
 }
@@ -82,8 +82,8 @@ export function ThemeProvider({
   );
 }
 
-export const useTheme = () => {
+export const useTheme = (): ThemeProviderState => {
   const context = useContext(ThemeProviderContext);
-  if (context === undefined) throw new Error("useTheme must be used within a ThemeProvider");
-  return context;
+  if (context === undefined || context === null) throw new Error("useTheme must be used within a ThemeProvider");
+  return context as ThemeProviderState;
 };
