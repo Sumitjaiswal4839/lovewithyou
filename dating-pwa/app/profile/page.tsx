@@ -2,7 +2,7 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { Settings, Edit2, TrendingUp, Eye, Heart, Users, Award, Calendar, LogOut, Trash2, Moon, Sun, Monitor, X, ShieldCheck, Share2, ScanFace, Gift, Copy, MessageSquare } from "lucide-react";
+import { TrendingUp, Eye, Heart, Users, Award, Calendar, ShieldCheck, Share2, ScanFace, Gift, Copy, X, MessageSquare } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
@@ -18,28 +18,14 @@ export default function ProfilePage() {
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const { theme, setTheme } = useTheme();
   
-  const [showSettings, setShowSettings] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
+  
   const { toast } = useToast();
-
-  const handleLogout = () => {
-    setProfile(null as any);
-    setDeviceId("");
-    router.push("/setup");
-  };
-
-  const handleDeleteAccount = () => {
-    // In a real app, this would call DELETE /profile API
-    setProfile(null as any);
-    setDeviceId("");
-    router.push("/setup");
-  };
 
   if (!profile) {
     return (
@@ -62,11 +48,6 @@ export default function ProfilePage() {
       
       {/* Header */}
       <div className="relative h-48 bg-gradient-to-b from-primary-900/40 to-dark-bg flex items-end justify-between p-6">
-        <div className="absolute top-4 right-4">
-          <button onClick={() => setShowSettings(true)} className="p-2 bg-black/40 backdrop-blur-md rounded-full text-white/80 hover:text-white transition">
-             <Settings size={20} />
-          </button>
-        </div>
         <div className="flex items-end gap-4">
           <div className="w-24 h-24 rounded-full border-4 border-dark-bg bg-black overflow-hidden relative shadow-lg">
             {profile.photo_url ? (
@@ -98,12 +79,6 @@ export default function ProfilePage() {
         
         {/* Actions */}
         <div className="flex gap-4">
-           <button 
-             onClick={() => router.push("/profile/edit")}
-             className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white font-medium py-2.5 rounded-xl border border-white/5 hover:bg-white/20 transition"
-           >
-             <Edit2 size={16} /> Edit Profile
-           </button>
            <button className="flex-1 flex items-center justify-center gap-2 bg-primary-500/10 text-primary-400 font-medium py-2.5 rounded-xl border border-primary-500/20 hover:bg-primary-500/20 transition">
              🪙 {coins} Coins
            </button>
@@ -157,13 +132,66 @@ export default function ProfilePage() {
                <span className="text-xl font-bold text-white">{analytics.likes}</span>
                <span className="text-xs text-gray-400 mt-1">Likes</span>
              </div>
-             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-               <Users size={20} className="text-green-400 mb-2" />
-               <span className="text-xl font-bold text-white">{analytics.matches}</span>
-               <span className="text-xs text-gray-400 mt-1">Matches</span>
-             </div>
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
+                <Users size={20} className="text-green-400 mb-2" />
+                <span className="text-xl font-bold text-white">{analytics.matches}</span>
+                <span className="text-xs text-gray-400 mt-1">Matches</span>
+              </div>
           </div>
         </div>
+
+        {/* About Me Section */}
+        <div className="space-y-4">
+          <h2 className="text-white font-bold text-lg">About Me</h2>
+          
+          {profile.bio && (
+            <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+              <p className="text-gray-300 text-sm leading-relaxed">{profile.bio}</p>
+            </div>
+          )}
+          
+          <div className="flex flex-wrap gap-2 mt-2">
+            {profile.location && (
+              <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">📍 {profile.location}</span>
+            )}
+            {profile.campus && (
+              <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">🎓 {profile.campus}</span>
+            )}
+            {profile.faith && (
+              <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">🙏 {profile.faith}</span>
+            )}
+            {profile.orientation && (
+              <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">🏳️‍🌈 {profile.orientation}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Hobbies Section */}
+        {profile.hobbies && profile.hobbies.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-white font-bold text-lg">Hobbies</h2>
+            <div className="flex flex-wrap gap-2">
+              {profile.hobbies.map((hobby, i) => (
+                <span key={i} className="bg-primary-500/20 text-primary-400 border border-primary-500/30 px-3 py-1.5 rounded-full text-xs font-medium">
+                  {hobby}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Prompts Section */}
+        {profile.prompts && profile.prompts.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-white font-bold text-lg">My Prompts</h2>
+            {profile.prompts.map((p, i) => (
+              <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                <p className="text-primary-400 text-xs font-bold uppercase mb-2">{p.question}</p>
+                <p className="text-white text-sm font-medium">{p.answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Events Banner */}
         <Link href="/events" className="block mt-4">
@@ -183,67 +211,7 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div className="bg-dark-bg w-full max-w-sm rounded-3xl border border-glass-border overflow-hidden animate-in slide-in-from-bottom-8">
-            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Settings size={20} /> Settings
-              </h2>
-              <button onClick={() => setShowSettings(false)} className="p-2 bg-white/10 rounded-full text-gray-400 hover:text-white">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-6">
-              {/* Theme Settings */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Appearance</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => setTheme("light")} className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${theme === 'light' ? 'bg-primary-500/20 border-primary-500 text-primary-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
-                    <Sun size={20} /> <span className="text-xs font-medium">Light</span>
-                  </button>
-                  <button onClick={() => setTheme("dark")} className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${theme === 'dark' ? 'bg-primary-500/20 border-primary-500 text-primary-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
-                    <Moon size={20} /> <span className="text-xs font-medium">Dark</span>
-                  </button>
-                  <button onClick={() => setTheme("system")} className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${theme === 'system' ? 'bg-primary-500/20 border-primary-500 text-primary-400' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
-                    <Monitor size={20} /> <span className="text-xs font-medium">Auto</span>
-                  </button>
-                </div>
-              </div>
 
-              <hr className="border-white/10" />
-
-              {/* Account Actions */}
-              <div className="space-y-2">
-                <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300">
-                  <span className="font-medium flex items-center gap-3"><MessageSquare size={18} /> Send Feedback</span>
-                </button>
-
-                <button onClick={handleLogout} className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 mt-2">
-                  <span className="font-medium flex items-center gap-3"><LogOut size={18} /> Log Out</span>
-                </button>
-                
-                {!showDeleteConfirm ? (
-                  <button onClick={() => setShowDeleteConfirm(true)} className="w-full flex items-center justify-between p-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 transition-colors border border-red-500/20 text-red-400 mt-2">
-                    <span className="font-medium flex items-center gap-3"><Trash2 size={18} /> Delete Account</span>
-                  </button>
-                ) : (
-                  <div className="p-4 rounded-2xl bg-red-500/20 border border-red-500/30 space-y-3 mt-2 animate-in fade-in zoom-in-95">
-                    <p className="text-sm font-bold text-red-300 text-center">Are you absolutely sure?</p>
-                    <p className="text-xs text-red-200/70 text-center">This will permanently delete your profile, matches, and coins.</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-xl bg-white/10 text-white text-sm font-medium">Cancel</button>
-                      <button onClick={handleDeleteAccount} className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/30">Yes, Delete</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Verification Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">

@@ -134,6 +134,7 @@ export const useUserStore = create<UserState>()(
         try {
           await fetch(`${BACKEND_URL}/auth/device`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ device_id: id }),
           })
         } catch (e) {
@@ -148,6 +149,7 @@ export const useUserStore = create<UserState>()(
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/profile`, {
               method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...profile, device_id: state.deviceId }),
             })
           }
