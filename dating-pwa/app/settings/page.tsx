@@ -56,9 +56,19 @@ export default function SettingsPage() {
 
         {/* Account Actions */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider px-1 mt-6">Account Actions</h3>
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider px-1 mt-6">Legal & Actions</h3>
           
-          <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 shadow-sm">
+          <button onClick={() => router.push('/privacy')} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 shadow-sm">
+            <div className="p-2 bg-green-500/20 text-green-400 rounded-lg"><span className="font-bold text-lg leading-none">?</span></div>
+            <span className="font-bold">Privacy Policy</span>
+          </button>
+
+          <button onClick={() => router.push('/terms')} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 shadow-sm mt-3">
+            <div className="p-2 bg-yellow-500/20 text-yellow-400 rounded-lg"><span className="font-bold text-lg leading-none">!</span></div>
+            <span className="font-bold">Terms & Conditions</span>
+          </button>
+
+          <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 shadow-sm mt-3">
             <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><MessageSquare size={20} /></div>
             <span className="font-bold">Send Feedback</span>
           </button>
@@ -101,14 +111,16 @@ export default function SettingsPage() {
             <button 
               onClick={async () => {
                 if (!feedbackText.trim()) return;
-                try {
-                  await supabase.from('feedbacks').insert([{ message: feedbackText }]);
+                
+                const { error } = await supabase.from('feedbacks').insert([{ message: feedbackText }]);
+                
+                if (error) {
+                  toast(`Failed to send feedback: ${error.message}`, "error");
+                } else {
                   toast("Feedback sent successfully!", "success");
-                } catch(e) {
-                  toast("Feedback saved locally", "success");
+                  setFeedbackText("");
+                  setShowFeedbackModal(false);
                 }
-                setFeedbackText("");
-                setShowFeedbackModal(false);
               }}
               className="w-full py-4 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-bold transition shadow-[0_0_15px_rgba(217,70,239,0.4)]"
             >
