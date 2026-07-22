@@ -171,7 +171,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 </button>
 
                 <button 
-                  onClick={() => { onClose(); router.push('/profile'); }}
+                  onClick={() => { onClose(); router.push('/settings'); }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
                 >
                   <Settings size={18} className="text-gray-400" />
