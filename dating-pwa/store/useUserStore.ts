@@ -53,6 +53,7 @@ interface UserState {
   coins: number;
   locationEnabled: boolean;
   matches: Match[];
+  likes: Match[];
   appSettings: {
     lowDataMode: boolean;
     highContrast: boolean;
@@ -66,6 +67,7 @@ interface UserState {
     selectedState: string | null;
     selectedCity: string | null;
   };
+  dailyUnlockDate: string | null;
   liveUserCount: number;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
@@ -74,6 +76,8 @@ interface UserState {
   requestLocation: () => void;
   setLocation: (loc: string) => void;
   addMatch: (match: Match) => void;
+  addLike: (match: Match) => void;
+  unlockDailyBlur: () => boolean;
   updateSettings: (settings: Partial<UserState['appSettings']>) => void;
   updateMatchPreferences: (prefs: Partial<UserState['matchPreferences']>) => void;
   initLocalization: () => void;
@@ -120,8 +124,10 @@ export const useUserStore = create<UserState>()(
         selectedState: null,
         selectedCity: null,
       },
+      dailyUnlockDate: null,
       liveUserCount: 0,
       matches: [],
+      likes: [],
       setDeviceId: async (id: string) => {
         set({ deviceId: id, isAuthenticated: true })
         // Register device with backend
@@ -194,6 +200,16 @@ export const useUserStore = create<UserState>()(
       setLocation: (loc: string) => set((state) => ({ profile: state.profile ? { ...state.profile, location: loc } : null })),
       setLiveUserCount: (count) => set({ liveUserCount: count }),
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),
+      addLike: (match) => set((state) => ({ likes: [...state.likes, match] })),
+      unlockDailyBlur: () => {
+        const state = useUserStore.getState();
+        if (state.coins >= 50) {
+          state.spendCoins(50);
+          set({ dailyUnlockDate: new Date().toISOString().split('T')[0] });
+          return true;
+        }
+        return false;
+      },
       updateSettings: (settings) => set((state) => ({ appSettings: { ...state.appSettings, ...settings } })),
       updateMatchPreferences: (prefs) => set((state) => ({ matchPreferences: { ...state.matchPreferences, ...prefs } })),
       initLocalization: () => {
