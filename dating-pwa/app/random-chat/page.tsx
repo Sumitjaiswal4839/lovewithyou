@@ -20,13 +20,23 @@ export default function RandomChatPage() {
   const [showProfile, setShowProfile] = useState(false);
   
   const liveUserCount = useUserStore((state) => state.liveUserCount);
+  const matchPreferences = useUserStore((state) => state.matchPreferences);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Mock finding a stranger
   const startSearch = () => {
     setIsSearching(true);
     setConnected(false);
-    setMessages([{ id: Date.now().toString(), sender: 'system', text: "Looking for someone you can vibe with..." }]);
+
+    let lookingMsg = "Looking for someone you can vibe with...";
+    if (matchPreferences) {
+      const locStr = matchPreferences.locationScope === "City" && matchPreferences.selectedCity ? ` in ${matchPreferences.selectedCity}` : 
+                     matchPreferences.locationScope === "State" && matchPreferences.selectedState ? ` in ${matchPreferences.selectedState}` : "";
+      const genderStr = matchPreferences.gender !== "Everyone" ? ` a ${matchPreferences.gender}` : " someone";
+      lookingMsg = `Looking for${genderStr}${locStr} you can vibe with...`;
+    }
+
+    setMessages([{ id: Date.now().toString(), sender: 'system', text: lookingMsg }]);
     
     setTimeout(() => {
       setIsSearching(false);

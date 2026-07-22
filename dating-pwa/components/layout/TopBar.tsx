@@ -1,28 +1,48 @@
 "use client";
 
 import { useUserStore } from "@/store/useUserStore";
-import { Coins } from "lucide-react";
+import { Coins, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { SidebarDrawer } from "../SidebarDrawer";
 
 export function TopBar() {
   const coins = useUserStore((state) => state.coins);
+  const pathname = usePathname();
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  const showSidebarToggle = ["/", "/random-chat", "/blind-date"].includes(pathname || "");
 
   return (
-    <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 glass border-b border-glass-border pt-safe">
+    <>
+    <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-[0_5px_15px_-3px_rgba(236,72,153,0.3)] pt-safe">
       <div className="flex items-center justify-between h-14 px-4">
-        {/* Logo or Title */}
-        <div className="flex items-center gap-2 text-primary-500 font-bold text-xl tracking-tight">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center text-white shadow-md shadow-primary-500/30">
-            <span className="text-sm font-black italic">LW</span>
+        {/* Logo or Title with Hamburger */}
+        <div className="flex items-center gap-3 text-white font-bold text-xl tracking-tight drop-shadow-sm">
+          {showSidebarToggle && (
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="p-1.5 -ml-2 rounded-full hover:bg-white/20 transition-colors"
+            >
+              <Menu size={24} />
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-pink-500 shadow-md">
+              <span className="text-sm font-black italic">LW</span>
+            </div>
+            LoveWith You
           </div>
-          LoveWith You
         </div>
 
         {/* Coin Wallet */}
-        <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-full font-medium border border-amber-500/20">
-          <Coins size={16} />
+        <div className="flex items-center gap-1.5 bg-black/20 text-yellow-300 px-3 py-1.5 rounded-full font-bold border border-white/20 backdrop-blur-md shadow-sm">
+          <Coins size={16} className="text-yellow-400" />
           <span>{coins}</span>
         </div>
       </div>
     </header>
+    <SidebarDrawer isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+    </>
   );
 }

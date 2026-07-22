@@ -13,9 +13,10 @@ import { Flame, Coins, WifiOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const DUMMY_PROFILES = [
-  { id: "1", name: "Priya", age: 21, campus: "Delhi University", karma: 130, img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 2), chemistryScore: 94, crossedPathsCount: 5, mode: "Date" },
-  { id: "2", name: "Ananya", age: 22, campus: "Amity", karma: 160, img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 45), chemistryScore: 88, crossedPathsCount: 1, mode: "Date", isAnonymous: true },
-  { id: "3", name: "Riya", age: 20, campus: "Delhi University", karma: 80, img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10), chemistryScore: 72, crossedPathsCount: 0, mode: "BFF" },
+  { id: "1", name: "Priya", gender: "Female", location: "New Delhi", age: 21, campus: "Delhi University", karma: 130, img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 2), chemistryScore: 94, crossedPathsCount: 5, mode: "Date" },
+  { id: "2", name: "Ananya", gender: "Female", location: "Mumbai", age: 22, campus: "Amity", karma: 160, img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 45), chemistryScore: 88, crossedPathsCount: 1, mode: "Date", isAnonymous: true },
+  { id: "3", name: "Riya", gender: "Female", location: "New Delhi", age: 20, campus: "Delhi University", karma: 80, img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10), chemistryScore: 72, crossedPathsCount: 0, mode: "BFF" },
+  { id: "4", name: "Rahul", gender: "Male", location: "Bengaluru", age: 23, campus: "Christ", karma: 110, img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 5), chemistryScore: 85, crossedPathsCount: 2, mode: "Date" }
 ];
 
 export default function Home() {
@@ -38,6 +39,7 @@ export default function Home() {
   const setLocation = useUserStore((state) => state.setLocation);
   const profile = useUserStore((state) => state.profile);
   const deviceId = useUserStore((state) => state.deviceId);
+  const matchPreferences = useUserStore((state) => state.matchPreferences);
 
   // Inactive User Filtering (Remove if > 7 days inactive)
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -67,6 +69,16 @@ export default function Home() {
   
   if (campusMode && profile?.campus) {
     displayProfiles = displayProfiles.filter(p => p.campus?.toLowerCase() === profile.campus?.toLowerCase());
+  }
+
+  // Match Preferences Filter
+  if (matchPreferences) {
+    if (matchPreferences.gender !== "Everyone") {
+      displayProfiles = displayProfiles.filter(p => p.gender === matchPreferences.gender);
+    }
+    if (matchPreferences.locationScope === "City" && matchPreferences.selectedCity) {
+      displayProfiles = displayProfiles.filter(p => p.location?.toLowerCase() === matchPreferences.selectedCity?.toLowerCase());
+    }
   }
 
   // Redirect to setup if no profile exists
@@ -107,9 +119,19 @@ export default function Home() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation(`${position.coords.latitude.toFixed(2)},${position.coords.longitude.toFixed(2)}`);
-        toast("Location found! Showing nearby profiles.", "success");
+      async (position) => {
+        try {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state || `${lat.toFixed(2)},${lon.toFixed(2)}`;
+          setLocation(city);
+          toast(`Location found: ${city}! Showing nearby profiles.`, "success");
+        } catch (e) {
+          setLocation(`${position.coords.latitude.toFixed(2)},${position.coords.longitude.toFixed(2)}`);
+          toast("Location found! Showing nearby profiles.", "success");
+        }
       },
       (error) => {
         setLocationError("Please enable location to find matches near you in India.");
@@ -246,7 +268,11 @@ export default function Home() {
       
       {/* Top Header & Toggles */}
       <div className="absolute top-0 w-full p-4 z-10 flex justify-between items-center glass border-b border-glass-border">
-        <div className="flex items-center gap-2">
+        <div 
+          onClick={requestLocation}
+          className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded-md transition-colors"
+          title="Click to refresh location"
+        >
            <MapPin size={18} className="text-primary-500" />
            <span className="text-sm font-medium">{profile?.location || "India"}</span>
         </div>

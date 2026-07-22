@@ -27,21 +27,6 @@ export default function ChatListPage() {
         </div>
       </div>
 
-      {/* Most Compatible Daily Suggestion */}
-      <div className="px-4 pt-2">
-        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-yellow-500/20 transition shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-          <div className="flex items-center gap-3">
-             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-yellow-500">
-                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" alt="Riya" className="w-full h-full object-cover" />
-             </div>
-             <div>
-               <h3 className="text-yellow-400 font-bold text-sm flex items-center gap-1"><Sparkles size={14} /> Most Compatible</h3>
-               <p className="text-white text-xs mt-0.5">Riya shares your Scorpio ♏ energy!</p>
-             </div>
-          </div>
-          <button className="px-3 py-1.5 bg-yellow-500 text-black text-xs font-bold rounded-full">Chat</button>
-        </div>
-      </div>
 
       {/* Matches List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

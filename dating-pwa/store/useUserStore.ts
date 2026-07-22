@@ -60,6 +60,12 @@ interface UserState {
     currency: string;
     hapticsEnabled: boolean;
   };
+  matchPreferences: {
+    gender: "Everyone" | "Male" | "Female";
+    locationScope: "Anywhere" | "State" | "City";
+    selectedState: string | null;
+    selectedCity: string | null;
+  };
   liveUserCount: number;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
@@ -69,6 +75,7 @@ interface UserState {
   setLocation: (loc: string) => void;
   addMatch: (match: Match) => void;
   updateSettings: (settings: Partial<UserState['appSettings']>) => void;
+  updateMatchPreferences: (prefs: Partial<UserState['matchPreferences']>) => void;
   initLocalization: () => void;
   syncProfile: () => Promise<void>;
   subscribeToPush: () => Promise<void>;
@@ -107,11 +114,14 @@ export const useUserStore = create<UserState>()(
         currency: "INR",
         hapticsEnabled: true,
       },
+      matchPreferences: {
+        gender: "Everyone",
+        locationScope: "Anywhere",
+        selectedState: null,
+        selectedCity: null,
+      },
       liveUserCount: 0,
-      matches: [
-        { id: "1", name: "Priya", karma: 130, campus: "Delhi University", zodiacSign: "Leo ♌", hobbies: ["Reading", "Coffee", "Travel"], img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80", lastActive: new Date(), chemistryScore: 92, crossedPathsCount: 3, mode: "Date", isMutual: true, matchTimestamp: Date.now() - 1000 * 60 * 60 * 12 },
-        { id: "2", name: "Ananya", karma: 160, campus: "Amity", zodiacSign: "Scorpio ♏", hobbies: ["Coding", "Gaming", "Anime"], img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80", lastActive: new Date(), chemistryScore: 85, crossedPathsCount: 0, mode: "Date", isAnonymous: true, isMutual: false, matchTimestamp: Date.now() }
-      ],
+      matches: [],
       setDeviceId: async (id: string) => {
         set({ deviceId: id, isAuthenticated: true })
         // Register device with backend
@@ -185,6 +195,7 @@ export const useUserStore = create<UserState>()(
       setLiveUserCount: (count) => set({ liveUserCount: count }),
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),
       updateSettings: (settings) => set((state) => ({ appSettings: { ...state.appSettings, ...settings } })),
+      updateMatchPreferences: (prefs) => set((state) => ({ matchPreferences: { ...state.matchPreferences, ...prefs } })),
       initLocalization: () => {
         try {
           const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;

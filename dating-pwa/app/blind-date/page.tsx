@@ -10,9 +10,9 @@ import { Heart, X, Play, Pause, Headphones } from "lucide-react";
 
 // Dummy audio prompts for testing (using generic free sounds or placeholders)
 const DUMMY_PROFILES = [
-  { id: "1", name: "Stranger #842", age: 21, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  { id: "2", name: "Stranger #991", age: 24, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id: "3", name: "Stranger #105", age: 20, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  { id: "1", name: "Stranger #842", gender: "Female", location: "New Delhi", age: 21, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id: "2", name: "Stranger #991", gender: "Male", location: "Mumbai", age: 24, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id: "3", name: "Stranger #105", gender: "Female", location: "Bengaluru", age: 20, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
 ];
 
 export default function BlindDatePage() {
@@ -27,6 +27,17 @@ export default function BlindDatePage() {
   const spendCoins = useUserStore((state) => state.spendCoins);
   const coins = useUserStore((state) => state.coins);
   const profile = useUserStore((state) => state.profile);
+  const matchPreferences = useUserStore((state) => state.matchPreferences);
+
+  let displayProfiles = profiles;
+  if (matchPreferences) {
+    if (matchPreferences.gender !== "Everyone") {
+      displayProfiles = displayProfiles.filter(p => p.gender === matchPreferences.gender);
+    }
+    if (matchPreferences.locationScope === "City" && matchPreferences.selectedCity) {
+      displayProfiles = displayProfiles.filter(p => p.location?.toLowerCase() === matchPreferences.selectedCity?.toLowerCase());
+    }
+  }
 
   // If user hasn't recorded a voice prompt, block access
   if (profile && !profile.voice_prompt_url) {
@@ -96,20 +107,26 @@ export default function BlindDatePage() {
     }
   };
 
-  if (profiles.length === 0) {
+  if (displayProfiles.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center px-4 pt-32">
-        <h2 className="text-2xl font-bold text-primary-500 mb-2">No more voices!</h2>
-        <p className="text-gray-400">Check back later for new people.</p>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] text-white/50 space-y-4">
+        <Headphones size={48} className="opacity-50" />
+        <p>No blind dates found for your current filters.</p>
+        <button onClick={() => setProfiles(DUMMY_PROFILES)} className="text-primary-500 font-bold hover:underline">
+          Refresh Profiles
+        </button>
       </div>
     );
   }
 
-  const currentProfile = profiles[0];
+  const currentProfile = displayProfiles[0];
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-[calc(100vh-8rem)] overflow-hidden bg-dark-bg">
       
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 via-purple-900 to-black pointer-events-none opacity-50" />
+
       {/* Hidden Audio Element */}
       <audio 
         ref={audioRef} 
