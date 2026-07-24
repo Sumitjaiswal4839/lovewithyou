@@ -10,6 +10,7 @@ export interface UserProfile {
   campus?: string;
   age: number | null;
   photo_url: string;
+  video_url?: string;
   voice_prompt_url?: string;
   gender: string;
   zodiacSign?: string;
@@ -22,11 +23,17 @@ export interface UserProfile {
   };
   mode: "Date" | "BFF" | "Bizz";
   isAnonymous: boolean;
+  intent?: string;
   orientation?: string;
   faith?: string;
   prismaPersonality?: string;
   spotifyArtists?: string[];
   prompts?: { question: string; answer: string }[];
+  isStudent?: boolean;
+  studentIdUrl?: string;
+  studentVerificationStatus?: 'none' | 'pending' | 'verified' | 'rejected';
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Match {
@@ -69,6 +76,8 @@ interface UserState {
   };
   dailyUnlockDate: string | null;
   liveUserCount: number;
+  dailySearchCount: number;
+  lastSearchDate: string | null;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
   addCoins: (amount: number) => void;
@@ -78,6 +87,8 @@ interface UserState {
   addMatch: (match: Match) => void;
   addLike: (match: Match) => void;
   unlockDailyBlur: () => boolean;
+  canSearch: () => boolean;
+  incrementSearchCount: () => void;
   updateSettings: (settings: Partial<UserState['appSettings']>) => void;
   updateMatchPreferences: (prefs: Partial<UserState['matchPreferences']>) => void;
   initLocalization: () => void;
@@ -105,7 +116,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export const useUserStore = create<UserState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       deviceId: null,
       isAuthenticated: false,
       profile: null,
@@ -125,6 +136,8 @@ export const useUserStore = create<UserState>()(
         selectedCity: null,
       },
       dailyUnlockDate: null,
+      dailySearchCount: 0,
+      lastSearchDate: null,
       liveUserCount: 0,
       matches: [],
       likes: [],
@@ -132,11 +145,17 @@ export const useUserStore = create<UserState>()(
         set({ deviceId: id, isAuthenticated: true })
         // Register device with backend
         try {
-          await fetch(`${BACKEND_URL}/auth/device`, {
+          const res = await fetch(`${BACKEND_URL}/auth/device`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ device_id: id }),
           })
+          if (res.ok) {
+            const data = await res.json();
+            if (data.coins !== undefined) {
+              set({ coins: data.coins });
+            }
+          }
         } catch (e) {
           console.error("Backend auth failed", e)
         }
@@ -196,21 +215,82 @@ export const useUserStore = create<UserState>()(
           }
         }
       },
-      addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
-      spendCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins - amount) })),
+      addCoins: async (amount) => {
+        const state = useUserStore.getState();
+        const isVerifiedStudent = state.profile?.isStudent && state.profile?.studentVerificationStatus === 'verified';
+        const finalAmount = isVerifiedStudent ? amount * 2 : amount;
+        set({ coins: state.coins + finalAmount });
+        try {
+          if (state.deviceId) {
+            await fetch(`${BACKEND_URL}/coins/earn`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount }),
+            });
+          }
+        } catch (e) {
+          console.error("Failed to add coins to backend", e);
+          set({ coins: state.coins }); // Revert
+        }
+      },
+      spendCoins: async (amount) => {
+        const state = useUserStore.getState();
+        const isVerifiedStudent = state.profile?.isStudent && state.profile?.studentVerificationStatus === 'verified';
+        const finalAmount = isVerifiedStudent ? Math.floor(amount / 2) : amount;
+        set({ coins: Math.max(0, state.coins - finalAmount) });
+        try {
+          if (state.deviceId) {
+            await fetch(`${BACKEND_URL}/coins/spend`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount }),
+            });
+          }
+        } catch (e) {
+          console.error("Failed to spend coins on backend", e);
+          set({ coins: state.coins }); // Revert
+        }
+      },
       requestLocation: () => set({ locationEnabled: true }),
       setLocation: (loc: string) => set((state) => ({ profile: state.profile ? { ...state.profile, location: loc } : null })),
       setLiveUserCount: (count) => set({ liveUserCount: count }),
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),
       addLike: (match) => set((state) => ({ likes: [...state.likes, match] })),
       unlockDailyBlur: () => {
-        const state = useUserStore.getState();
+        const state = get();
         if (state.coins >= 50) {
           state.spendCoins(50);
           set({ dailyUnlockDate: new Date().toISOString().split('T')[0] });
           return true;
         }
         return false;
+      },
+      canSearch: () => {
+        const state = get();
+        const today = new Date().toISOString().split('T')[0];
+        if (state.lastSearchDate !== today) {
+           // Reset for a new day
+           set({ dailySearchCount: 0, lastSearchDate: today });
+           return true;
+        }
+        // If 5 free searches used up, check coins
+        if (state.dailySearchCount >= 5) {
+           return state.coins >= 1;
+        }
+        return true;
+      },
+      incrementSearchCount: () => {
+        const state = get();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Reset if it's a new day (just in case)
+        let newCount = state.lastSearchDate !== today ? 1 : state.dailySearchCount + 1;
+        
+        if (newCount > 5) {
+           // Deduct coin if they went over the free limit
+           state.spendCoins(1);
+        }
+        set({ dailySearchCount: newCount, lastSearchDate: today });
       },
       updateSettings: (settings) => set((state) => ({ appSettings: { ...state.appSettings, ...settings } })),
       updateMatchPreferences: (prefs) => set((state) => ({ matchPreferences: { ...state.matchPreferences, ...prefs } })),

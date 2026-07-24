@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, MessageCircle, User, Headphones, Dices, Calendar } from "lucide-react";
+import { Flame, MessageCircle, User, Headphones, Dices, GraduationCap } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { cn } from "@/lib/utils";
 
@@ -10,15 +10,12 @@ export function BottomNav() {
   const router = useRouter();
   const { triggerLight } = useHaptics();
 
-  // Force Next.js Turbopack to retain this chunk to fix the cache error
-  if (typeof window !== "undefined") {
-    (window as any).__calendar_cache_fix = Calendar;
-  }
+  // Removed calendar cache fix
 
   const links = [
     { href: "/", icon: Flame, label: "Match" },
     { href: "/random-chat", icon: Dices, label: "Random" },
-    { href: "/blind-date", icon: Headphones, label: "Blind" },
+    { href: "/campus", icon: GraduationCap, label: "Campus" },
     { href: "/chat", icon: MessageCircle, label: "Chat" },
     { href: "/profile", icon: User, label: "Profile" },
   ];

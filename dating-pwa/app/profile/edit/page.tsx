@@ -31,6 +31,8 @@ export default function EditProfilePage() {
     isAnonymous: profile?.isAnonymous || false,
     orientation: profile?.orientation || "",
     faith: profile?.faith || "",
+    intent: profile?.intent || "Long-term",
+    zodiacSign: profile?.zodiacSign || "",
   });
 
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -94,6 +96,8 @@ export default function EditProfilePage() {
       voice_prompt_url: formData.voice_prompt_url,
       mode: formData.mode as "Date" | "BFF" | "Bizz",
       isAnonymous: formData.isAnonymous,
+      intent: formData.intent,
+      zodiacSign: formData.zodiacSign,
       orientation: formData.orientation,
       faith: formData.faith,
       prompts: promptAnswer ? [{ question: selectedPrompt, answer: promptAnswer }] : [],
@@ -221,6 +225,33 @@ export default function EditProfilePage() {
               onChange={(e) => setFormData({ ...formData, faith: e.target.value })}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-400 ml-1">Looking For (Intent)</label>
+          <select 
+            className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary-500 appearance-none"
+            value={formData.intent}
+            onChange={(e) => setFormData({ ...formData, intent: e.target.value })}
+          >
+            {["Long-term", "Short-term", "Just friends", "Still figuring it out"].map(i => (
+              <option key={i} value={i} className="bg-dark-bg">{i}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-400 ml-1">Zodiac Sign</label>
+          <select 
+            className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary-500 appearance-none"
+            value={formData.zodiacSign}
+            onChange={(e) => setFormData({ ...formData, zodiacSign: e.target.value })}
+          >
+            <option value="" className="bg-dark-bg">Select Zodiac</option>
+            {["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"].map(i => (
+              <option key={i} value={i} className="bg-dark-bg">{i}</option>
+            ))}
+          </select>
         </div>
 
         <div>

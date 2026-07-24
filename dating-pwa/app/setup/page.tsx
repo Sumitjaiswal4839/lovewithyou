@@ -13,6 +13,7 @@ export default function SetupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const setProfile = useUserStore((state) => state.setProfile);
+  const addCoins = useUserStore((state) => state.addCoins);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -118,7 +119,8 @@ export default function SetupPage() {
       isAnonymous: false
     });
 
-    toast("Profile Verified and Locked. Welcome aboard!", "success");
+    addCoins(20);
+    toast("Profile Verified! +20 Coins Awarded 💰", "success");
     router.push("/");
   };
 

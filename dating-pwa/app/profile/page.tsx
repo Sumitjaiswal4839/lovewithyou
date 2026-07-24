@@ -2,8 +2,9 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Eye, Heart, Users, Award, Calendar, ShieldCheck, Share2, ScanFace, Gift, Copy, X, MessageSquare } from "lucide-react";
+import { TrendingUp, Eye, Heart, Users, Award, Calendar, ShieldCheck, Share2, ScanFace, Gift, Copy, X, MessageSquare, GraduationCap } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
+import { StudentVerificationModal } from "@/components/StudentVerificationModal";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
 import { useState } from "react";
@@ -14,15 +15,20 @@ export default function ProfilePage() {
   const router = useRouter();
   const profile = useUserStore((state) => state.profile);
   const coins = useUserStore((state) => state.coins);
+  const spendCoins = useUserStore((state) => state.spendCoins);
   const setProfile = useUserStore((state) => state.setProfile);
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const { theme, setTheme } = useTheme();
   
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isBoosted, setIsBoosted] = useState(false);
   
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   
   const { toast } = useToast();
@@ -62,6 +68,7 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold text-white flex items-center gap-2">
               {profile.name}, {profile.age}
               {profile.verified && <ShieldCheck size={20} className="text-blue-500 fill-blue-500/20" />}
+              {profile.studentVerificationStatus === 'verified' && <span title="Verified Student"><GraduationCap size={20} className="text-indigo-400" /></span>}
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <KarmaBadge score={profile.karma} />
@@ -78,9 +85,26 @@ export default function ProfilePage() {
       <div className="px-6 py-4 space-y-6">
         
         {/* Actions */}
-        <div className="flex gap-4">
-           <button className="flex-1 flex items-center justify-center gap-2 bg-primary-500/10 text-primary-400 font-medium py-2.5 rounded-xl border border-primary-500/20 hover:bg-primary-500/20 transition">
+        <div className="flex gap-3">
+           <button className="flex-1 flex items-center justify-center gap-2 bg-yellow-500/10 text-yellow-500 font-bold py-3 rounded-xl border border-yellow-500/20 hover:bg-yellow-500/20 transition shadow-sm">
              🪙 {coins} Coins
+           </button>
+           
+           <button 
+             onClick={() => {
+               if (isBoosted) return toast("Already boosted!", "message");
+               if (coins < 30) return toast("Not enough coins. Need 30 coins to boost.", "error");
+               spendCoins(30);
+               setIsBoosted(true);
+               toast("Profile Boosted for 30 minutes! 🚀", "success");
+             }}
+             className={`flex-[1.5] flex items-center justify-center gap-2 font-bold py-3 rounded-xl border transition shadow-sm ${
+               isBoosted 
+                 ? "bg-purple-500/20 text-purple-400 border-purple-500/30" 
+                 : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500 shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:scale-[1.02]"
+             }`}
+           >
+             <TrendingUp size={18} /> {isBoosted ? "Boost Active" : "Boost (30 🪙)"}
            </button>
         </div>
 
@@ -104,7 +128,7 @@ export default function ProfilePage() {
               <ScanFace size={24} className="text-blue-400" />
               <div>
                 <h3 className="text-blue-400 font-bold text-sm">Get Verified</h3>
-                <p className="text-gray-400 text-[10px] mt-0.5">Get the blue tick</p>
+                <p className="text-gray-400 text-[10px] mt-0.5">Free Blue Tick</p>
               </div>
             </button>
           )}
@@ -114,6 +138,40 @@ export default function ProfilePage() {
             <div>
               <h3 className="text-green-400 font-bold text-sm">Invite Friends</h3>
               <p className="text-gray-400 text-[10px] mt-0.5">Earn 200 Coins</p>
+            </div>
+          </button>
+          
+          <button onClick={() => setShowAdModal(true)} className="bg-gradient-to-br from-yellow-500/20 to-orange-600/10 border border-yellow-500/30 rounded-2xl p-4 flex flex-col items-start gap-2 hover:bg-yellow-500/30 transition text-left">
+            <TrendingUp size={24} className="text-yellow-400" />
+            <div>
+              <h3 className="text-yellow-400 font-bold text-sm">Watch Ad</h3>
+              <p className="text-gray-400 text-[10px] mt-0.5">+50 Free Coins</p>
+            </div>
+          </button>
+
+          {!profile.verified && (
+            <button 
+              onClick={() => {
+                if (coins < 500) return toast("Not enough coins! Need 500.", "error");
+                spendCoins(500);
+                setProfile({ ...profile, verified: true });
+                toast("Verification Badge Purchased! 🌟", "success");
+              }} 
+              className="bg-gradient-to-br from-pink-500/20 to-rose-600/10 border border-pink-500/30 rounded-2xl p-4 flex flex-col items-start gap-2 hover:bg-pink-500/30 transition text-left"
+            >
+              <ShieldCheck size={24} className="text-pink-400" />
+              <div>
+                <h3 className="text-pink-400 font-bold text-sm">Buy Badge</h3>
+                <p className="text-gray-400 text-[10px] mt-0.5">Skip AI (500 🪙)</p>
+              </div>
+            </button>
+          )}
+
+          <button onClick={() => setShowStudentModal(true)} className="bg-gradient-to-br from-indigo-500/20 to-purple-600/10 border border-indigo-500/30 rounded-2xl p-4 flex flex-col items-start gap-2 hover:bg-indigo-500/30 transition text-left">
+            <GraduationCap size={24} className="text-indigo-400" />
+            <div>
+              <h3 className="text-indigo-400 font-bold text-sm">Student ID</h3>
+              <p className="text-gray-400 text-[10px] mt-0.5">Unlock Perks</p>
             </div>
           </button>
         </div>
@@ -153,6 +211,9 @@ export default function ProfilePage() {
           <div className="flex flex-wrap gap-2 mt-2">
             {profile.location && (
               <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">📍 {profile.location}</span>
+            )}
+            {profile.intent && (
+              <span className="bg-pink-500/20 text-pink-300 border border-pink-500/30 px-3 py-1.5 rounded-full text-xs font-medium">👀 {profile.intent}</span>
             )}
             {profile.campus && (
               <span className="bg-white/10 text-white px-3 py-1.5 rounded-full text-xs font-medium">🎓 {profile.campus}</span>
@@ -277,6 +338,47 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Watch Ad Modal */}
+      {showAdModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-dark-bg border border-glass-border w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl animate-in zoom-in-95">
+             <div className="w-16 h-16 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto mb-4">
+               <TrendingUp size={32} />
+             </div>
+             <h3 className="text-xl font-bold text-white mb-2">Watch an Ad</h3>
+             <p className="text-sm text-gray-400 mb-6">Watch a quick sponsored video to earn 50 free coins for your next Super Like!</p>
+             
+             {isWatchingAd ? (
+               <div className="w-full h-40 bg-black rounded-xl border border-white/10 flex flex-col items-center justify-center mb-4 relative overflow-hidden">
+                 <div className="w-full h-1 bg-white/20 absolute top-0 left-0">
+                    <div className="h-full bg-yellow-500 animate-[progress_5s_linear_forwards]"></div>
+                 </div>
+                 <p className="text-white font-bold text-sm">Playing Ad...</p>
+                 <p className="text-gray-500 text-xs mt-2">Please wait 5 seconds</p>
+               </div>
+             ) : (
+               <button 
+                 onClick={() => {
+                   setIsWatchingAd(true);
+                   setTimeout(() => {
+                     setIsWatchingAd(false);
+                     setShowAdModal(false);
+                     useUserStore.getState().addCoins(50);
+                     toast("Earned 50 Coins! 🪙", "success");
+                   }, 5000);
+                 }}
+                 className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-black font-bold transition shadow-[0_0_15px_rgba(234,179,8,0.4)]"
+               >
+                 Watch Now
+               </button>
+             )}
+             {!isWatchingAd && (
+               <button onClick={() => setShowAdModal(false)} className="w-full mt-3 py-3 text-gray-400 font-bold hover:text-white transition">Cancel</button>
+             )}
+          </div>
+        </div>
+      )}
+
       {/* Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
@@ -310,6 +412,11 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Student Verification Modal */}
+      {showStudentModal && (
+        <StudentVerificationModal onClose={() => setShowStudentModal(false)} />
       )}
     </div>
   );
