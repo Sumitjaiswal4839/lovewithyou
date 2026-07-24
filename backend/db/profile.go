@@ -6,34 +6,34 @@ import (
 )
 
 type Profile struct {
-	DeviceID          string                   `json:"device_id"`
-	Name              string                   `json:"name"`
-	Bio               string                   `json:"bio"`
-	Hobbies           []string                 `json:"hobbies"`
-	Interests         []string                 `json:"interests"`
-	Location          string                   `json:"location"`
-	Campus            string                   `json:"campus,omitempty"`
-	Age               int                      `json:"age"`
-	PhotoURL          string                   `json:"photo_url"`
-	VoicePromptURL    string                   `json:"voice_prompt_url,omitempty"`
-	Gender            string                   `json:"gender"`
-	Verified          bool                     `json:"verified"`
-	Coins             int                      `json:"coins"`
-	Karma             int                      `json:"karma"`
-	ZodiacSign        string                   `json:"zodiacSign,omitempty"`
-	Analytics         map[string]int           `json:"analytics,omitempty"`
-	Mode              string                   `json:"mode,omitempty"`
-	IsAnonymous       bool                     `json:"isAnonymous"`
-	Orientation       string                   `json:"orientation,omitempty"`
-	Faith             string                   `json:"faith,omitempty"`
-	PrismaPersonality string                   `json:"prismaPersonality,omitempty"`
-	SpotifyArtists    []string                 `json:"spotifyArtists,omitempty"`
-	Prompts           []map[string]string      `json:"prompts,omitempty"`
-	IsStudent         bool                     `json:"isStudent,omitempty"`
-	StudentIdUrl      string                   `json:"studentIdUrl,omitempty"`
-	StudentVerificationStatus string         `json:"studentVerificationStatus,omitempty"`
-	Latitude          float64                  `json:"latitude,omitempty"`
-	Longitude         float64                  `json:"longitude,omitempty"`
+	DeviceID                  string              `json:"device_id"`
+	Name                      string              `json:"name"`
+	Bio                       string              `json:"bio"`
+	Hobbies                   []string            `json:"hobbies"`
+	Interests                 []string            `json:"interests"`
+	Location                  string              `json:"location"`
+	Campus                    string              `json:"campus,omitempty"`
+	Age                       int                 `json:"age"`
+	PhotoURL                  string              `json:"photo_url"`
+	VoicePromptURL            string              `json:"voice_prompt_url,omitempty"`
+	Gender                    string              `json:"gender"`
+	Verified                  bool                `json:"verified"`
+	Coins                     int                 `json:"coins"`
+	Karma                     int                 `json:"karma"`
+	ZodiacSign                string              `json:"zodiacSign,omitempty"`
+	Analytics                 map[string]int      `json:"analytics,omitempty"`
+	Mode                      string              `json:"mode,omitempty"`
+	IsAnonymous               bool                `json:"isAnonymous"`
+	Orientation               string              `json:"orientation,omitempty"`
+	Faith                     string              `json:"faith,omitempty"`
+	PrismaPersonality         string              `json:"prismaPersonality,omitempty"`
+	SpotifyArtists            []string            `json:"spotifyArtists,omitempty"`
+	Prompts                   []map[string]string `json:"prompts,omitempty"`
+	IsStudent                 bool                `json:"isStudent,omitempty"`
+	StudentIdUrl              string              `json:"studentIdUrl,omitempty"`
+	StudentVerificationStatus string              `json:"studentVerificationStatus,omitempty"`
+	Latitude                  float64             `json:"latitude,omitempty"`
+	Longitude                 float64             `json:"longitude,omitempty"`
 }
 
 // GetProfile fetches a profile from the 'profiles' table in Supabase
@@ -46,10 +46,10 @@ func GetProfile(deviceID string) (*Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// single response returns byte slice of the object
 	_ = count // silence unused variable
-	
+
 	var profile Profile
 	if err := json.Unmarshal(data, &profile); err != nil {
 		return nil, err
@@ -67,14 +67,14 @@ func UpsertProfile(profile Profile) (*Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	_ = count
-	
+
 	var profiles []Profile
 	if err := json.Unmarshal(data, &profiles); err != nil {
 		return nil, err
 	}
-	
+
 	if len(profiles) > 0 {
 		return &profiles[0], nil
 	}
@@ -87,7 +87,7 @@ func GetOrCreateProfile(deviceID string) (*Profile, error) {
 	if err == nil && profile != nil {
 		return profile, nil
 	}
-	
+
 	// Create new profile if not found
 	newProfile := Profile{
 		DeviceID: deviceID,
@@ -103,12 +103,12 @@ func UpdateCoins(deviceID string, amount int) (*Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	newBalance := profile.Coins + amount
 	if newBalance < 0 {
 		return nil, fmt.Errorf("insufficient coins")
 	}
-	
+
 	profile.Coins = newBalance
 	return UpsertProfile(*profile)
 }
@@ -179,7 +179,7 @@ func GetNearbyUsers(lat, lng float64) ([]Cluster, error) {
 	}
 
 	data, _, err := Client.From("profiles").Select("location, latitude, longitude", "exact", false).
-		NotEq("latitude", "0").Execute()
+		Gt("latitude", "0").Execute()
 
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func SearchProfiles(query string) ([]Profile, error) {
 	if Client == nil {
 		return nil, fmt.Errorf("supabase client not initialized")
 	}
-	
+
 	// Basic sanitization
 	if len(query) < 2 {
 		return []Profile{}, nil

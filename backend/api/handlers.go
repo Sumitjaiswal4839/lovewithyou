@@ -1,52 +1,64 @@
 package api
 
 import (
+	"dating-backend/db"
+	"dating-backend/ws"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"dating-backend/db"
-	"dating-backend/ws"
 
-	"github.com/gorilla/mux"
 	"github.com/SherClockHolmes/webpush-go"
+	"github.com/gorilla/mux"
 )
 
 // SetupRoutes registers all REST and WebSocket endpoints
 func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r := mux.NewRouter()
-	
+
+	// Apply CORS middleware first so every request and preflight gets the right headers.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			origin := req.Header.Get("Origin")
+			allowedOrigin := os.Getenv("CORS_ALLOWED_ORIGIN")
+			if allowedOrigin == "" {
+				allowedOrigin = "*"
+			}
+
+			if origin != "" && allowedOrigin != "*" {
+				w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			} else {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			}
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			if req.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, req)
+		})
+	})
+
 	// WebSocket
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.ServeWs(hub, w, r)
 	})
 
 	// REST API
-	r.HandleFunc("/auth/device", DeviceAuth).Methods("POST", "OPTIONS")
-	r.HandleFunc("/coins/earn", EarnCoins).Methods("POST", "OPTIONS")
-	r.HandleFunc("/coins/spend", SpendCoins).Methods("POST", "OPTIONS")
-	r.HandleFunc("/profile/{device_id}", GetProfile).Methods("GET", "OPTIONS")
-	r.HandleFunc("/profile", UpdateProfile).Methods("POST", "OPTIONS")
-	r.HandleFunc("/swipes", RecordSwipe).Methods("POST", "OPTIONS")
-	r.HandleFunc("/users/nearby", GetNearbyClusters).Methods("GET", "OPTIONS")
-	r.HandleFunc("/users/search", SearchUsers).Methods("GET", "OPTIONS")
-	r.HandleFunc("/webpush/subscribe", SubscribeWebPush).Methods("POST", "OPTIONS")
-	
-	// Apply CORS middleware
-	r.Use(mux.CORSMethodMiddleware(r))
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			if req.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-			next.ServeHTTP(w, req)
-		})
-	})
+	r.HandleFunc("/auth/device", DeviceAuth).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/coins/earn", EarnCoins).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/coins/spend", SpendCoins).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/profile/{device_id}", GetProfile).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/profile", UpdateProfile).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/swipes", RecordSwipe).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/users/nearby", GetNearbyClusters).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/users/search", SearchUsers).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/webpush/subscribe", SubscribeWebPush).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
 }
@@ -88,17 +100,17 @@ func DeviceAuth(w http.ResponseWriter, r *http.Request) {
 	var req map[string]string
 	json.NewDecoder(r.Body).Decode(&req)
 	deviceID := req["device_id"]
-	
+
 	profile, err := db.GetOrCreateProfile(deviceID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status": "authenticated", 
+		"status":    "authenticated",
 		"device_id": deviceID,
-		"coins": profile.Coins,
+		"coins":     profile.Coins,
 	})
 }
 
@@ -113,7 +125,7 @@ func EarnCoins(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	profile, err := db.UpdateCoins(req.DeviceID, req.Amount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -128,7 +140,7 @@ func SpendCoins(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	profile, err := db.UpdateCoins(req.DeviceID, -req.Amount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -149,13 +161,13 @@ func RecordSwipe(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	isMatch, err := db.RecordSwipeAndCheckMatch(req.SwiperID, req.SwipedID, req.Direction)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "is_match": isMatch})
 }
 
@@ -163,16 +175,16 @@ func GetNearbyClusters(w http.ResponseWriter, r *http.Request) {
 	// Parse lat and lng from query string if available
 	latStr := r.URL.Query().Get("lat")
 	lngStr := r.URL.Query().Get("lng")
-	
+
 	lat, _ := strconv.ParseFloat(latStr, 64)
 	lng, _ := strconv.ParseFloat(lngStr, 64)
-	
+
 	clusters, err := db.GetNearbyUsers(lat, lng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(clusters)
 }
 
@@ -182,13 +194,13 @@ func SearchUsers(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode([]db.Profile{})
 		return
 	}
-	
+
 	profiles, err := db.SearchProfiles(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(profiles)
 }
 
