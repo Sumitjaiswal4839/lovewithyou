@@ -28,10 +28,12 @@ export function TopBar() {
             </button>
           )}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-pink-500 shadow-md">
-              <span className="text-sm font-black italic">LW</span>
+            <div className="w-8 h-8 rounded-full bg-white/15 border border-white/30 flex items-center justify-center p-1 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+              <img src="/favicon.png" alt="LoveWithYou Logo" className="w-6 h-6 object-contain drop-shadow" />
             </div>
-            LoveWith You
+            <span className="bg-gradient-to-r from-white via-pink-100 to-rose-200 bg-clip-text text-transparent font-extrabold tracking-tight">
+              LoveWithYou
+            </span>
           </div>
         </div>
 

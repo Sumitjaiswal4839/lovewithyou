@@ -20,21 +20,21 @@ export default function TermsPage() {
         <section>
           <h2 className="text-white font-bold text-lg mb-2">1. Acceptance of Terms</h2>
           <p>
-            By accessing or using the LoveWith You application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree to all the terms and conditions, then you may not access the App.
+            By accessing or using the LoveWithYou application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree to all the terms and conditions, then you may not access the App.
           </p>
         </section>
 
         <section>
           <h2 className="text-white font-bold text-lg mb-2">2. Eligibility</h2>
           <p>
-            You must be at least 18 years of age to create an account on LoveWith You and use the Service. By creating an account, you represent and warrant that you are legally capable of entering into a binding contract.
+            You must be at least 18 years of age to create an account on LoveWithYou and use the Service. By creating an account, you represent and warrant that you are legally capable of entering into a binding contract.
           </p>
         </section>
 
         <section>
           <h2 className="text-white font-bold text-lg mb-2">3. User Conduct & Safety</h2>
           <p>
-            You agree to use LoveWith You for its intended purposes (Date, BFF, or Bizz) in a respectful manner. You agree NOT to:
+            You agree to use LoveWithYou for its intended purposes (Date, BFF, or Bizz) in a respectful manner. You agree NOT to:
           </p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>Post any content that is hate speech, threatening, sexually explicit or pornographic.</li>
@@ -53,14 +53,14 @@ export default function TermsPage() {
             The App utilizes a virtual currency system ("Coins"). Coins can be earned through app engagement (like referrals) or purchased. Coins are used to unlock premium features, such as unlocking daily likes and matches (e.g., spending 50 coins to unblur connections).
           </p>
           <p className="mt-2">
-            All purchases of Coins are final and non-refundable. Coins have no real-world monetary value and cannot be exchanged for cash. LoveWith You reserves the right to modify the cost of features at any time.
+            All purchases of Coins are final and non-refundable. Coins have no real-world monetary value and cannot be exchanged for cash. LoveWithYou reserves the right to modify the cost of features at any time.
           </p>
         </section>
 
         <section>
           <h2 className="text-white font-bold text-lg mb-2">5. Account Termination</h2>
           <p>
-            You can delete your account at any time via the Settings menu. LoveWith You reserves the right to suspend or terminate your account without notice if we believe you have violated these Terms. Upon deletion, all your data, matches, and accumulated coins will be permanently removed.
+            You can delete your account at any time via the Settings menu. LoveWithYou reserves the right to suspend or terminate your account without notice if we believe you have violated these Terms. Upon deletion, all your data, matches, and accumulated coins will be permanently removed.
           </p>
         </section>
 

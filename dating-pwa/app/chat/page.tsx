@@ -3,18 +3,20 @@
 import { useState, useEffect, Suspense } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageCircle, Search, Lock, HeartPulse, Heart } from "lucide-react";
+import { MessageCircle, Search, Lock, HeartPulse, Heart, Users, Check, X, Clock } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function ChatListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "likes" ? "likes" : "matches";
-  const [activeTab, setActiveTab] = useState<"matches" | "likes">(initialTab);
+  const initialTab = searchParams.get("tab") as "matches" | "likes" | "friends" || "matches";
+  const [activeTab, setActiveTab] = useState<"matches" | "likes" | "friends">(initialTab);
   
   const matches = useUserStore((state) => state.matches);
   const likes = useUserStore((state) => state.likes);
+  const friends = useUserStore((state) => state.friends);
+  const friendRequests = useUserStore((state) => state.friendRequests);
   const dailyUnlockDate = useUserStore((state) => state.dailyUnlockDate);
   const unlockDailyBlur = useUserStore((state) => state.unlockDailyBlur);
   const coins = useUserStore((state) => state.coins);
@@ -111,6 +113,100 @@ function ChatListContent() {
     );
   };
 
+  const renderFriendsTab = () => {
+    const incomingReqs = friendRequests.filter(r => r.status === "incoming");
+    const outgoingReqs = friendRequests.filter(r => r.status === "outgoing");
+
+    return (
+      <div className="space-y-6">
+        {/* Incoming Requests */}
+        {incomingReqs.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Friend Requests ({incomingReqs.length})</h3>
+            {incomingReqs.map(req => (
+              <div key={req.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+                  <img src={req.img} alt={req.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-white font-bold text-sm truncate">{req.name}</h4>
+                  <p className="text-xs text-gray-400">Wants to be friends</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button 
+                    onClick={() => useUserStore.getState().acceptFriendRequest(req.id)}
+                    className="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center hover:bg-green-500/30 transition-colors"
+                  >
+                    <Check size={18} />
+                  </button>
+                  <button 
+                    onClick={() => useUserStore.getState().declineFriendRequest(req.id)}
+                    className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Outgoing Requests */}
+        {outgoingReqs.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Sent Requests ({outgoingReqs.length})</h3>
+            {outgoingReqs.map(req => (
+              <div key={req.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl opacity-70">
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                  <img src={req.img} alt={req.name} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-white font-bold text-sm truncate">{req.name}</h4>
+                  <p className="text-[11px] text-orange-400 flex items-center gap-1"><Clock size={10} /> Pending Approval</p>
+                </div>
+                <button 
+                  onClick={() => router.push(`/chat/${req.id}`)}
+                  className="px-3 py-1.5 text-xs bg-white/10 text-white rounded-full font-medium"
+                >
+                  View Chat
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Friends List */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">My Friends ({friends.length})</h3>
+          {friends.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 text-sm">
+              <Users size={32} className="mx-auto mb-2 opacity-50" />
+              You haven't added any friends yet.
+            </div>
+          ) : (
+            friends.map(friend => (
+              <div 
+                key={friend.id}
+                onClick={() => router.push(`/chat/${friend.id}`)}
+                className="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-all"
+              >
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 relative">
+                  <img src={friend.img} alt={friend.name} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-dark-bg rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-white font-bold truncate">{friend.name}</h4>
+                  <p className="text-xs text-primary-400 font-medium">Friend</p>
+                </div>
+                <MessageCircle size={18} className="text-gray-400" />
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-dark-bg pb-20">
       
@@ -129,25 +225,33 @@ function ChatListContent() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 overflow-x-auto no-scrollbar">
           <button 
             onClick={() => setActiveTab("matches")}
-            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "matches" ? "border-primary-500 text-primary-500" : "border-transparent text-gray-400"}`}
+            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "matches" ? "border-primary-500 text-primary-500" : "border-transparent text-gray-400"}`}
           >
             My Matches <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{matches.length}</span>
           </button>
           <button 
             onClick={() => setActiveTab("likes")}
-            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors ${activeTab === "likes" ? "border-pink-500 text-pink-500" : "border-transparent text-gray-400"}`}
+            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "likes" ? "border-pink-500 text-pink-500" : "border-transparent text-gray-400"}`}
           >
             Who Liked Me <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{likes.length}</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("friends")}
+            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "friends" ? "border-blue-500 text-blue-500" : "border-transparent text-gray-400"}`}
+          >
+            Friends <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{friends.length + friendRequests.filter(r => r.status === 'incoming').length}</span>
           </button>
         </div>
       </div>
 
       {/* List Container */}
       <div className="flex-1 overflow-y-auto p-4">
-         {activeTab === "matches" ? renderList(matches, false) : renderList(likes, true)}
+         {activeTab === "matches" && renderList(matches, false)}
+         {activeTab === "likes" && renderList(likes, true)}
+         {activeTab === "friends" && renderFriendsTab()}
       </div>
       
     </div>

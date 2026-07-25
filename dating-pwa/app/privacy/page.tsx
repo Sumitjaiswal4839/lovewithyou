@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="text-white font-bold text-lg mb-2">1. Introduction</h2>
           <p>
-            At LoveWith You, your privacy is our priority. This Privacy Policy explains how we collect, use, and protect your personal data when you use our Progressive Web Application (PWA) and services.
+            At LoveWithYou, your privacy is our priority. This Privacy Policy explains how we collect, use, and protect your personal data when you use our Progressive Web Application (PWA) and services.
           </p>
         </section>
 
@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
 
         <section>
           <h2 className="text-white font-bold text-lg mb-2">3. How We Use Your Data</h2>
-          <p>We use your information strictly to operate and improve the LoveWith You experience:</p>
+          <p>We use your information strictly to operate and improve the LoveWithYou experience:</p>
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>To run our matching algorithm and show you relevant profiles based on your preferences.</li>
             <li>To manage virtual currency (Coins) and daily unlock limits.</li>

@@ -10,6 +10,7 @@ export interface UserProfile {
   campus?: string;
   age: number | null;
   photo_url: string;
+  photos?: string[];
   video_url?: string;
   voice_prompt_url?: string;
   gender: string;
@@ -53,6 +54,21 @@ export interface Match {
   matchTimestamp?: number;
 }
 
+export interface FriendRequest {
+  id: string; // The user ID sending/receiving the request
+  name: string;
+  img: string;
+  status: "incoming" | "outgoing";
+  timestamp: number;
+}
+
+export interface Friend {
+  id: string;
+  name: string;
+  img: string;
+  addedAt: number;
+}
+
 interface UserState {
   deviceId: string | null;
   isAuthenticated: boolean;
@@ -61,6 +77,8 @@ interface UserState {
   locationEnabled: boolean;
   matches: Match[];
   likes: Match[];
+  friendRequests: FriendRequest[];
+  friends: Friend[];
   appSettings: {
     lowDataMode: boolean;
     highContrast: boolean;
@@ -86,6 +104,10 @@ interface UserState {
   setLocation: (loc: string) => void;
   addMatch: (match: Match) => void;
   addLike: (match: Match) => void;
+  sendFriendRequest: (userId: string, name: string, img: string) => void;
+  receiveFriendRequest: (userId: string, name: string, img: string) => void;
+  acceptFriendRequest: (userId: string) => void;
+  declineFriendRequest: (userId: string) => void;
   unlockDailyBlur: () => boolean;
   canSearch: () => boolean;
   incrementSearchCount: () => void;
@@ -141,6 +163,8 @@ export const useUserStore = create<UserState>()(
       liveUserCount: 0,
       matches: [],
       likes: [],
+      friendRequests: [],
+      friends: [],
       setDeviceId: async (id: string) => {
         set({ deviceId: id, isAuthenticated: true })
         // Register device with backend
@@ -256,6 +280,49 @@ export const useUserStore = create<UserState>()(
       setLiveUserCount: (count) => set({ liveUserCount: count }),
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),
       addLike: (match) => set((state) => ({ likes: [...state.likes, match] })),
+      
+      sendFriendRequest: (userId, name, img) => set((state) => {
+        // Avoid duplicates
+        if (state.friendRequests.some(r => r.id === userId) || state.friends.some(f => f.id === userId)) {
+          return state;
+        }
+        return {
+          friendRequests: [
+            ...state.friendRequests, 
+            { id: userId, name, img, status: "outgoing", timestamp: Date.now() }
+          ]
+        };
+      }),
+
+      receiveFriendRequest: (userId, name, img) => set((state) => {
+         if (state.friendRequests.some(r => r.id === userId) || state.friends.some(f => f.id === userId)) {
+          return state;
+        }
+        return {
+          friendRequests: [
+            { id: userId, name, img, status: "incoming", timestamp: Date.now() },
+            ...state.friendRequests
+          ]
+        };
+      }),
+
+      acceptFriendRequest: (userId) => set((state) => {
+        const request = state.friendRequests.find(r => r.id === userId);
+        if (!request) return state;
+
+        return {
+          friendRequests: state.friendRequests.filter(r => r.id !== userId),
+          friends: [
+            ...state.friends,
+            { id: userId, name: request.name, img: request.img, addedAt: Date.now() }
+          ]
+        };
+      }),
+
+      declineFriendRequest: (userId) => set((state) => ({
+        friendRequests: state.friendRequests.filter(r => r.id !== userId)
+      })),
+
       unlockDailyBlur: () => {
         const state = get();
         if (state.coins >= 50) {

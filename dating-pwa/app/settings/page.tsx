@@ -2,11 +2,9 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { Moon, Sun, Monitor, Trash2, MessageSquare, ArrowLeft, X } from "lucide-react";
+import { Moon, Sun, Monitor, Trash2, ArrowLeft } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useState } from "react";
-import { useToast } from "@/components/ui/ToastProvider";
-import { supabase } from "@/lib/supabase";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -16,9 +14,6 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
-  const { toast } = useToast();
 
   const handleDeleteAccount = () => {
     // In a real app, this would call DELETE /profile API
@@ -68,11 +63,6 @@ export default function SettingsPage() {
             <span className="font-bold">Terms & Conditions</span>
           </button>
 
-          <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5 text-gray-300 shadow-sm mt-3">
-            <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><MessageSquare size={20} /></div>
-            <span className="font-bold">Send Feedback</span>
-          </button>
-
           {!showDeleteConfirm ? (
             <button onClick={() => setShowDeleteConfirm(true)} className="w-full flex items-center gap-4 p-4 rounded-2xl bg-red-500/5 hover:bg-red-500/10 transition-colors border border-red-500/10 text-red-400 mt-3 shadow-sm">
               <div className="p-2 bg-red-500/20 text-red-400 rounded-lg"><Trash2 size={20} /></div>
@@ -92,43 +82,6 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
-
-      {/* Feedback Modal */}
-      {showFeedbackModal && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-dark-bg border border-glass-border w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2"><MessageSquare size={20} className="text-blue-400"/> Feedback</h3>
-              <button onClick={() => setShowFeedbackModal(false)} className="p-2 bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20} /></button>
-            </div>
-            <textarea 
-              rows={5}
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="Tell us what you love or what needs improvement..."
-              className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-4 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none text-sm text-white mb-4"
-            />
-            <button 
-              onClick={async () => {
-                if (!feedbackText.trim()) return;
-                
-                const { error } = await supabase.from('feedbacks').insert([{ message: feedbackText }]);
-                
-                if (error) {
-                  toast(`Failed to send feedback: ${error.message}`, "error");
-                } else {
-                  toast("Feedback sent successfully!", "success");
-                  setFeedbackText("");
-                  setShowFeedbackModal(false);
-                }
-              }}
-              className="w-full py-4 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-bold transition shadow-[0_0_15px_rgba(217,70,239,0.4)]"
-            >
-              Submit Feedback
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

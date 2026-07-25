@@ -1,146 +1,385 @@
 "use client";
 
+import { useState } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Lock, Calendar, MessageSquare, Users, ChevronRight, Zap } from "lucide-react";
+import { GraduationCap, Lock, Calendar, Users, ChevronRight, Zap, Heart, Flame, Send, MessageCircle, Sparkles, UserPlus, ShieldCheck, ThumbsUp } from "lucide-react";
+import { useToast } from "@/components/ui/ToastProvider";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Confession {
+  id: string;
+  text: string;
+  tag: string;
+  time: string;
+  likes: number;
+  liked: boolean;
+}
 
 export default function CampusPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const profile = useUserStore((state) => state.profile);
+  
+  const [activeTab, setActiveTab] = useState<"hub" | "crush" | "confessions">("hub");
+  const [crushHandle, setCrushHandle] = useState<string>("");
+  const [savedCrushes, setSavedCrushes] = useState<string[]>(["Rohit_Vibe24"]);
+  const [newConfessionText, setNewConfessionText] = useState<string>("");
+  const [confessionTag, setConfessionTag] = useState<string>("CS Department");
+
+  const [confessions, setConfessions] = useState<Confession[]>([
+    { id: "c1", text: "To the girl in denim jacket sitting at the central coffee canteen today: your smile instantly brightened my mood! ☕✨", tag: "Library Hub", time: "2h ago", likes: 24, liked: false },
+    { id: "c2", text: "Who was that guy playing guitar during the hostel break? You totally rocked that acoustic solo! 🎸", tag: "Music Society", time: "5h ago", likes: 41, liked: true },
+    { id: "c3", text: "Best luck to everyone in Third Year Engineering for tomorrow's lab evaluations! Let's crush this! 🚀", tag: "CS Department", time: "1d ago", likes: 18, liked: false },
+  ]);
 
   // If not a student or not verified, show lock screen
   const isVerifiedStudent = profile?.isStudent && profile?.studentVerificationStatus === 'verified';
 
   if (!isVerifiedStudent) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-dark-bg px-6 text-center">
-        <div className="w-24 h-24 rounded-full bg-indigo-500/10 flex items-center justify-center mb-6 relative">
-          <GraduationCap size={48} className="text-indigo-400 opacity-50" />
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-dark-bg px-6 text-center font-sans">
+        <div className="w-24 h-24 rounded-full bg-indigo-500/10 flex items-center justify-center mb-6 relative border border-indigo-500/30">
+          <GraduationCap size={48} className="text-indigo-400 opacity-80" />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] rounded-full flex items-center justify-center">
             <Lock size={32} className="text-white" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Campus Mode Locked</h1>
-        <p className="text-gray-400 text-sm mb-8">
-          Verify your student ID in your Profile to unlock Campus Mode. Connect with students, join communities, and get exclusive event invites.
+        <h1 className="text-2xl font-bold text-white mb-2">Campus Mode Locked 🔒</h1>
+        <p className="text-gray-400 text-sm mb-8 max-w-xs leading-relaxed">
+          Verify your student identity in your Profile to unlock Exclusive Campus Mode, Secret Crush matching, and anonymous college confessions!
         </p>
         <button 
           onClick={() => router.push('/profile')}
-          className="w-full max-w-xs py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+          className="w-full max-w-xs py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition shadow-[0_0_20px_rgba(99,102,241,0.4)]"
         >
-          Go to Profile to Verify
+          Verify Student Status Now
         </button>
       </div>
     );
   }
 
+  const handleAddCrush = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crushHandle.trim()) return;
+    if (savedCrushes.length >= 3) {
+      toast("You can only keep up to 3 active Secret Crushes at a time!", "error");
+      return;
+    }
+    if (savedCrushes.includes(crushHandle.trim())) {
+      toast("User is already in your Secret Crush lock box!", "info");
+      return;
+    }
+    setSavedCrushes((prev) => [...prev, crushHandle.trim()]);
+    setCrushHandle("");
+    toast(`💘 Added to Secret Crush! If they secretly add your handle too, an instant match unlocks!`, "success");
+  };
+
+  const handlePostConfession = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newConfessionText.trim()) return;
+    const newEntry: Confession = {
+      id: Date.now().toString(),
+      text: newConfessionText.trim(),
+      tag: confessionTag || "General",
+      time: "Just now",
+      likes: 1,
+      liked: true,
+    };
+    setConfessions((prev) => [newEntry, ...prev]);
+    setNewConfessionText("");
+    toast("🔥 Your anonymous campus confession has been published!", "success");
+  };
+
+  const toggleLike = (id: string) => {
+    setConfessions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          const newLiked = !c.liked;
+          return { ...c, liked: newLiked, likes: newLiked ? c.likes + 1 : c.likes - 1 };
+        }
+        return c;
+      })
+    );
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-dark-bg pb-20 overflow-y-auto">
+    <div className="flex flex-col min-h-screen bg-dark-bg pb-24 overflow-y-auto text-white font-sans">
       {/* Header */}
-      <div className="bg-gradient-to-b from-indigo-900/40 to-dark-bg p-6 pt-12 pb-8 sticky top-0 z-10 backdrop-blur-md border-b border-white/5">
+      <div className="bg-gradient-to-b from-indigo-900/40 via-dark-bg to-dark-bg p-5 pt-8 sticky top-0 z-20 backdrop-blur-md border-b border-white/10">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            Campus <GraduationCap size={28} className="text-indigo-400" />
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            Campus Hub <GraduationCap size={26} className="text-indigo-400" />
           </h1>
-          <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/30 flex items-center gap-1">
-            <Zap size={14} /> Perks Active
+          <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[11px] font-bold border border-indigo-500/30 flex items-center gap-1 shadow">
+            <Zap size={13} /> Student Verified
           </span>
         </div>
-        <p className="text-gray-400 text-sm">{profile?.campus || "Your University"}'s Exclusive Hub</p>
+        <p className="text-gray-400 text-xs">{profile?.campus || "Delhi University Hub"}&apos;s Private Student Circle</p>
+
+        {/* Navigation Tabs */}
+        <div className="flex rounded-xl bg-white/5 p-1 border border-white/10 mt-4">
+          <button
+            onClick={() => setActiveTab("hub")}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
+              activeTab === "hub" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <Users size={14} /> Fests & Rooms
+          </button>
+          <button
+            onClick={() => setActiveTab("crush")}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
+              activeTab === "crush" ? "bg-pink-600 text-white shadow-lg shadow-pink-600/30" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <Heart size={14} /> Secret Crush
+          </button>
+          <button
+            onClick={() => setActiveTab("confessions")}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
+              activeTab === "confessions" ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <Flame size={14} /> Confessions
+          </button>
+        </div>
       </div>
 
-      <div className="p-4 space-y-8">
-        
-        {/* Events Section */}
-        <section>
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-white font-bold text-lg flex items-center gap-2">
-              <Calendar size={20} className="text-pink-400" /> Upcoming Fests
-            </h2>
-            <button className="text-indigo-400 text-xs font-bold hover:underline">See All</button>
-          </div>
-          
-          <div className="flex overflow-x-auto gap-4 pb-4 px-2 no-scrollbar">
-            {/* Event Card 1 */}
-            <div className="min-w-[240px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg group cursor-pointer hover:bg-white/10 transition">
-              <div className="h-28 bg-pink-500/20 relative">
-                <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" alt="Fest" className="w-full h-full object-cover mix-blend-overlay" />
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs text-white font-bold">
-                  Oct 14
+      <div className="p-4">
+        <AnimatePresence mode="wait">
+          {/* TAB 1: HUB & EVENTS */}
+          {activeTab === "hub" && (
+            <motion.div key="hub" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+              {/* Events Section */}
+              <section>
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-white font-bold text-base flex items-center gap-2">
+                    <Calendar size={18} className="text-pink-400" /> Upcoming University Fests
+                  </h2>
+                  <button className="text-indigo-400 text-xs font-bold hover:underline">See All</button>
                 </div>
-              </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold mb-1">Tech Symphony '26</h3>
-                <p className="text-gray-400 text-xs flex items-center gap-1"><MapPin size={12} /> Main Auditorium</p>
-                <div className="mt-3 flex -space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-dark-bg"></div>
-                  <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-dark-bg"></div>
-                  <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-dark-bg flex items-center justify-center text-[8px] font-bold text-white">+42</div>
-                  <span className="text-xs text-gray-400 ml-4 font-medium">Going</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Event Card 2 */}
-            <div className="min-w-[240px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg group cursor-pointer hover:bg-white/10 transition">
-              <div className="h-28 bg-indigo-500/20 relative">
-                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80" alt="Music" className="w-full h-full object-cover mix-blend-overlay" />
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-xs text-white font-bold">
-                  Oct 20
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="text-white font-bold mb-1">EDM Night</h3>
-                <p className="text-gray-400 text-xs flex items-center gap-1"><MapPin size={12} /> College Ground</p>
-                <div className="mt-3 flex -space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-dark-bg"></div>
-                  <div className="w-6 h-6 rounded-full bg-red-500 border-2 border-dark-bg flex items-center justify-center text-[8px] font-bold text-white">+89</div>
-                  <span className="text-xs text-gray-400 ml-4 font-medium">Going</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Student Communities */}
-        <section>
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h2 className="text-white font-bold text-lg flex items-center gap-2">
-              <Users size={20} className="text-blue-400" /> Study & Chill Rooms
-            </h2>
-          </div>
-          
-          <div className="space-y-3 px-2">
-            {[
-              { name: "Late Night Coders", members: 124, emoji: "💻", active: 12 },
-              { name: "Anime Otakus", members: 89, emoji: "🍙", active: 5 },
-              { name: "Startup Enthusiasts", members: 56, emoji: "🚀", active: 2 },
-              { name: "Guitar Jams", members: 42, emoji: "🎸", active: 8 },
-            ].map((room, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between cursor-pointer hover:bg-white/10 transition">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center text-xl">
-                    {room.emoji}
+                
+                <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
+                  <div className="min-w-[240px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg hover:border-indigo-500/50 transition">
+                    <div className="h-28 bg-pink-500/20 relative">
+                      <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" alt="Fest" className="w-full h-full object-cover mix-blend-overlay" />
+                      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-white font-bold">
+                        Oct 14 • Auditorium
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-white font-bold text-sm mb-1">Tech Symphony &apos;26</h3>
+                      <p className="text-gray-400 text-xs">Annual Hackathon & Musical Night</p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-dark-bg text-[10px] flex items-center justify-center font-bold">S</div>
+                          <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-dark-bg text-[10px] flex items-center justify-center font-bold">R</div>
+                          <div className="w-6 h-6 rounded-full bg-green-500 border-2 border-dark-bg flex items-center justify-center text-[8px] font-bold text-white">+42</div>
+                        </div>
+                        <span className="text-[11px] text-indigo-400 font-bold">Register Free</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-white font-bold text-sm">{room.name}</h4>
-                    <p className="text-gray-400 text-xs mt-0.5">{room.members} members • <span className="text-green-400">{room.active} online</span></p>
+
+                  <div className="min-w-[240px] bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg hover:border-indigo-500/50 transition">
+                    <div className="h-28 bg-indigo-500/20 relative">
+                      <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80" alt="Music" className="w-full h-full object-cover mix-blend-overlay" />
+                      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-white font-bold">
+                        Oct 20 • Campus Ground
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-white font-bold text-sm mb-1">EDM & Glow Night</h3>
+                      <p className="text-gray-400 text-xs">Exclusive student IDs entry only</p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-yellow-500 border-2 border-dark-bg text-[10px] flex items-center justify-center font-bold">K</div>
+                          <div className="w-6 h-6 rounded-full bg-red-500 border-2 border-dark-bg flex items-center justify-center text-[8px] font-bold text-white">+89</div>
+                        </div>
+                        <span className="text-[11px] text-pink-400 font-bold">RSVP Now</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <button className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/40 transition">
-                  <ChevronRight size={18} />
+              </section>
+
+              {/* Student Communities */}
+              <section>
+                <h2 className="text-white font-bold text-base flex items-center gap-2 mb-4 px-1">
+                  <Users size={18} className="text-blue-400" /> Study & Chill Hangouts
+                </h2>
+                
+                <div className="space-y-3">
+                  {[
+                    { name: "Late Night Coders", members: 124, emoji: "💻", active: 14, tag: "CS Dept" },
+                    { name: "Anime Otakus", members: 89, emoji: "🍙", active: 8, tag: "All Campus" },
+                    { name: "Startup & Founders Circle", members: 56, emoji: "🚀", active: 6, tag: "MBA/Tech" },
+                    { name: "Acoustic Guitar Jams", members: 42, emoji: "🎸", active: 9, tag: "Arts Hub" },
+                  ].map((room, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-white/10 hover:border-indigo-500/30 transition shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-black/60 rounded-xl flex items-center justify-center text-2xl border border-white/10">
+                          {room.emoji}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-bold text-sm">{room.name}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">{room.tag}</span>
+                            <span className="text-[11px] text-green-400 font-medium">● {room.active} online</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center hover:bg-indigo-500 text-white transition">
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </motion.div>
+          )}
+
+          {/* TAB 2: SECRET CRUSH */}
+          {activeTab === "crush" && (
+            <motion.div key="crush" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+              <div className="bg-gradient-to-br from-pink-900/30 via-black/40 to-purple-900/30 border border-pink-500/20 rounded-3xl p-6 text-center shadow-lg relative overflow-hidden">
+                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                  <Heart size={28} className="text-white fill-current animate-pulse" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Secret Crush Matcher 💘</h3>
+                <p className="text-xs text-gray-300 leading-relaxed max-w-xs mx-auto">
+                  Add up to 3 campus peers privately. <span className="text-pink-400 font-bold">They will never know</span> unless they also add your handle into their box, unlocking a mutual VIP chat!
+                </p>
+
+                <form onSubmit={handleAddCrush} className="mt-5 flex gap-2">
+                  <input
+                    type="text"
+                    value={crushHandle}
+                    onChange={(e) => setCrushHandle(e.target.value)}
+                    placeholder="Enter peer's handle (e.g. Priya_Design24)..."
+                    className="flex-1 px-4 py-3 rounded-xl bg-black/60 border border-white/20 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-pink-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-3 bg-pink-600 hover:bg-pink-500 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-pink-600/30 transition"
+                  >
+                    <UserPlus size={16} /> Add
+                  </button>
+                </form>
+
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-gray-400">
+                  <span>🔒 100% Anonymous Encryption</span>
+                  <span className="text-pink-300 font-bold">{savedCrushes.length}/3 Slots Used</span>
+                </div>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shrink-0">
+                  🔥 2
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-emerald-300">2 Students marked YOU as their secret crush!</h4>
+                  <p className="text-[11px] text-gray-400">Keep guessing handles to strike the mutual match!</p>
+                </div>
+              </div>
+
+              {/* Saved Crushes List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 px-1">Your Active Lock Box</h4>
+                {savedCrushes.map((handle, index) => (
+                  <div key={index} className="bg-white/5 border border-white/10 p-3.5 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-pink-300 font-bold text-sm">
+                        {handle[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">{handle}</p>
+                        <p className="text-[10px] text-gray-400">Status: Waiting for mutual match...</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSavedCrushes(savedCrushes.filter((h) => h !== handle));
+                        toast("Removed from secret crushes.", "info");
+                      }}
+                      className="text-xs font-bold text-gray-500 hover:text-red-400 px-2 py-1 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: ANONYMOUS CONFESSIONS */}
+          {activeTab === "confessions" && (
+            <motion.div key="confessions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+              {/* Post Confession Form */}
+              <form onSubmit={handlePostConfession} className="bg-black/60 border border-amber-500/30 rounded-2xl p-4 shadow-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <Flame size={15} /> Post Anonymous Confession
+                  </span>
+                  <select
+                    value={confessionTag}
+                    onChange={(e) => setConfessionTag(e.target.value)}
+                    className="bg-dark-bg text-gray-300 text-[11px] px-2 py-1 rounded border border-white/20 focus:outline-none"
+                  >
+                    <option value="CS Department">CS Department</option>
+                    <option value="Medical Hub">Medical Hub</option>
+                    <option value="Library Circle">Library Circle</option>
+                    <option value="Sports & Fests">Sports & Fests</option>
+                  </select>
+                </div>
+                <textarea
+                  value={newConfessionText}
+                  onChange={(e) => setNewConfessionText(e.target.value)}
+                  placeholder="Share a sweet compliment, college story, or secret admirer note... (100% anonymous & safe)"
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 resize-none"
+                />
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 font-bold rounded-xl text-xs flex items-center justify-center gap-2 text-white shadow"
+                >
+                  <Send size={14} /> Post Confession Anonymously
                 </button>
-              </div>
-            ))}
-          </div>
-        </section>
+              </form>
 
+              {/* Confessions Feed */}
+              <div className="space-y-3">
+                {confessions.map((item) => (
+                  <div key={item.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 hover:bg-white/[0.07] transition">
+                    <div className="flex items-center justify-between">
+                      <span className="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                        📍 {item.tag}
+                      </span>
+                      <span className="text-[10px] text-gray-500">{item.time}</span>
+                    </div>
+                    <p className="text-xs text-gray-200 leading-relaxed font-medium">{item.text}</p>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <button
+                        onClick={() => toggleLike(item.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition ${
+                          item.liked ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <Heart size={14} className={item.liked ? "fill-current" : ""} /> {item.likes}
+                      </button>
+                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <ShieldCheck size={12} className="text-blue-400" /> Verified Peer Post
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
-}
-
-// Dummy MapPin since lucide-react might complain if not imported here
-function MapPin(props: any) {
-  return <svg xmlns="http://www.w3.org/2000/svg" width={props.size||24} height={props.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
 }

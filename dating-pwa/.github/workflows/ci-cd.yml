@@ -1,0 +1,33 @@
+name: 🛡️ Dating PWA (Frontend) CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, staging, development ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-build-verify:
+    name: 🎨 Next.js Frontend (Type Check & Production Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: ⚡ Run TypeScript Strict Type-Check
+        run: npx tsc --noEmit
+
+      - name: 🏗️ Execute Next.js Optimized Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+          NEXT_PUBLIC_BACKEND_URL: http://localhost:8080

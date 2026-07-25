@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,22 +7,18 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AdminTrigger } from "@/components/AdminTrigger";
 import { A2HSPrompt } from "@/components/A2HSPrompt";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import ScreenshotShield from "@/components/ScreenshotShield";
 import Script from "next/script";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "LoveWith You - Find your Match",
-  description: "A secure, coin-based dating app.",
+  title: "LoveWithYou - Find your Match",
+  description: "A secure, coin-based next-gen dating & flirt app.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -52,19 +47,21 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-black sm:bg-[#111] selection:bg-primary-500/30 transition-colors duration-300`}
+        className="antialiased font-sans min-h-screen bg-black sm:bg-[#111] selection:bg-primary-500/30 transition-colors duration-300"
       >
         <ThemeProvider defaultTheme="dark" storageKey="dating-ui-theme">
           <ToastProvider>
             <div className="w-full max-w-md mx-auto min-h-screen bg-dark-bg relative shadow-2xl overflow-x-hidden sm:border-x border-white/5 pb-16 pt-14">
-              <TopBar />
-              <main className="min-h-full relative">
-                {children}
-              </main>
-              <BottomNav />
-              <A2HSPrompt />
-              <PushNotificationPrompt />
-              <AdminTrigger />
+              <ScreenshotShield>
+                <TopBar />
+                <main className="min-h-full relative">
+                  {children}
+                </main>
+                <BottomNav />
+                <A2HSPrompt />
+                <PushNotificationPrompt />
+                <AdminTrigger />
+              </ScreenshotShield>
             </div>
           </ToastProvider>
         </ThemeProvider>

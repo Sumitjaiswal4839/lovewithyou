@@ -4,8 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Send, MoreVertical, ShieldAlert, Phone, Video } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Phone, Video, Image as ImageIcon, Lock, Mic, Sparkles, Gamepad2 } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
+import SecureImage from "@/components/chat/SecureImage";
+import FlirtGamesSuite from "@/components/chat/FlirtGamesSuite";
+import { API } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -22,10 +25,26 @@ export default function ChatRoomPage() {
   
   const { toast } = useToast();
   const deviceId = useUserStore((state) => state.deviceId);
+  const friendRequests = useUserStore((state) => state.friendRequests);
+  const friends = useUserStore((state) => state.friends);
+  const acceptFriendRequest = useUserStore((state) => state.acceptFriendRequest);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isFlirtOpen, setIsFlirtOpen] = useState(false);
+
+  // 📸 Automatic Screenshot Blocker & Karma Shaming Deduction
+  useEffect(() => {
+    const handleScreenshotAttempt = async (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen" || e.keyCode === 44) {
+        toast("🚨 Screenshot attempted! Content blurred & 20 Karma deducted automatically!", "error");
+        await API.reportScreenshotViolation(deviceId || "anon_violator", matchId, "private_chat");
+      }
+    };
+    window.addEventListener("keyup", handleScreenshotAttempt);
+    return () => window.removeEventListener("keyup", handleScreenshotAttempt);
+  }, [deviceId, matchId, toast]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -130,6 +149,34 @@ export default function ChatRoomPage() {
     setNewMessage(prev => prev + emoji);
   };
 
+  const sendMockImage = async () => {
+    // This mocks sending a slightly risky image for demonstration
+    if (!deviceId) return;
+    const mockNsfwUrl = "https://images.unsplash.com/photo-1616423640778-28d1b53229bd?w=800&q=80"; // Note: unsplash is SFW but nsfwjs sometimes triggers on skin/bikini
+    const msgContent = `[IMAGE]${mockNsfwUrl}`;
+    
+    const tempMsg: Message = {
+      id: Date.now().toString(),
+      sender_id: deviceId,
+      receiver_id: matchId,
+      content: msgContent,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages((prev) => [...prev, tempMsg]);
+
+    const { error } = await supabase.from('messages').insert([{
+      sender_id: deviceId,
+      receiver_id: matchId,
+      content: msgContent
+    }]);
+
+    if (error) {
+      toast("Failed to send image", "error");
+      setMessages((prev) => prev.filter(m => m.id !== tempMsg.id));
+    }
+  };
+
   // Mock match data based on ID since we don't have a users table fetch yet
   const matchName = matchId === "1" ? "Priya" : "Match " + matchId.substring(0,4);
   const matchImg = matchId === "1" ? "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80" : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80";
@@ -177,6 +224,10 @@ export default function ChatRoomPage() {
             const isMe = msg.sender_id === deviceId;
             const showAvatar = !isMe && (index === messages.length - 1 || messages[index + 1]?.sender_id !== msg.sender_id);
             
+            const isAudio = msg.content.startsWith("[AUDIO]");
+            const isImage = msg.content.startsWith("[IMAGE]");
+            const isDisappearing = msg.content.startsWith("[DISAPPEARING_IMAGE]");
+            
             return (
               <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 group`}>
                 {!isMe && (
@@ -185,13 +236,41 @@ export default function ChatRoomPage() {
                   </div>
                 )}
                 
-                <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                <div className={`max-w-[75%] rounded-2xl shadow-sm overflow-hidden ${
                   isMe 
                     ? 'bg-gradient-to-br from-primary-600 to-primary-500 text-white rounded-br-sm' 
                     : 'bg-white/10 text-gray-200 rounded-bl-sm border border-white/5'
-                }`}>
-                  <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
-                  <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-gray-500'}`}>
+                } ${isImage || isDisappearing ? 'p-1' : 'px-4 py-2.5'}`}>
+                  
+                  {isImage && (
+                    <div className="w-full max-w-[200px] aspect-[3/4]">
+                      <SecureImage src={msg.content.replace('[IMAGE]', '')} alt="Chat image" />
+                    </div>
+                  )}
+
+                  {isDisappearing && (
+                    <div className="w-full max-w-[200px] aspect-[3/4] relative">
+                       <div className="w-full h-full bg-black/50 flex flex-col items-center justify-center cursor-pointer hover:bg-black/40 transition-colors">
+                         <Lock size={32} className="text-primary-400 mb-2" />
+                         <span className="text-xs font-bold uppercase tracking-wider text-white">Tap to View</span>
+                       </div>
+                    </div>
+                  )}
+
+                  {isAudio && (
+                    <div className="flex items-center gap-3 min-w-[150px]">
+                       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                         <Mic size={14} className="text-white" />
+                       </div>
+                       <audio src={msg.content.replace("[AUDIO]", "")} controls className="h-8 max-w-[150px] opacity-90 invert grayscale hue-rotate-180" />
+                    </div>
+                  )}
+
+                  {!isImage && !isDisappearing && !isAudio && (
+                    <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
+                  )}
+                  
+                  <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-gray-500'} ${(isImage || isDisappearing) ? 'pr-2 pb-1' : ''}`}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -217,40 +296,127 @@ export default function ChatRoomPage() {
 
       {/* Input Area */}
       <div className="p-3 bg-dark-bg border-t border-glass-border pb-safe">
-        <form onSubmit={sendMessage} className="flex items-end gap-2 bg-white/5 border border-white/10 rounded-3xl p-1.5 pl-4 pr-1.5 focus-within:border-primary-500 transition-colors">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={`Message ${matchName}...`}
-            className="flex-1 bg-transparent border-none text-white outline-none py-3 text-sm placeholder:text-gray-500"
-          />
-          <button 
-            type="submit" 
-            disabled={!newMessage.trim()}
-            className={`p-3 rounded-full flex-shrink-0 transition-all ${
-              newMessage.trim() 
-                ? 'bg-primary-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-100 hover:scale-105' 
-                : 'bg-white/10 text-gray-500 scale-95'
-            }`}
-          >
-            <Send size={18} className={newMessage.trim() ? 'ml-0.5' : ''} />
-          </button>
-        </form>
         
-        {/* Emoji Quick Replies */}
-        <div className="flex gap-4 mt-3 px-2 overflow-x-auto no-scrollbar">
-           {['❤️', '😂', '🔥', '👀', '✨', '🥺', '💯', '🥂'].map(emoji => (
-             <button 
-               key={emoji} 
-               onClick={() => sendEmoji(emoji)}
-               className="text-2xl hover:scale-125 transition-transform active:scale-95"
-             >
-               {emoji}
-             </button>
-           ))}
-        </div>
+        {(() => {
+          const outgoingRequest = friendRequests.find(r => r.id === matchId && r.status === "outgoing");
+          const incomingRequest = friendRequests.find(r => r.id === matchId && r.status === "incoming");
+          
+          if (outgoingRequest) {
+            return (
+              <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/10">
+                <Lock size={20} className="text-orange-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-300 font-medium">Waiting for {matchName} to accept your friend request.</p>
+              </div>
+            );
+          }
+          
+          if (incomingRequest) {
+            return (
+              <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/10">
+                <p className="text-sm text-gray-300 font-medium mb-3">{matchName} wants to be friends!</p>
+                <button 
+                  onClick={() => acceptFriendRequest(matchId)}
+                  className="px-6 py-2 bg-green-500 text-white rounded-full font-bold shadow-lg"
+                >
+                  Accept to Chat
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <>
+              {/* AI Wingman & Game Triggers */}
+              <div className="flex items-center gap-2 mb-2.5 px-1 overflow-x-auto no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const openers = [
+                      `Hey ${matchName}! My AI Wingman noticed we both share awesome vibes. What's your top campus hangout spot? ✨`,
+                      `If you could instantly skip one exam paper this semester, which subject would it be? 📚🚀`,
+                      `Truth or Dare time! Pick one to break the ice! 🎲😎`,
+                      `Hey! What song is on loop in your playlist this week? 🎵✨`
+                    ];
+                    const picked = openers[Math.floor(Math.random() * openers.length)];
+                    setNewMessage(picked);
+                    toast("✨ AI Wingman loaded a high-conversion icebreaker!", "success");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/40 hover:border-purple-400 text-[11px] font-bold text-purple-300 shadow-md transition-all shrink-0 active:scale-95"
+                >
+                  <Sparkles size={14} className="text-pink-400 animate-pulse" /> AI Wingman Coach
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const gamePrompt = `🎮 [DATE GAME] Hey! I launched a Rapid 5-Question Compatibility Quiz! Reply with your answer: Sunrise 🌅 or Sunset 🌆?`;
+                    setNewMessage(gamePrompt);
+                    toast("🎲 Compatibility Game challenge loaded! Tap Send!", "success");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-600/30 to-teal-600/30 border border-emerald-500/40 hover:border-emerald-400 text-[11px] font-bold text-emerald-300 shadow-md transition-all shrink-0 active:scale-95"
+                >
+                  <Gamepad2 size={14} className="text-emerald-400" /> Compatibility Quiz 🎲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFlirtOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-purple-600 border border-rose-400 font-extrabold text-[11px] text-white shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all shrink-0 animate-pulse active:scale-95"
+                >
+                  🎡 3D Flirt Suite (Bottle, 2 Truths, Whisper)
+                </button>
+              </div>
+
+              <form onSubmit={sendMessage} className="flex items-end gap-2 bg-white/5 border border-white/10 rounded-3xl p-1.5 pl-4 pr-1.5 focus-within:border-primary-500 transition-colors">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder={`Message ${matchName}...`}
+                  className="flex-1 bg-transparent border-none text-white outline-none py-3 text-sm placeholder:text-gray-500"
+                />
+                <button 
+                  type="button" 
+                  onClick={sendMockImage}
+                  className="p-3 bg-white/10 hover:bg-white/20 text-gray-300 rounded-full transition-colors flex-shrink-0"
+                  title="Send Image (Mock)"
+                >
+                  <ImageIcon size={18} />
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={!newMessage.trim()}
+                  className={`p-3 rounded-full flex-shrink-0 transition-all ${
+                    newMessage.trim() 
+                      ? 'bg-primary-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-100 hover:scale-105' 
+                      : 'bg-white/10 text-gray-500 scale-95'
+                  }`}
+                >
+                  <Send size={18} className={newMessage.trim() ? 'ml-0.5' : ''} />
+                </button>
+              </form>
+              
+              {/* Emoji Quick Replies */}
+              <div className="flex gap-4 mt-3 px-2 overflow-x-auto no-scrollbar">
+                 {['❤️', '😂', '🔥', '👀', '✨', '🥺', '💯', '🥂'].map(emoji => (
+                   <button 
+                     key={emoji} 
+                     onClick={() => sendEmoji(emoji)}
+                     className="text-2xl hover:scale-125 transition-transform active:scale-95"
+                   >
+                     {emoji}
+                   </button>
+                 ))}
+               </div>
+            </>
+          );
+        })()}
       </div>
+
+      {/* Flirt Suite & Interactive Games Modal */}
+      <FlirtGamesSuite
+        isOpen={isFlirtOpen}
+        onClose={() => setIsFlirtOpen(false)}
+        onSendMessage={(txt) => { setNewMessage(txt); setIsFlirtOpen(false); }}
+      />
     </div>
   );
 }

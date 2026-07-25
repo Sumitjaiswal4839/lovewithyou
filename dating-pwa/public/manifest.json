@@ -1,0 +1,23 @@
+{
+  "name": "LoveWithYou - Next-Gen Dating & Flirt Platform",
+  "short_name": "LoveWithYou",
+  "description": "India's Most Advanced, Secure & Gamified 18+ Dating Platform with Blind Audio, 2v2 Squads, and Midnight Confessions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080512",
+  "theme_color": "#f43f5e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    }
+  ]
+}

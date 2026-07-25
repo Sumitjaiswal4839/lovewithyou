@@ -60,6 +60,35 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/users/search", SearchUsers).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/webpush/subscribe", SubscribeWebPush).Methods(http.MethodPost, http.MethodOptions)
 
+	// V1 Campus & Radar Extensions
+	r.HandleFunc("/api/v1/sync", SyncState).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/radar/ping", RadarPing).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/campus/crush", SecretCrush).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/campus/confessions", PostConfession).Methods(http.MethodPost, http.MethodOptions)
+
+	// V1 After-Dark 18+ Anonymous Intimate Lounge
+	r.HandleFunc("/api/v1/lounge/join", JoinAfterDarkLounge).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/lounge/disconnect", DisconnectAfterDarkLounge).Methods(http.MethodPost, http.MethodOptions)
+
+	// V1 Romance, Discovery & Gamification Suite
+	r.HandleFunc("/api/v1/blind-audio/match", BlindAudioMatch).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/haptic/heartbeat", SyncHeartbeat).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/squad/match", SquadDoubleDate).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/swipes/rewind", SecondChanceRewind).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/chat/game/play", TriggerFlirtGame).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/radar/broadcast", PheromoneBroadcast).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/profile/vip-halo", ActivateVipHalo).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/rewards/daily-slot", SpinDailyCupidSlot).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/leaderboard/top-connectors", GetLeaderboardVibeKings).Methods(http.MethodGet, http.MethodOptions)
+
+	// V1 Safety & High-Concurrency Infrastructure
+	r.HandleFunc("/api/v1/safety/verify-smile", VerifyFaceCatfishBuster).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/sos-timer", StartSosCheckinTimer).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/sos-confirm", ConfirmSafeCheckin).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/screenshot-violation", ReportScreenshotViolation).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/p2p/webrtc-signal", WebRTCSignalExchange).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/redis/pubsub/publish", RedisPubSubClusterBroadcast).Methods(http.MethodPost, http.MethodOptions)
+
 	return r
 }
 

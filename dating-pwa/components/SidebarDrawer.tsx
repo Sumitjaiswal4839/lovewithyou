@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { INDIA_STATES, INDIA_CITIES } from "@/lib/indiaData";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, MapPin, Users, User, Heart, SlidersHorizontal, MessageCircle, HeartPulse, Settings, Edit3, Globe, Headphones, ShieldCheck, HelpCircle, Share2, LogOut, Coins, Search, ChevronRight } from "lucide-react";
+import { X, MapPin, Users, User, Heart, SlidersHorizontal, MessageCircle, HeartPulse, Settings, Edit3, Globe, Headphones, ShieldCheck, HelpCircle, Share2, LogOut, Coins, Search, ChevronRight, ChevronDown, MessageSquareHeart, Flame, Moon, Sparkles, Award, Compass, ShieldAlert } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -28,6 +28,19 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+
+  // Accordion / Dropdown Submenu States
+  const [openSections, setOpenSections] = useState({
+    arenas: true,     // Core Dating & Social
+    afterDark: true,  // 18+ & Late Night
+    filters: false,   // Match Preferences & Distance
+    vip: false,       // Premium & Rewards
+    account: false,   // Account & Settings
+  });
+
+  const toggleSection = (key: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -76,7 +89,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70 z-[60] backdrop-blur-md"
           />
 
           {/* Drawer */}
@@ -85,280 +98,375 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-0 left-0 h-full w-4/5 max-w-[320px] bg-dark-bg border-r border-white/10 z-[70] shadow-2xl flex flex-col pt-safe"
+            className="fixed top-0 left-0 h-full w-4/5 max-w-[340px] bg-[#0c0816] border-r border-white/10 z-[70] shadow-2xl flex flex-col pt-safe text-white"
           >
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <SlidersHorizontal size={20} className="text-primary-500" />
-                Match Settings
-              </h2>
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/70">
-                <X size={20} />
+            {/* Header Brand */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-pink-950/30 to-purple-950/30">
+              <div className="flex items-center gap-2.5">
+                <img src="/favicon.png" alt="LoveWithYou" className="w-7 h-7 object-contain drop-shadow" />
+                <div>
+                  <h2 className="text-lg font-extrabold bg-gradient-to-r from-white via-pink-200 to-rose-400 bg-clip-text text-transparent tracking-tight">
+                    LoveWithYou
+                  </h2>
+                  <p className="text-[10px] text-pink-300 font-medium">Next-Gen Flirt & Discovery</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70">
+                <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-8 pb-32">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 custom-scrollbar">
               
-              {/* Search Profile */}
-              <div className="space-y-3">
+              {/* Search Profile Box */}
+              <div className="space-y-2">
                 <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search profiles by name..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+                    placeholder="Search singles by name..."
+                    className="w-full bg-black/60 border border-white/10 rounded-2xl py-2.5 pl-9 pr-4 text-xs text-white focus:outline-none focus:border-pink-500 transition-all shadow-inner"
                   />
                   {isSearching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                   )}
                 </div>
                 
-                {/* Search Results Dropdown */}
+                {/* Search Results */}
                 {searchResults.length > 0 && searchQuery.length >= 2 && (
-                  <div className="bg-black/40 border border-white/10 rounded-xl max-h-48 overflow-y-auto shadow-2xl">
+                  <div className="bg-black/90 border border-white/10 rounded-2xl max-h-48 overflow-y-auto shadow-2xl z-20">
                     {searchResults.map(user => (
                       <button
                         key={user.id}
                         onClick={() => handleUserClick(user)}
                         className="w-full flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 text-left"
                       >
-                        <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
                           {user.photo_url ? (
                             <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
                           ) : (
-                            <User size={20} className="text-white/50 m-auto h-full" />
+                            <User size={16} className="text-white/50 m-auto h-full" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-white text-sm font-bold truncate">{user.name}</h4>
-                          <p className="text-white/50 text-xs truncate">{user.campus || user.location || "Unknown location"}</p>
+                          <h4 className="text-white text-xs font-bold truncate">{user.name}</h4>
+                          <p className="text-white/50 text-[10px] truncate">{user.campus || user.location || "Unknown"}</p>
                         </div>
-                        <ChevronRight size={16} className="text-white/30" />
+                        <ChevronRight size={14} className="text-white/30" />
                       </button>
                     ))}
                   </div>
                 )}
                 {searchQuery.length >= 2 && !isSearching && searchResults.length === 0 && (
-                  <div className="text-center p-3 text-xs text-white/50 bg-white/5 rounded-xl border border-white/10">
-                    No users found matching "{searchQuery}"
+                  <div className="text-center p-2 text-[11px] text-white/50 bg-white/5 rounded-xl border border-white/5">
+                    No singles found matching &quot;{searchQuery}&quot;
                   </div>
                 )}
               </div>
               
-              {/* Quick Links */}
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => { onClose(); router.push('/chat?tab=matches'); }}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+              {/* ACCORDION 1: 💖 Dating & Social Arenas */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden shadow-lg">
+                <button
+                  onClick={() => toggleSection("arenas")}
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
                 >
-                  <MessageCircle size={24} className="text-blue-400 mb-2" />
-                  <span className="text-xs font-bold text-white">My Matches</span>
+                  <span className="text-xs font-black text-white flex items-center gap-2">
+                    <Compass size={16} className="text-pink-400" /> Core Dating & Arenas
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transform transition-transform ${openSections.arenas ? "rotate-180" : ""}`} />
                 </button>
-                <button 
-                  onClick={() => { onClose(); router.push('/chat?tab=likes'); }}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-                >
-                  <HeartPulse size={24} className="text-pink-500 mb-2" />
-                  <span className="text-xs font-bold text-white">Who Liked Me</span>
-                </button>
-                <button 
-                  onClick={() => { onClose(); router.push('/blind-date'); }}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-                >
-                  <Headphones size={24} className="text-purple-500 mb-2" />
-                  <span className="text-xs font-bold text-white">Blind Date</span>
-                </button>
-                <button 
-                  onClick={() => { onClose(); router.push('/nearby-map'); }}
-                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-                >
-                  <Globe size={24} className="text-green-500 mb-2" />
-                  <span className="text-xs font-bold text-white">Nearby Map</span>
-                </button>
-              </div>
-              
-              {/* Gender Preference */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-                  <Users size={16} /> I want to meet
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {["Everyone", "Male", "Female"].map((gender) => (
-                    <button
-                      key={gender}
-                      onClick={() => updateMatchPreferences({ gender: gender as any })}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-                        matchPreferences.gender === gender
-                          ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20 scale-105"
-                          : "bg-white/5 text-white/60 hover:bg-white/10"
-                      }`}
-                    >
-                      {gender}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Location Scope */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
-                  <MapPin size={16} /> Distance / Location
-                </h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {["Anywhere", "State", "City"].map((scope) => (
-                    <button
-                      key={scope}
-                      onClick={() => {
-                        if (scope !== "Anywhere" && matchPreferences.locationScope !== scope) {
-                          if (coins < 5) {
-                            toast("Not enough coins to unlock advanced filters!", "error");
-                            return;
-                          }
-                          spendCoins(5);
-                          toast(`Unlocked ${scope} filter for 5 coins!`, "success");
-                        }
-                        updateMatchPreferences({ locationScope: scope as any });
-                      }}
-                      className={`py-2 px-1 rounded-xl text-xs font-bold transition-all relative ${
-                        matchPreferences.locationScope === scope
-                          ? "bg-primary-500 text-white shadow-lg shadow-primary-500/20 scale-105"
-                          : "bg-white/5 text-white/60 hover:bg-white/10"
-                      }`}
-                    >
-                      {scope !== "Anywhere" && <span className="absolute -top-2 -right-1 text-[10px] bg-yellow-500 text-black px-1 rounded-full font-bold">5 🪙</span>}
-                      {scope}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* State & City Selectors */}
-              {(matchPreferences.locationScope === "State" || matchPreferences.locationScope === "City") && (
-                <div className="space-y-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                  <div className="space-y-2">
-                    <label className="text-xs text-white/70 font-medium">Select State</label>
-                    <select 
-                      value={matchPreferences.selectedState || ""}
-                      onChange={handleStateChange}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary-500"
-                    >
-                      <option value="">-- Choose State --</option>
-                      {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-
-                  {matchPreferences.locationScope === "City" && (
-                    <div className="space-y-2">
-                      <label className="text-xs text-white/70 font-medium">Select City</label>
-                      <select 
-                        value={matchPreferences.selectedCity || ""}
-                        onChange={(e) => updateMatchPreferences({ selectedCity: e.target.value })}
-                        disabled={!matchPreferences.selectedState || !INDIA_CITIES[matchPreferences.selectedState]}
-                        className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary-500 disabled:opacity-50"
-                      >
-                        <option value="">-- Choose City --</option>
-                        {matchPreferences.selectedState && INDIA_CITIES[matchPreferences.selectedState]?.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                      {matchPreferences.selectedState && !INDIA_CITIES[matchPreferences.selectedState] && (
-                         <p className="text-[10px] text-yellow-500">Major cities list not available for this state yet.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* General Settings & Actions */}
-              <div className="space-y-2 mt-6">
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3 px-2">
-                  Account & Settings
-                </h3>
                 
-                <button 
-                  onClick={() => { onClose(); router.push('/profile/edit'); }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
-                >
-                  <Edit3 size={18} className="text-blue-400" />
-                  <span className="text-sm font-medium">Edit Profile</span>
-                </button>
-
-                <button 
-                  onClick={() => { onClose(); router.push('/settings'); }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
-                >
-                  <Settings size={18} className="text-gray-400" />
-                  <span className="text-sm font-medium">Settings</span>
-                </button>
-
-                <button 
-                  onClick={() => { 
-                    const isHi = useUserStore.getState().appSettings.language === 'hi';
-                    useUserStore.getState().updateSettings({ language: isHi ? 'en' : 'hi' });
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
-                >
-                  <Globe size={18} className="text-green-400" />
-                  <span className="text-sm font-medium">Language ({useUserStore.getState().appSettings.language === 'hi' ? 'Hindi' : 'English'})</span>
-                </button>
-
-                <button 
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
-                >
-                  <div className="flex items-center gap-3">
-                    <Coins size={18} className="text-yellow-400" />
-                    <span className="text-sm font-medium">Get Premium</span>
+                {openSections.arenas && (
+                  <div className="p-3 pt-0 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
+                    <button 
+                      onClick={() => { onClose(); router.push('/chat?tab=matches'); }}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all"
+                    >
+                      <MessageCircle size={20} className="text-blue-400 mb-1" />
+                      <span className="text-[11px] font-bold text-white">My Matches</span>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/chat?tab=likes'); }}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all"
+                    >
+                      <HeartPulse size={20} className="text-pink-500 mb-1" />
+                      <span className="text-[11px] font-bold text-white">Who Liked Me</span>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/blind-date'); }}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl bg-gradient-to-br from-purple-950/50 to-black hover:bg-purple-900/30 border border-purple-500/30 transition-all shadow-[0_0_10px_rgba(168,85,247,0.15)]"
+                    >
+                      <Headphones size={20} className="text-purple-400 mb-1" />
+                      <span className="text-[11px] font-bold text-purple-200">3-Min Blind Date</span>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/random-chat'); }}
+                      className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all"
+                    >
+                      <Users size={20} className="text-orange-400 mb-1" />
+                      <span className="text-[11px] font-bold text-white">Random Chat</span>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/nearby-map'); }}
+                      className="col-span-2 flex items-center justify-center gap-2 p-3 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 transition-all"
+                    >
+                      <Globe size={18} className="text-emerald-400" />
+                      <span className="text-xs font-extrabold text-emerald-200">📍 Nearby Radar & VIP Boosts</span>
+                    </button>
                   </div>
-                  <span className="bg-yellow-500/20 text-yellow-500 text-[10px] px-2 py-0.5 rounded-full font-bold">SALE</span>
-                </button>
+                )}
               </div>
 
-              <div className="space-y-2 mt-2">
-                <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-3 px-2">
-                  More
-                </h3>
-
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white">
-                  <ShieldCheck size={18} className="text-purple-400" />
-                  <span className="text-sm font-medium">Safety Center</span>
-                </button>
-
-                <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white">
-                  <HelpCircle size={18} className="text-pink-400" />
-                  <span className="text-sm font-medium">Help & Support</span>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: 'LoveWith You', url: 'https://lovewithyou.app' })
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-white"
+              {/* ACCORDION 2: 🔥 18+ After-Dark & Late Night */}
+              <div className="bg-gradient-to-br from-rose-950/30 via-indigo-950/30 to-black border border-rose-500/40 rounded-3xl overflow-hidden shadow-[0_0_20px_rgba(244,63,94,0.15)]">
+                <button
+                  onClick={() => toggleSection("afterDark")}
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
                 >
-                  <Share2 size={18} className="text-teal-400" />
-                  <span className="text-sm font-medium">Share App</span>
+                  <span className="text-xs font-black text-rose-300 flex items-center gap-2">
+                    <Flame size={16} className="text-rose-500 animate-bounce" /> 18+ After-Dark & Squads
+                  </span>
+                  <ChevronDown size={16} className={`text-rose-300 transform transition-transform ${openSections.afterDark ? "rotate-180" : ""}`} />
                 </button>
+                
+                {openSections.afterDark && (
+                  <div className="p-3 pt-0 space-y-2 border-t border-rose-500/20 bg-black/40">
+                    <button 
+                      onClick={() => { onClose(); router.push('/after-dark'); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/40 transition-all text-left group"
+                    >
+                      <span className="text-lg">💋</span>
+                      <div>
+                        <h4 className="text-xs font-extrabold text-rose-200 group-hover:text-white">18+ Anonymous Consent Mode</h4>
+                        <p className="text-[10px] text-gray-400">Zero logging, ephemeral intimacy rooms</p>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/midnight-roulette'); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 transition-all text-left group"
+                    >
+                      <Moon size={20} className="text-indigo-400 animate-pulse flex-shrink-0" />
+                      <div>
+                        <h4 className="text-xs font-extrabold text-indigo-200 group-hover:text-white">🌙 Midnight Roulette & 2v2 Squads</h4>
+                        <p className="text-[10px] text-gray-400">Late night lounge (11 PM-2 AM) & Tag-a-friend</p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                <button 
-                  onClick={() => {
-                     // Add signout logic later
-                     onClose();
-                     router.push('/setup');
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 transition-colors text-red-400 mt-4"
+              {/* ACCORDION 3: 🎯 Match Preferences & Distance */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden shadow-lg">
+                <button
+                  onClick={() => toggleSection("filters")}
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
                 >
-                  <LogOut size={18} />
-                  <span className="text-sm font-medium">Sign Out</span>
+                  <span className="text-xs font-extrabold text-white flex items-center gap-2">
+                    <SlidersHorizontal size={16} className="text-purple-400" /> Match Preferences & Scope
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transform transition-transform ${openSections.filters ? "rotate-180" : ""}`} />
                 </button>
+                
+                {openSections.filters && (
+                  <div className="p-4 pt-2 space-y-4 border-t border-white/5 bg-black/30 text-xs">
+                    {/* Gender Preference */}
+                    <div className="space-y-2">
+                      <label className="font-bold text-white/70 text-[11px] uppercase tracking-wider block">Looking To Meet</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {["Everyone", "Male", "Female"].map((gender) => (
+                          <button
+                            key={gender}
+                            onClick={() => updateMatchPreferences({ gender: gender as any })}
+                            className={`py-2 px-2 rounded-xl font-bold transition-all ${
+                              matchPreferences.gender === gender
+                                ? "bg-pink-600 text-white shadow-md shadow-pink-600/30 font-black"
+                                : "bg-white/5 text-white/60 hover:bg-white/10"
+                            }`}
+                          >
+                            {gender}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Location Scope */}
+                    <div className="space-y-2">
+                      <label className="font-bold text-white/70 text-[11px] uppercase tracking-wider block">Location Range</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {["Anywhere", "State", "City"].map((scope) => (
+                          <button
+                            key={scope}
+                            onClick={() => {
+                              if (scope !== "Anywhere" && matchPreferences.locationScope !== scope) {
+                                if (coins < 5) {
+                                  toast("Not enough coins to unlock advanced location filters!", "error");
+                                  return;
+                                }
+                                spendCoins(5);
+                                toast(`Unlocked ${scope} filter for 5 coins!`, "success");
+                              }
+                              updateMatchPreferences({ locationScope: scope as any });
+                            }}
+                            className={`py-2 px-2 rounded-xl font-bold transition-all relative ${
+                              matchPreferences.locationScope === scope
+                                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 font-black"
+                                : "bg-white/5 text-white/60 hover:bg-white/10"
+                            }`}
+                          >
+                            {scope !== "Anywhere" && <span className="absolute -top-2 -right-1 text-[9px] bg-yellow-400 text-black px-1 rounded-full font-extrabold">5 🪙</span>}
+                            {scope}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* State & City Pickers */}
+                    {(matchPreferences.locationScope === "State" || matchPreferences.locationScope === "City") && (
+                      <div className="space-y-3 pt-2 border-t border-white/10">
+                        <div>
+                          <label className="text-[10px] text-gray-400 font-bold block mb-1">State</label>
+                          <select 
+                            value={matchPreferences.selectedState || ""}
+                            onChange={handleStateChange}
+                            className="w-full bg-black border border-white/20 rounded-xl p-2.5 text-xs text-white outline-none"
+                          >
+                            <option value="">-- Choose State --</option>
+                            {INDIA_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+
+                        {matchPreferences.locationScope === "City" && (
+                          <div>
+                            <label className="text-[10px] text-gray-400 font-bold block mb-1">City</label>
+                            <select 
+                              value={matchPreferences.selectedCity || ""}
+                              onChange={(e) => updateMatchPreferences({ selectedCity: e.target.value })}
+                              disabled={!matchPreferences.selectedState || !INDIA_CITIES[matchPreferences.selectedState]}
+                              className="w-full bg-black border border-white/20 rounded-xl p-2.5 text-xs text-white outline-none disabled:opacity-40"
+                            >
+                              <option value="">-- Choose City --</option>
+                              {matchPreferences.selectedState && INDIA_CITIES[matchPreferences.selectedState]?.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ACCORDION 4: 👑 VIP & Monetization Rewards */}
+              <div className="bg-gradient-to-r from-amber-950/40 to-black border border-amber-500/30 rounded-3xl overflow-hidden shadow-lg">
+                <button
+                  onClick={() => toggleSection("vip")}
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+                >
+                  <span className="text-xs font-extrabold text-amber-300 flex items-center gap-2">
+                    <Sparkles size={16} className="text-amber-400 animate-pulse" /> VIP Rewards & Coins Vault
+                  </span>
+                  <ChevronDown size={16} className={`text-amber-300 transform transition-transform ${openSections.vip ? "rotate-180" : ""}`} />
+                </button>
+                
+                {openSections.vip && (
+                  <div className="p-3 pt-0 space-y-2 border-t border-amber-500/20 bg-black/40">
+                    <button 
+                      onClick={() => { onClose(); router.push('/premium'); }}
+                      className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-left transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Coins size={18} className="text-yellow-400" />
+                        <span className="text-xs font-bold text-white">Get Premium Access</span>
+                      </div>
+                      <span className="bg-amber-400 text-black text-[10px] px-2 py-0.5 rounded-full font-extrabold animate-pulse">SALE</span>
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/profile'); }}
+                      className="w-full flex items-center gap-2.5 p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 transition-colors"
+                    >
+                      <Award size={16} className="text-purple-400" /> Daily Cupid&apos;s Slot Machine
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ACCORDION 5: ⚙️ Account & Settings */}
+              <div className="bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden shadow-lg">
+                <button
+                  onClick={() => toggleSection("account")}
+                  className="w-full p-3.5 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+                >
+                  <span className="text-xs font-extrabold text-white flex items-center gap-2">
+                    <Settings size={16} className="text-gray-400" /> Account & App Settings
+                  </span>
+                  <ChevronDown size={16} className={`text-gray-400 transform transition-transform ${openSections.account ? "rotate-180" : ""}`} />
+                </button>
+                
+                {openSections.account && (
+                  <div className="p-2 space-y-1 border-t border-white/5 bg-black/30">
+                    <button 
+                      onClick={() => { onClose(); router.push('/profile/edit'); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <Edit3 size={16} className="text-blue-400" /> Edit Profile Details
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/settings'); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <Settings size={16} className="text-gray-400" /> Preferences & Security
+                    </button>
+                    <button 
+                      onClick={() => { 
+                        const isHi = useUserStore.getState().appSettings.language === 'hi';
+                        useUserStore.getState().updateSettings({ language: isHi ? 'en' : 'hi' });
+                      }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <Globe size={16} className="text-green-400" /> Language ({useUserStore.getState().appSettings.language === 'hi' ? 'Hindi' : 'English'})
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/faq'); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <HelpCircle size={16} className="text-pink-400" /> FAQ & Support Center
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/feedback'); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <MessageSquareHeart size={16} className="text-amber-400" /> Send Feedback
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({ title: 'LoveWithYou', url: 'https://lovewithyou.app' });
+                        }
+                      }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 transition-colors text-white text-xs font-medium"
+                    >
+                      <Share2 size={16} className="text-teal-400" /> Share LoveWithYou App
+                    </button>
+                    <button 
+                      onClick={() => { onClose(); router.push('/setup'); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-red-500/10 transition-colors text-red-400 text-xs font-bold pt-2 border-t border-white/10 mt-2"
+                    >
+                      <LogOut size={16} /> Sign Out of Account
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>
 
-            <div className="p-4 border-t border-white/10">
-              <Button onClick={onClose} className="w-full font-bold">Apply Filters</Button>
+            {/* Bottom Apply Bar */}
+            <div className="p-4 border-t border-white/10 bg-black/80 backdrop-blur-md">
+              <button onClick={onClose} className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-600 font-extrabold text-xs text-white shadow-lg shadow-pink-500/30 active:scale-95 transition-transform">
+                APPLY PREFERENCES & DISCOVER 🔥
+              </button>
             </div>
           </motion.div>
 
@@ -386,7 +494,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <div className="absolute bottom-4 left-4">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                       {selectedUser.name}
-                      {selectedUser.isStudent && <div className="bg-primary-500 text-[10px] px-2 py-0.5 rounded-full">STUDENT</div>}
+                      {selectedUser.isStudent && <div className="bg-pink-500 text-[10px] px-2 py-0.5 rounded-full font-bold">STUDENT</div>}
                     </h3>
                     <p className="text-white/70 text-sm flex items-center gap-1">
                       <MapPin size={12} /> {selectedUser.location || "Unknown"}
@@ -396,19 +504,18 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 <div className="p-5 space-y-4">
                   {selectedUser.bio && (
                     <p className="text-white/80 text-sm leading-relaxed">
-                      "{selectedUser.bio}"
+                      &quot;{selectedUser.bio}&quot;
                     </p>
                   )}
-                  <Button 
-                    variant="primary" 
-                    className="w-full"
+                  <button 
+                    className="w-full py-3 rounded-2xl bg-pink-600 font-extrabold text-xs text-white"
                     onClick={() => {
                       onClose();
                       router.push(`/user/${selectedUser.id}`);
                     }}
                   >
                     View Complete Profile
-                  </Button>
+                  </button>
                 </div>
               </motion.div>
             </div>
