@@ -178,16 +178,16 @@ export default function BlindDatePage() {
           !inCall ? (
             <div className="text-center space-y-6 w-full py-6">
               <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 blur-xl opacity-50 animate-pulse"></div>
-                <div className="w-32 h-32 rounded-full bg-black/90 border-2 border-pink-500/50 flex items-center justify-center shadow-2xl relative z-10">
-                  <PhoneCall size={48} className="text-pink-400 animate-bounce" />
+                <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl opacity-50 animate-pulse"></div>
+                <div className="w-32 h-32 rounded-full bg-black/90 border-2 border-rose-500/50 flex items-center justify-center shadow-2xl relative z-10">
+                  <PhoneCall size={48} className="text-rose-400 animate-bounce" />
                 </div>
               </div>
 
               <div>
                 <h2 className="text-2xl font-black text-white">3-Minute Heart-to-Heart</h2>
                 <p className="text-xs text-gray-300 mt-2 max-w-xs mx-auto leading-relaxed">
-                  Only Voice! Koi photo nahi, koi name nahi. Complete 3 minutes of deep voice conversation. Agar dono time dhalne par <span className="text-emerald-400 font-bold">&quot;YES&quot;</span> karte hain tabhi Profile photo & name unlock hogee!
+                  Only Voice! Koi photo nahi, koi name nahi. Complete 3 minutes of deep voice conversation. Agar dono time dhalne par <span className="text-emerald-400 font-bold">&quot;YES&quot;</span> karte hain tabhi Profile photo &amp; name unlock hogee!
                 </p>
               </div>
 
@@ -202,16 +202,16 @@ export default function BlindDatePage() {
 
               <button
                 onClick={handleStart3MinDate}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 font-extrabold text-base text-white shadow-[0_0_30px_rgba(236,72,153,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-extrabold text-base text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
               >
-                <Sparkles size={20} /> Match & Connect Voice Now 🎙️
+                <Sparkles size={20} /> Match &amp; Connect Voice Now 🎙️
               </button>
             </div>
           ) : (
             <div className="w-full flex flex-col items-center justify-between space-y-6 py-4">
               {/* Timer Bar */}
               <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-                <span className="text-xs text-pink-300 font-bold flex items-center gap-1.5">
+                <span className="text-xs text-rose-300 font-bold flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span> Audio Date Active
                 </span>
                 <span className="text-2xl font-black text-emerald-400 font-mono tracking-wider flex items-center gap-1.5">
@@ -222,7 +222,7 @@ export default function BlindDatePage() {
               {/* Profile Avatar / Unlock Showcase */}
               <div
                 onDoubleClick={handleDoubleTapHaptic}
-                className="relative w-64 h-64 rounded-3xl overflow-hidden border-2 border-white/20 bg-gradient-to-b from-purple-950/60 to-black shadow-2xl flex flex-col items-center justify-center cursor-pointer group select-none"
+                className="relative w-64 h-64 rounded-3xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center cursor-pointer group select-none"
               >
                 {!unlocked ? (
                   <>

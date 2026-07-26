@@ -15,36 +15,36 @@ export function TopBar() {
 
   return (
     <>
-    <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-[0_5px_15px_-3px_rgba(236,72,153,0.3)] pt-safe">
-      <div className="flex items-center justify-between h-14 px-4">
-        {/* Logo or Title with Hamburger */}
-        <div className="flex items-center gap-3 text-white font-bold text-xl tracking-tight drop-shadow-sm">
-          {showSidebarToggle && (
-            <button 
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 -ml-2 rounded-full hover:bg-white/20 transition-colors"
-            >
-              <Menu size={24} />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-white/15 border border-white/30 flex items-center justify-center p-1 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-              <img src="/favicon.png" alt="LoveWithYou Logo" className="w-6 h-6 object-contain drop-shadow" />
+      <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-[#07050e]/95 backdrop-blur-xl border-b border-white/10 pt-safe transition-colors duration-300">
+        <div className="flex items-center justify-between h-14 px-4">
+          {/* Logo or Title with Hamburger */}
+          <div className="flex items-center gap-3 text-white font-bold text-lg tracking-tight">
+            {showSidebarToggle && (
+              <button 
+                onClick={() => setSidebarOpen(true)}
+                className="p-1.5 -ml-1 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <Menu size={22} />
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-[#D624B8]/15 border border-[#D624B8]/30 flex items-center justify-center p-1.5 shadow-sm">
+                <img src="/favicon.png" alt="LoveWithYou Logo" className="w-full h-full object-contain" />
+              </div>
+              <span className="text-white font-black tracking-tight text-base">
+                LoveWithYou
+              </span>
             </div>
-            <span className="bg-gradient-to-r from-white via-pink-100 to-rose-200 bg-clip-text text-transparent font-extrabold tracking-tight">
-              LoveWithYou
-            </span>
+          </div>
+
+          {/* Coin Wallet with #FFDC17 Gold */}
+          <div className="flex items-center gap-1.5 badge-gold px-3 py-1.5 rounded-full font-extrabold text-xs backdrop-blur-md shadow-sm">
+            <Coins size={14} className="text-[#FFDC17]" />
+            <span>{coins}</span>
           </div>
         </div>
-
-        {/* Coin Wallet */}
-        <div className="flex items-center gap-1.5 bg-black/20 text-yellow-300 px-3 py-1.5 rounded-full font-bold border border-white/20 backdrop-blur-md shadow-sm">
-          <Coins size={16} className="text-yellow-400" />
-          <span>{coins}</span>
-        </div>
-      </div>
-    </header>
-    <SidebarDrawer isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </header>
+      <SidebarDrawer isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
     </>
   );
 }

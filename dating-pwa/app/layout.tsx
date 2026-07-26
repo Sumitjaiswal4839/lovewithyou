@@ -2,12 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { TopBar } from "@/components/layout/TopBar";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { AdminTrigger } from "@/components/AdminTrigger";
-import { A2HSPrompt } from "@/components/A2HSPrompt";
-import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
-import ScreenshotShield from "@/components/ScreenshotShield";
+import { AppLayoutWrapper } from "@/components/layout/AppLayoutWrapper";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -35,7 +30,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // suppressHydrationWarning is standard practice when using theme toggles
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* PostHog Analytics */}
@@ -51,18 +45,9 @@ export default function RootLayout({
       >
         <ThemeProvider defaultTheme="dark" storageKey="dating-ui-theme">
           <ToastProvider>
-            <div className="w-full max-w-md mx-auto min-h-screen bg-dark-bg relative shadow-2xl overflow-x-hidden sm:border-x border-white/5 pb-16 pt-14">
-              <ScreenshotShield>
-                <TopBar />
-                <main className="min-h-full relative">
-                  {children}
-                </main>
-                <BottomNav />
-                <A2HSPrompt />
-                <PushNotificationPrompt />
-                <AdminTrigger />
-              </ScreenshotShield>
-            </div>
+            <AppLayoutWrapper>
+              {children}
+            </AppLayoutWrapper>
           </ToastProvider>
         </ThemeProvider>
       </body>

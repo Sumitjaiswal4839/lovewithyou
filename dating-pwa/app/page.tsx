@@ -23,6 +23,8 @@ interface DummyProfile {
   campus?: string;
   hobbies?: string[];
   verified?: boolean;
+  isStudent?: boolean;
+  studentVerificationStatus?: string;
   karma: number;
   img?: string;
   images?: string[];
@@ -72,13 +74,67 @@ export default function Home() {
   const deviceId = useUserStore((state) => state.deviceId);
   const matchPreferences = useUserStore((state) => state.matchPreferences);
 
-  // Initial data fetch simulation
-  useEffect(() => {
-    const fetchTimer = setTimeout(() => {
+  // Live Supabase PostgreSQL Data Fetch & Realtime Monitoring
+  const fetchRealProfiles = async () => {
+    setIsLoadingProfiles(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!error && data && data.length > 0) {
+        const formatted = data.map((p: any) => ({
+          id: p.device_id || p.id || Math.random().toString(),
+          name: p.name || "Anonymous",
+          gender: p.gender || "Female",
+          location: p.location || "Nearby",
+          age: p.age || 21,
+          campus: p.campus || "University Hub",
+          hobbies: p.hobbies || ["Dating", "Music", "Coffee"],
+          verified: p.verified || false,
+          isStudent: p.isStudent || p.studentVerificationStatus === "verified",
+          studentVerificationStatus: p.studentVerificationStatus || "none",
+          karma: p.karma || 100,
+          img: p.photo_url || (p.photos && p.photos[0]) || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
+          images: p.photos || [p.photo_url],
+          lastActive: p.updated_at ? new Date(p.updated_at) : new Date(),
+          chemistryScore: Math.floor(Math.random() * 20) + 80,
+          crossedPathsCount: Math.floor(Math.random() * 5) + 1,
+          mode: p.mode || "Date",
+          zodiacSign: p.zodiacSign || "Leo",
+        }));
+        setProfiles(formatted);
+      } else {
+        setProfiles(DUMMY_PROFILES);
+      }
+    } catch (err) {
+      console.error("Live DB Error:", err);
       setProfiles(DUMMY_PROFILES);
+    } finally {
       setIsLoadingProfiles(false);
-    }, 1500);
-    return () => clearTimeout(fetchTimer);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealProfiles();
+
+    // Live Supabase Realtime DB Change Listener
+    const channel = supabase
+      .channel("live_profiles_monitor")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          fetchRealProfiles();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Inactive User Filtering (Remove if > 7 days inactive)
@@ -129,6 +185,12 @@ export default function Home() {
     }
     if (matchPreferences.locationScope === "City" && matchPreferences.selectedCity) {
       displayProfiles = displayProfiles.filter(p => p.location?.toLowerCase() === matchPreferences.selectedCity?.toLowerCase());
+    }
+    if (matchPreferences.verifiedOnly) {
+      displayProfiles = displayProfiles.filter(p => p.verified);
+    }
+    if (matchPreferences.studentsOnly) {
+      displayProfiles = displayProfiles.filter(p => p.isStudent || p.studentVerificationStatus === 'verified');
     }
   }
 
@@ -475,14 +537,14 @@ export default function Home() {
                   
                   {/* Looking For (Intent) Badge */}
                   {currentProfile.intent && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-gradient-to-r from-pink-500/20 to-rose-500/20 backdrop-blur-md rounded-md text-xs font-semibold text-pink-300 border border-pink-500/30 mr-2">
+                    <div className="mt-2 inline-block px-2.5 py-1 bg-rose-500/15 backdrop-blur-md rounded-md text-xs font-semibold text-rose-300 border border-rose-500/30 mr-2">
                       👀 {currentProfile.intent}
                     </div>
                   )}
 
                   {/* Zodiac Compatibility Badge */}
                   {profile?.zodiacSign && currentProfile.zodiacSign && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-md rounded-md text-xs font-semibold text-purple-300 border border-purple-500/30 mr-2">
+                    <div className="mt-2 inline-block px-2.5 py-1 bg-white/10 backdrop-blur-md rounded-md text-xs font-semibold text-white border border-white/20 mr-2">
                       ✨ {currentProfile.zodiacSign} • {getZodiacCompatibility(profile.zodiacSign, currentProfile.zodiacSign)}
                     </div>
                   )}

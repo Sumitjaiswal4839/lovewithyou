@@ -71,6 +71,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/lounge/disconnect", DisconnectAfterDarkLounge).Methods(http.MethodPost, http.MethodOptions)
 
 	// V1 Romance, Discovery & Gamification Suite
+	r.HandleFunc("/api/v1/random-chat/join", JoinRandomChat).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/blind-audio/match", BlindAudioMatch).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/haptic/heartbeat", SyncHeartbeat).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/squad/match", SquadDoubleDate).Methods(http.MethodPost, http.MethodOptions)

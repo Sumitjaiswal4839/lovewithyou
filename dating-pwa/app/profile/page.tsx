@@ -265,53 +265,53 @@ export default function ProfilePage() {
         {/* TAB 3: STATS & REACH */}
         {activeTab === "insights" && (
           <div className="space-y-5 animate-in fade-in duration-300">
-            {/* Weekly Wrap-Up (Trending) */}
-            <div className="bg-gradient-to-r from-orange-500/15 via-red-500/10 to-black border border-orange-500/30 rounded-3xl p-5 flex items-center gap-4 shadow-lg">
-               <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
-                 <TrendingUp size={24} className="animate-pulse" />
-               </div>
-               <div>
-                 <h3 className="text-orange-300 font-black text-sm">Weekly Wrap-Up 🔥</h3>
-                 <p className="text-gray-300 text-xs mt-1 leading-relaxed">
-                   Your profile is rising fast! You were seen by <span className="text-white font-bold">{analytics.views} singles</span> this week on the radar and swipe deck.
-                 </p>
-               </div>
-            </div>
+             {/* Weekly Wrap-Up */}
+             <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-5 flex items-center gap-4 shadow">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                  <TrendingUp size={24} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-rose-300 font-black text-sm">Weekly Wrap-Up 🔥</h3>
+                  <p className="text-gray-300 text-xs mt-1 leading-relaxed">
+                    Your profile is rising fast! You were seen by <span className="text-white font-bold">{analytics.views} singles</span> this week on the radar and swipe deck.
+                  </p>
+                </div>
+             </div>
 
-            {/* Analytics Grid */}
-            <div className="grid grid-cols-3 gap-3">
-               <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
-                 <Eye size={22} className="text-blue-400 mb-1.5" />
-                 <span className="text-2xl font-black text-white">{analytics.views}</span>
-                 <span className="text-[11px] text-gray-400 font-bold">Profile Views</span>
-               </div>
-               <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
-                 <Heart size={22} className="text-pink-500 mb-1.5" />
-                 <span className="text-2xl font-black text-white">{analytics.likes}</span>
-                 <span className="text-[11px] text-gray-400 font-bold">Total Likes</span>
-               </div>
-               <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
-                 <Users size={22} className="text-emerald-400 mb-1.5" />
-                 <span className="text-2xl font-black text-white">{analytics.matches}</span>
-                 <span className="text-[11px] text-gray-400 font-bold">Mutual Matches</span>
-               </div>
-            </div>
+             {/* Analytics Grid */}
+             <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
+                  <Eye size={22} className="text-white/80 mb-1.5" />
+                  <span className="text-2xl font-black text-white">{analytics.views}</span>
+                  <span className="text-[11px] text-gray-400 font-bold">Profile Views</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
+                  <Heart size={22} className="text-rose-400 mb-1.5" />
+                  <span className="text-2xl font-black text-white">{analytics.likes}</span>
+                  <span className="text-[11px] text-gray-400 font-bold">Total Likes</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col items-center justify-center text-center shadow">
+                  <Users size={22} className="text-emerald-400 mb-1.5" />
+                  <span className="text-2xl font-black text-white">{analytics.matches}</span>
+                  <span className="text-[11px] text-gray-400 font-bold">Mutual Matches</span>
+                </div>
+             </div>
 
-            {/* Events Banner */}
-            <Link href="/events" className="block">
-              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/40 rounded-3xl p-5 flex items-center justify-between shadow-lg hover:brightness-110 transition">
-                 <div className="flex items-center gap-3.5">
-                   <div className="w-11 h-11 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
-                     <Calendar size={22} />
-                   </div>
-                   <div>
-                     <h3 className="text-white font-black text-sm">Virtual Speed Dating Events 🎟️</h3>
-                     <p className="text-purple-300 text-xs mt-0.5 font-medium">Register for upcoming college campus mixers</p>
-                   </div>
-                 </div>
-                 <span className="text-purple-400 font-bold">→</span>
-              </div>
-            </Link>
+             {/* Events Banner */}
+             <Link href="/events" className="block">
+               <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-5 flex items-center justify-between shadow-lg hover:border-white/20 transition">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+                      <Calendar size={22} />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-black text-sm">Virtual Speed Dating Events 🎟️</h3>
+                      <p className="text-gray-400 text-xs mt-0.5 font-medium">Register for upcoming college campus mixers</p>
+                    </div>
+                  </div>
+                  <span className="text-gray-400 font-bold">→</span>
+               </div>
+             </Link>
           </div>
         )}
 

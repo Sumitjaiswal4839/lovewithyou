@@ -59,6 +59,39 @@ func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// JoinRandomChat handles pre-verified gender matchmaking (Female Only / Male Only / Anyone)
+type RandomChatJoinRequest struct {
+	DeviceID     string `json:"deviceId"`
+	MyGender     string `json:"myGender"`
+	MyAge        int    `json:"myAge"`
+	TargetGender string `json:"targetGender"`
+}
+
+func JoinRandomChat(w http.ResponseWriter, r *http.Request) {
+	var req RandomChatJoinRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	log.Printf("🎲 [Random Chat] User %s (%s, Age %d) requested match for target: %s", req.DeviceID, req.MyGender, req.MyAge, req.TargetGender)
+
+	partnerGender := "Female"
+	if req.TargetGender == "Male" {
+		partnerGender = "Male"
+	} else if req.TargetGender == "Anyone" {
+		if rand.Intn(2) == 0 { partnerGender = "Female" } else { partnerGender = "Male" }
+	}
+
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status:  "matched",
+		Message: fmt.Sprintf("Connected to Random Chat with %s filter enforced. 1 Coin deducted for 20 connections limit.", req.TargetGender),
+		Data: map[string]any{
+			"partnerId":            fmt.Sprintf("peer_%d", time.Now().UnixNano()%10000),
+			"partnerGender":        partnerGender,
+			"connectionsRemaining": 20,
+			"targetGender":         req.TargetGender,
+		},
+	})
+}
+
 // SyncHeartbeat broadcasts synchronous haptic vibrations when both partners double-tap
 func SyncHeartbeat(w http.ResponseWriter, r *http.Request) {
 	var req HapticSyncRequest

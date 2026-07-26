@@ -111,7 +111,7 @@ export const API = {
    * Connects to the anonymous 18+ After-Dark intimate matchmaking lounge.
    * Zero PII shared: only gender identity and conversational vibe tag are routed.
    */
-  async joinAfterDarkLounge(payload: { myGender: string; targetGender: string; vibeTag: string }) {
+  async joinAfterDarkLounge(payload: { deviceId?: string; myGender: string; targetGender: string; vibeTag: string }) {
     try {
       const response = await fetch(`${API_BASE_URL}/lounge/join`, {
         method: "POST",

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, MessageCircle, User, Headphones, Dices, GraduationCap } from "lucide-react";
+import { Flame, MessageCircle, User, Dices, GraduationCap } from "lucide-react";
 import { useHaptics } from "@/hooks/useHaptics";
 import { cn } from "@/lib/utils";
 
@@ -9,8 +9,6 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { triggerLight } = useHaptics();
-
-  // Removed calendar cache fix
 
   const links = [
     { href: "/", icon: Flame, label: "Match" },
@@ -21,7 +19,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 border-t border-white/10 pb-safe shadow-[0_-5px_15px_-3px_rgba(236,72,153,0.3)]">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-[#07050e]/95 backdrop-blur-xl border-t border-white/10 pb-safe shadow-2xl transition-colors duration-300">
       <div className="flex justify-around items-center h-16">
         {links.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href;
@@ -33,18 +31,23 @@ export function BottomNav() {
                 router.push(href);
               }}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200",
-                isActive ? "text-white" : "text-white/60 hover:text-white"
+                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 relative",
+                isActive ? "text-[#D624B8]" : "text-gray-400 hover:text-white"
               )}
             >
+              {isActive && (
+                <span className="absolute top-0 w-8 h-0.5 bg-[#D624B8] rounded-full shadow-[0_0_10px_#D624B8]" />
+              )}
               <Icon
-                size={24}
+                size={22}
                 className={cn(
-                  "transition-all duration-300",
-                  isActive ? "fill-white/30 scale-110 drop-shadow-md" : "scale-100"
+                  "transition-all duration-200",
+                  isActive ? "scale-110 text-[#D624B8]" : "scale-100"
                 )}
               />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className={cn("text-[10px] font-bold tracking-tight", isActive ? "text-[#D624B8] font-black" : "text-gray-400")}>
+                {label}
+              </span>
             </button>
           );
         })}

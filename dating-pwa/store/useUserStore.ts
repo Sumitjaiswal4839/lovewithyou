@@ -55,7 +55,7 @@ export interface Match {
 }
 
 export interface FriendRequest {
-  id: string; // The user ID sending/receiving the request
+  id: string;
   name: string;
   img: string;
   status: "incoming" | "outgoing";
@@ -74,6 +74,8 @@ interface UserState {
   isAuthenticated: boolean;
   profile: UserProfile | null;
   coins: number;
+  cashbackVault: number;
+  adFreeEnabled: boolean;
   locationEnabled: boolean;
   matches: Match[];
   likes: Match[];
@@ -91,6 +93,9 @@ interface UserState {
     locationScope: "Anywhere" | "State" | "City";
     selectedState: string | null;
     selectedCity: string | null;
+    verifiedOnly: boolean;
+    studentsOnly: boolean;
+    zodiacMatchOnly: boolean;
   };
   dailyUnlockDate: string | null;
   liveUserCount: number;
@@ -100,6 +105,8 @@ interface UserState {
   setProfile: (profile: UserProfile) => void;
   addCoins: (amount: number) => void;
   spendCoins: (amount: number) => void;
+  claimCashback: () => number;
+  toggleAdFree: () => void;
   requestLocation: () => void;
   setLocation: (loc: string) => void;
   addMatch: (match: Match) => void;
@@ -143,6 +150,8 @@ export const useUserStore = create<UserState>()(
       isAuthenticated: false,
       profile: null,
       coins: 100,
+      cashbackVault: 15,
+      adFreeEnabled: false,
       locationEnabled: false,
       appSettings: {
         lowDataMode: false,
@@ -156,6 +165,9 @@ export const useUserStore = create<UserState>()(
         locationScope: "Anywhere",
         selectedState: null,
         selectedCity: null,
+        verifiedOnly: false,
+        studentsOnly: false,
+        zodiacMatchOnly: false,
       },
       dailyUnlockDate: null,
       dailySearchCount: 0,
@@ -167,7 +179,6 @@ export const useUserStore = create<UserState>()(
       friends: [],
       setDeviceId: async (id: string) => {
         set({ deviceId: id, isAuthenticated: true })
-        // Register device with backend
         try {
           const res = await fetch(`${BACKEND_URL}/auth/device`, {
             method: 'POST',
@@ -186,7 +197,6 @@ export const useUserStore = create<UserState>()(
       },
       setProfile: async (profile) => {
         set({ profile })
-        // Sync to backend
         try {
           const state = useUserStore.getState()
           if (state.deviceId) {
@@ -241,9 +251,16 @@ export const useUserStore = create<UserState>()(
       },
       addCoins: async (amount) => {
         const state = useUserStore.getState();
-        const isVerifiedStudent = state.profile?.isStudent && state.profile?.studentVerificationStatus === 'verified';
+        const isVerifiedStudent = state.profile?.isStudent || state.profile?.studentVerificationStatus === 'verified';
         const finalAmount = isVerifiedStudent ? amount * 2 : amount;
-        set({ coins: state.coins + finalAmount });
+        // 10% Cashback Bonus on coin addition
+        const cashbackEarned = Math.max(1, Math.floor(finalAmount * 0.1));
+
+        set({ 
+          coins: state.coins + finalAmount,
+          cashbackVault: state.cashbackVault + cashbackEarned
+        });
+
         try {
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/coins/earn`, {
@@ -254,14 +271,21 @@ export const useUserStore = create<UserState>()(
           }
         } catch (e) {
           console.error("Failed to add coins to backend", e);
-          set({ coins: state.coins }); // Revert
+          set({ coins: state.coins });
         }
       },
       spendCoins: async (amount) => {
         const state = useUserStore.getState();
-        const isVerifiedStudent = state.profile?.isStudent && state.profile?.studentVerificationStatus === 'verified';
+        const isVerifiedStudent = state.profile?.isStudent || state.profile?.studentVerificationStatus === 'verified';
         const finalAmount = isVerifiedStudent ? Math.floor(amount / 2) : amount;
-        set({ coins: Math.max(0, state.coins - finalAmount) });
+        // 10% Cashback refund on coin spending
+        const cashbackRefund = Math.max(1, Math.floor(finalAmount * 0.1));
+
+        set({ 
+          coins: Math.max(0, state.coins - finalAmount),
+          cashbackVault: state.cashbackVault + cashbackRefund
+        });
+
         try {
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/coins/spend`, {
@@ -272,9 +296,21 @@ export const useUserStore = create<UserState>()(
           }
         } catch (e) {
           console.error("Failed to spend coins on backend", e);
-          set({ coins: state.coins }); // Revert
+          set({ coins: state.coins });
         }
       },
+      claimCashback: () => {
+        const state = get();
+        const claimed = state.cashbackVault;
+        if (claimed > 0) {
+          set({
+            coins: state.coins + claimed,
+            cashbackVault: 0
+          });
+        }
+        return claimed;
+      },
+      toggleAdFree: () => set((state) => ({ adFreeEnabled: !state.adFreeEnabled })),
       requestLocation: () => set({ locationEnabled: true }),
       setLocation: (loc: string) => set((state) => ({ profile: state.profile ? { ...state.profile, location: loc } : null })),
       setLiveUserCount: (count) => set({ liveUserCount: count }),
@@ -282,7 +318,6 @@ export const useUserStore = create<UserState>()(
       addLike: (match) => set((state) => ({ likes: [...state.likes, match] })),
       
       sendFriendRequest: (userId, name, img) => set((state) => {
-        // Avoid duplicates
         if (state.friendRequests.some(r => r.id === userId) || state.friends.some(f => f.id === userId)) {
           return state;
         }
@@ -336,11 +371,9 @@ export const useUserStore = create<UserState>()(
         const state = get();
         const today = new Date().toISOString().split('T')[0];
         if (state.lastSearchDate !== today) {
-           // Reset for a new day
            set({ dailySearchCount: 0, lastSearchDate: today });
            return true;
         }
-        // If 5 free searches used up, check coins
         if (state.dailySearchCount >= 5) {
            return state.coins >= 1;
         }
@@ -349,12 +382,8 @@ export const useUserStore = create<UserState>()(
       incrementSearchCount: () => {
         const state = get();
         const today = new Date().toISOString().split('T')[0];
-        
-        // Reset if it's a new day (just in case)
         let newCount = state.lastSearchDate !== today ? 1 : state.dailySearchCount + 1;
-        
         if (newCount > 5) {
-           // Deduct coin if they went over the free limit
            state.spendCoins(1);
         }
         set({ dailySearchCount: newCount, lastSearchDate: today });

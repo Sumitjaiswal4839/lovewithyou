@@ -106,12 +106,12 @@ export default function CampusPage() {
   return (
     <div className="flex flex-col min-h-screen bg-dark-bg pb-24 overflow-y-auto text-white font-sans">
       {/* Header */}
-      <div className="bg-gradient-to-b from-indigo-900/40 via-dark-bg to-dark-bg p-5 pt-8 sticky top-0 z-20 backdrop-blur-md border-b border-white/10">
+      <div className="bg-[#080512]/90 p-5 pt-8 sticky top-0 z-20 backdrop-blur-xl border-b border-white/10">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            Campus Hub <GraduationCap size={26} className="text-indigo-400" />
+            Campus Hub <GraduationCap size={26} className="text-rose-400" />
           </h1>
-          <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[11px] font-bold border border-indigo-500/30 flex items-center gap-1 shadow">
+          <span className="bg-rose-500/15 text-rose-300 px-3 py-1 rounded-full text-[11px] font-bold border border-rose-500/30 flex items-center gap-1 shadow">
             <Zap size={13} /> Student Verified
           </span>
         </div>
