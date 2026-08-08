@@ -2,6 +2,7 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import { 
   Moon, 
   Sun, 
@@ -100,10 +101,17 @@ export default function SettingsPage() {
     { id: "r-1", name: "Fake_Profile_4", status: "Under Review by Moderation Team" }
   ]);
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    // Mark profile for deletion in Supabase (admin will review and permanently delete)
+    if (deviceId) {
+      await supabase
+        .from("profiles")
+        .update({ deletion_requested_at: new Date().toISOString() })
+        .eq("device_id", deviceId);
+    }
     setProfile(null as any);
     setDeviceId("");
-    toast("Account permanently deleted.", "info");
+    toast("Account deletion requested. Data will be cleared within 30 days.", "info");
     router.push("/setup");
   };
 

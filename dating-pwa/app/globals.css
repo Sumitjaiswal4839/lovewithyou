@@ -29,10 +29,11 @@
   --color-magenta: #D624B8;
   --color-gold: #FFDC17;
 
-  --background: #07050e;
-  --foreground: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  /* Light theme defaults */
+  --background: #f8f4ff;
+  --foreground: #1a0530;
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.08);
 }
 
 .dark {
@@ -40,6 +41,19 @@
   --foreground: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+.light {
+  --background: #f8f4ff;
+  --foreground: #1a0530;
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.08);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 @keyframes pulse {

@@ -58,7 +58,7 @@ export default function AdminDashboard() {
 
   // Navigation Menu Tabs
   const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "revenue" | "feedbacks" | "verifications" | "sub_admins" | "broadcast"
+    "overview" | "users" | "revenue" | "feedbacks" | "verifications" | "sub_admins" | "broadcast" | "deleted_accounts"
   >("overview");
 
   // User Filter State
@@ -383,6 +383,7 @@ export default function AdminDashboard() {
     { id: "revenue", label: "Ads & Earnings", icon: DollarSign },
     { id: "feedbacks", label: "User Feedbacks", icon: MessageSquare, badge: feedbacks.length },
     { id: "verifications", label: "Student Verification", icon: GraduationCap, badge: pendingStudents.length },
+    { id: "deleted_accounts", label: "Deleted Accounts", icon: Trash2 },
     { id: "sub_admins", label: "Lower Admin Profiles", icon: Key },
     { id: "broadcast", label: "Broadcast Alert Engine", icon: Radio },
   ];
@@ -511,6 +512,7 @@ export default function AdminDashboard() {
               {activeTab === "verifications" && "🎓 Student Card Verification Queue"}
               {activeTab === "sub_admins" && "🔑 Sub-Admin Profiles & Permissions"}
               {activeTab === "broadcast" && "📢 Global Push Broadcast Alert Engine"}
+              {activeTab === "deleted_accounts" && "🗑️ Deleted Account Requests & Full Data"}
             </h1>
             <p className="text-xs text-gray-400 mt-1">
               Live data connection synced with Supabase Cloud &amp; Render Backend Services.
@@ -1118,7 +1120,168 @@ export default function AdminDashboard() {
             </form>
           </div>
         )}
+
+        {/* TAB 8: DELETED ACCOUNTS */}
+        {activeTab === "deleted_accounts" && (
+          <DeletedAccountsTab />
+        )}
       </main>
+    </div>
+  );
+}
+
+// Separate component to fetch and display deleted account requests from Supabase
+function DeletedAccountsTab() {
+  const [deletedProfiles, setDeletedProfiles] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDeleted = async () => {
+      setIsLoading(true);
+      // Fetch profiles marked for deletion (is_deleted flag or deletion_requested_at set)
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .not("deletion_requested_at", "is", null)
+        .order("deletion_requested_at", { ascending: false });
+      setDeletedProfiles(data || []);
+      setIsLoading(false);
+    };
+    fetchDeleted();
+  }, []);
+
+  const handlePermanentDelete = async (deviceId: string) => {
+    if (!confirm("Permanently delete ALL data for this user? This cannot be undone.")) return;
+    await supabase.from("swipes").delete().eq("swiper_id", deviceId);
+    await supabase.from("matches").delete().or(`user1_id.eq.${deviceId},user2_id.eq.${deviceId}`);
+    await supabase.from("messages").delete().or(`sender_id.eq.${deviceId},receiver_id.eq.${deviceId}`);
+    await supabase.from("profiles").delete().eq("device_id", deviceId);
+    setDeletedProfiles(prev => prev.filter(p => p.device_id !== deviceId));
+  };
+
+  const handleRestoreProfile = async (deviceId: string) => {
+    await supabase.from("profiles").update({ deletion_requested_at: null }).eq("device_id", deviceId);
+    setDeletedProfiles(prev => prev.filter(p => p.device_id !== deviceId));
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Loading deleted account requests...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 text-xs text-rose-300 font-medium">
+        ⚠️ These users have requested account deletion. Review their full data before permanently wiping it.
+        Total pending: <span className="font-black text-white">{deletedProfiles.length}</span>
+      </div>
+
+      {deletedProfiles.length === 0 ? (
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-10 text-center text-gray-500">
+          No pending account deletion requests.
+        </div>
+      ) : (
+        deletedProfiles.map((p) => (
+          <div key={p.device_id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+            {/* Header Row */}
+            <div
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition"
+              onClick={() => setExpandedId(expandedId === p.device_id ? null : p.device_id)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gray-800 overflow-hidden border border-white/10 shrink-0">
+                  {p.photo_url ? (
+                    <img src={p.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-black">
+                      {p.name?.[0] || "?"}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="font-black text-white text-sm">{p.name || "Unnamed"}, {p.age || "?"}</p>
+                  <p className="text-[11px] text-gray-400">{p.gender} • {p.campus || p.location || "No location"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-rose-400 font-bold bg-rose-500/20 px-2 py-0.5 rounded-full">
+                  Delete Requested
+                </span>
+                <span className="text-gray-400 text-xs">{expandedId === p.device_id ? "▲" : "▼"}</span>
+              </div>
+            </div>
+
+            {/* Expanded Full Details */}
+            {expandedId === p.device_id && (
+              <div className="border-t border-white/10 p-5 space-y-4">
+                <h4 className="text-xs font-black text-gray-300 uppercase tracking-wider">Full Account Data</h4>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Device ID</p>
+                    <p className="text-white font-mono text-[11px] break-all">{p.device_id}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Coins / Karma</p>
+                    <p className="text-amber-400 font-black">🪙 {p.coins || 0} • ⭐ {p.karma || 0}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Verified</p>
+                    <p className={p.verified ? "text-blue-400 font-bold" : "text-gray-500"}>{p.verified ? "✅ Yes" : "❌ No"}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Student Status</p>
+                    <p className="text-purple-400 font-bold">{p.studentVerificationStatus || "none"}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Joined</p>
+                    <p className="text-white">{p.created_at ? new Date(p.created_at).toLocaleDateString() : "Unknown"}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Last Active</p>
+                    <p className="text-white">{p.last_active ? new Date(p.last_active).toLocaleDateString() : "Unknown"}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl col-span-2">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Bio</p>
+                    <p className="text-white">{p.bio || "No bio"}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-xl col-span-2">
+                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Hobbies</p>
+                    <p className="text-white">{p.hobbies?.join(", ") || "None"}</p>
+                  </div>
+                </div>
+
+                {/* Photos */}
+                {p.photos && p.photos.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase font-black text-gray-400 mb-2">Photos ({p.photos.length})</p>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {p.photos.map((url: string, i: number) => (
+                        <img key={i} src={url} alt={`Photo ${i+1}`} className="w-16 h-20 object-cover rounded-xl shrink-0 border border-white/10" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2 border-t border-white/10">
+                  <button
+                    onClick={() => handleRestoreProfile(p.device_id)}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs transition"
+                  >
+                    ✅ Restore Account
+                  </button>
+                  <button
+                    onClick={() => handlePermanentDelete(p.device_id)}
+                    className="flex-1 py-2.5 bg-rose-700 hover:bg-rose-600 text-white rounded-xl font-black text-xs transition"
+                  >
+                    🗑️ Permanently Delete All Data
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 }

@@ -270,6 +270,10 @@ CREATE INDEX IF NOT EXISTS idx_profiles_campus ON public.profiles(campus);
 CREATE INDEX IF NOT EXISTS idx_messages_receiver ON public.messages(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_swipes_target ON public.swipes(swiped_id);
 
+-- Deleted accounts tracking
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS deletion_requested_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;
+
 CREATE INDEX IF NOT EXISTS idx_profiles_banned ON public.profiles(is_banned);
 CREATE INDEX IF NOT EXISTS idx_profiles_last_active ON public.profiles(last_active);
 

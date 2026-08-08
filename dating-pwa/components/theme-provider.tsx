@@ -70,14 +70,10 @@ export function ThemeProvider({
     },
   };
 
-  // Provide context immediately to prevent SSR crashes for consumers
+  // Always render children — theme class is applied to <html> instantly
   return (
     <ThemeProviderContext.Provider value={value}>
-      {!mounted ? (
-        <div style={{ visibility: "hidden" }}>{children}</div>
-      ) : (
-        children
-      )}
+      {children}
     </ThemeProviderContext.Provider>
   );
 }

@@ -194,12 +194,19 @@ export default function Home() {
     }
   }
 
-  // Redirect to setup if no profile exists
+  // Redirect to setup if no profile exists — wait for Zustand hydration first
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (!profile) {
+    // Give Zustand persist a tick to rehydrate from localStorage
+    const t = setTimeout(() => setHydrated(true), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated && !profile) {
       router.push("/setup");
     }
-  }, [profile, router]);
+  }, [hydrated, profile, router]);
 
   // Request location on mount
   useEffect(() => {
@@ -364,7 +371,8 @@ export default function Home() {
     }
   };
 
-  if (!profile) return null; // Wait for redirect to /setup
+  if (!hydrated) return null; // Wait for Zustand to rehydrate
+  if (!profile) return null; // Will redirect via useEffect above
 
   // UI state: Location not granted
   if (!profile.location) {

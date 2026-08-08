@@ -28,7 +28,11 @@ import {
   Sparkles, 
   Award, 
   Compass,
-  Headphones
+  Headphones,
+  Trophy,
+  Calendar,
+  GraduationCap,
+  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -273,6 +277,32 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <div className="flex items-center gap-4">
                     <Moon size={20} className="text-indigo-600" />
                     <span className="text-sm font-extrabold text-indigo-950">Midnight Roulette &amp; 2v2 Squads</span>
+                  </div>
+                </button>
+
+                {/* Campus Hub */}
+                <button onClick={() => navigateTo('/campus')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-purple-50/50 transition text-left">
+                  <div className="flex items-center gap-4">
+                    <GraduationCap size={20} className="text-purple-600" />
+                    <span className="text-sm font-extrabold text-purple-950">Campus Hub</span>
+                  </div>
+                  <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">Students</span>
+                </button>
+
+                {/* Leaderboard */}
+                <button onClick={() => navigateTo('/leaderboard')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-amber-50/50 transition text-left">
+                  <div className="flex items-center gap-4">
+                    <Trophy size={20} className="text-amber-500" />
+                    <span className="text-sm font-extrabold text-slate-800">Leaderboard</span>
+                  </div>
+                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">Top Connectors</span>
+                </button>
+
+                {/* Events */}
+                <button onClick={() => navigateTo('/events')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-violet-50/50 transition text-left">
+                  <div className="flex items-center gap-4">
+                    <Calendar size={20} className="text-violet-600" />
+                    <span className="text-sm font-extrabold text-slate-800">Events Calendar</span>
                   </div>
                 </button>
 

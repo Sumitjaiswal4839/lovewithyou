@@ -11,7 +11,7 @@ export function TopBar() {
   const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  const showSidebarToggle = ["/", "/random-chat", "/blind-date"].includes(pathname || "");
+  const showSidebarToggle = true; // Always show hamburger on all app pages
 
   return (
     <>
