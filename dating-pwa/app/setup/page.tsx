@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
+import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Lock, AlertTriangle, CheckCircle2, Plus, X as XIcon, Image as ImageIcon } from "lucide-react";
@@ -13,10 +14,13 @@ const FaceScanner = dynamic(() => import("@/components/FaceScanner"), {
 });
 import { useToast } from "@/components/ui/ToastProvider";
 import Link from "next/link";
+import { uploadMultipleToCloudinary } from "@/lib/cloudinary";
 
 export default function SetupPage() {
   const router = useRouter();
   const { toast } = useToast();
+  // Ensure device fingerprint is generated before profile is saved
+  useDeviceAuth();
   const setProfile = useUserStore((state) => state.setProfile);
   const addCoins = useUserStore((state) => state.addCoins);
 
@@ -32,6 +36,7 @@ export default function SetupPage() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [aiVerifiedAge, setAiVerifiedAge] = useState<number | null>(null);
   const [ageError, setAgeError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // 6 Photos required
   const [photos, setPhotos] = useState<string[]>(Array(6).fill(""));
@@ -122,7 +127,7 @@ export default function SetupPage() {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!formData.name || !formData.gender || !formData.age) {
       toast("Please fill all required fields", "error");
       return;
@@ -143,32 +148,46 @@ export default function SetupPage() {
       return;
     }
 
-    // Save to Zustand
-    setProfile({
-      name: formData.name,
-      bio: "",
-      hobbies: [],
-      interests: [],
-      location: "",
-      campus: formData.campus, // Save the campus
-      age: parseInt(formData.age),
-      photo_url: formData.photo_url,
-      photos: photos,
-      gender: formData.gender,
-      verified: true, // Marking true locally for UI purposes based on live photo
-      karma: 100, // Default safe karma score for new users
-      analytics: {
-        views: 0,
-        likes: 0,
-        matches: 0
-      },
-      mode: "Date",
-      isAnonymous: false
-    });
+    setIsUploading(true);
+    toast("Uploading your photos... Please wait ⏳", "message");
 
-    addCoins(20);
-    toast("Profile Verified! +20 Coins Awarded 💰", "success");
-    router.push("/");
+    try {
+      // Upload all 6 photos to Cloudinary and get back secure URLs
+      const uploadedUrls = await uploadMultipleToCloudinary(photos);
+      const primaryPhoto = uploadedUrls[0];
+
+      // Save to Zustand — setProfile also syncs to backend if deviceId is set
+      setProfile({
+        name: formData.name,
+        bio: "",
+        hobbies: [],
+        interests: [],
+        location: "",
+        campus: formData.campus,
+        age: parseInt(formData.age),
+        photo_url: primaryPhoto,      // Real Cloudinary URL ✅
+        photos: uploadedUrls,          // All 6 Cloudinary URLs ✅
+        gender: formData.gender,
+        verified: true,
+        karma: 100,
+        analytics: {
+          views: 0,
+          likes: 0,
+          matches: 0
+        },
+        mode: "Date",
+        isAnonymous: false
+      });
+
+      addCoins(20);
+      toast("Profile Verified! +20 Coins Awarded 💰", "success");
+      router.push("/");
+    } catch (err) {
+      console.error("Photo upload failed:", err);
+      toast("Photo upload failed. Please check your internet and try again.", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -328,9 +347,9 @@ export default function SetupPage() {
           onClick={handleComplete} 
           className="w-full mt-8" 
           size="lg" 
-          disabled={!!cameraError || !formData.photo_url || !termsAgreed || photos.some(p => p === "")}
+          disabled={!!cameraError || !formData.photo_url || !termsAgreed || photos.some(p => p === "") || isUploading}
         >
-          Start Matching
+          {isUploading ? "Uploading Photos... ⏳" : "Start Matching"}
         </Button>
       </Card>
     </div>

@@ -292,10 +292,21 @@ export default function AdminDashboard() {
 
     if (!matchesSearch) return false;
 
-    if (userFilter === "active") return !u.is_banned && (u.last_active?.includes("Active") || u.last_active?.includes("hour"));
-    if (userFilter === "inactive") return !u.is_banned && u.last_active?.includes("day");
     if (userFilter === "banned") return u.is_banned;
     if (userFilter === "verified") return u.verified;
+    
+    if (userFilter === "active") {
+      if (u.is_banned) return false;
+      if (!u.last_active) return true; // assume active if no timestamp
+      const diffHours = (Date.now() - new Date(u.last_active).getTime()) / (1000 * 60 * 60);
+      return diffHours <= 72; // active within last 3 days
+    }
+    if (userFilter === "inactive") {
+      if (u.is_banned) return false;
+      if (!u.last_active) return false;
+      const diffHours = (Date.now() - new Date(u.last_active).getTime()) / (1000 * 60 * 60);
+      return diffHours > 72;
+    }
     return true;
   });
 
@@ -733,7 +744,15 @@ export default function AdminDashboard() {
                           </td>
 
                           <td className="p-4 text-gray-300 font-medium">
-                            {u.last_active || "Recent"}
+                            {u.last_active 
+                              ? (() => {
+                                  const diffMins = Math.floor((Date.now() - new Date(u.last_active).getTime()) / 60000);
+                                  if (diffMins < 5) return <span className="text-green-400 font-bold">🟢 Online Now</span>;
+                                  if (diffMins < 60) return `${diffMins}m ago`;
+                                  if (diffMins < 1440) return `${Math.floor(diffMins/60)}h ago`;
+                                  return `${Math.floor(diffMins/1440)}d ago`;
+                                })()
+                              : "Recent"}
                           </td>
 
                           <td className="p-4">

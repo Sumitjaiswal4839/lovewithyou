@@ -15,6 +15,7 @@ type Profile struct {
 	Campus                    string              `json:"campus,omitempty"`
 	Age                       int                 `json:"age"`
 	PhotoURL                  string              `json:"photo_url"`
+	Photos                    []string            `json:"photos,omitempty"`
 	VoicePromptURL            string              `json:"voice_prompt_url,omitempty"`
 	Gender                    string              `json:"gender"`
 	Verified                  bool                `json:"verified"`
@@ -24,6 +25,7 @@ type Profile struct {
 	Analytics                 map[string]int      `json:"analytics,omitempty"`
 	Mode                      string              `json:"mode,omitempty"`
 	IsAnonymous               bool                `json:"isAnonymous"`
+	IsBanned                  bool                `json:"is_banned,omitempty"`
 	Orientation               string              `json:"orientation,omitempty"`
 	Faith                     string              `json:"faith,omitempty"`
 	PrismaPersonality         string              `json:"prismaPersonality,omitempty"`
@@ -63,7 +65,7 @@ func UpsertProfile(profile Profile) (*Profile, error) {
 		return nil, fmt.Errorf("supabase client not initialized")
 	}
 
-	data, count, err := Client.From("profiles").Upsert(profile, "", "exact", "").Execute()
+	data, count, err := Client.From("profiles").Upsert(profile, "device_id", "exact", "").Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +90,13 @@ func GetOrCreateProfile(deviceID string) (*Profile, error) {
 		return profile, nil
 	}
 
-	// Create new profile if not found
+	// Create new stub profile - name will be filled in via /profile POST after setup
 	newProfile := Profile{
 		DeviceID: deviceID,
-		Coins:    100, // Starting coins
+		Name:     "",
+		Coins:    100,
 		Karma:    100,
+		Mode:     "Date",
 	}
 	return UpsertProfile(newProfile)
 }

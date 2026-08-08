@@ -6,6 +6,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/Button";
 import { Lock, Camera, ArrowLeft, Mic, Square, Play, Trash2, Sparkles, ScanFace, EyeOff, Bell, Shield, Languages, Music } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
+import { uploadToCloudinary, uploadMultipleToCloudinary } from "@/lib/cloudinary";
 
 const PROMPTS = [
   "My biggest red flag is...",
@@ -40,6 +41,8 @@ export default function EditProfilePage() {
   const [selectedPrompt, setSelectedPrompt] = useState(PROMPTS[0]);
   const [promptAnswer, setPromptAnswer] = useState("");
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -80,8 +83,9 @@ export default function EditProfilePage() {
     setFormData({ ...formData, voice_prompt_url: "" });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!profile) return;
+    setIsSaving(true);
     
     // Convert hobbies string to array
     const hobbiesArray = formData.hobbies.split(",").map((h) => h.trim()).filter((h) => h !== "");
@@ -103,8 +107,22 @@ export default function EditProfilePage() {
       prompts: promptAnswer ? [{ question: selectedPrompt, answer: promptAnswer }] : [],
     });
     
+    setIsSaving(false);
     toast("Profile updated successfully!", "success");
     router.push("/profile");
+  };
+
+  const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+    try {
+      toast("Uploading photo...", "message");
+      const url = await uploadToCloudinary(file);
+      setProfile({ ...profile, photo_url: url });
+      toast("Profile photo updated! ✅", "success");
+    } catch (err) {
+      toast("Photo upload failed. Try again.", "error");
+    }
   };
 
   if (!profile) {
@@ -121,9 +139,9 @@ export default function EditProfilePage() {
         <h2 className="text-2xl font-bold">Edit Profile</h2>
       </div>
 
-      {/* Photo Upload Placeholder */}
+      {/* Photo Upload */}
       <div className="flex justify-center">
-        <div className="relative group cursor-pointer">
+        <div className="relative group cursor-pointer" onClick={() => photoInputRef.current?.click()}>
           <div className="w-32 h-32 rounded-full border-4 border-glass-border overflow-hidden bg-dark-bg flex items-center justify-center">
             {profile.photo_url ? (
               <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
@@ -132,8 +150,15 @@ export default function EditProfilePage() {
             )}
           </div>
           <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="text-sm font-medium text-white">Upload</span>
+            <span className="text-sm font-medium text-white">Change</span>
           </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleProfilePhotoChange}
+          />
         </div>
       </div>
 
@@ -473,8 +498,8 @@ export default function EditProfilePage() {
 
       {/* Save Button */}
       <div className="pt-4">
-        <Button onClick={handleSave} className="w-full" size="lg">
-          Save Changes
+        <Button onClick={handleSave} className="w-full" size="lg" disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 

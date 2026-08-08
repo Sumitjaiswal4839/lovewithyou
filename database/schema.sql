@@ -19,19 +19,24 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Core User Profiles Table (Indexed by Hardware Device Fingerprint Hash)
 CREATE TABLE IF NOT EXISTS public.profiles (
     device_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT DEFAULT '',
     bio TEXT DEFAULT '',
     age INTEGER DEFAULT 18,
     gender TEXT DEFAULT 'Everyone',
     photo_url TEXT DEFAULT '',
     location TEXT DEFAULT 'Delhi Hub',
-    coins INTEGER DEFAULT 25,
+    coins INTEGER DEFAULT 100,
     karma INTEGER DEFAULT 100 CHECK (karma >= 0 AND karma <= 100),
     verified BOOLEAN DEFAULT false,
+    is_banned BOOLEAN DEFAULT false,
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
 -- Safely alter profiles table to ensure ALL Go Backend and Phase 2-3 fields exist
+-- Ensure new columns exist (safe to run multiple times)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now());
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS hobbies TEXT[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS interests TEXT[] DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS campus TEXT DEFAULT 'Delhi University Hub';
@@ -265,6 +270,9 @@ CREATE INDEX IF NOT EXISTS idx_profiles_campus ON public.profiles(campus);
 CREATE INDEX IF NOT EXISTS idx_messages_receiver ON public.messages(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_swipes_target ON public.swipes(swiped_id);
 
+CREATE INDEX IF NOT EXISTS idx_profiles_banned ON public.profiles(is_banned);
+CREATE INDEX IF NOT EXISTS idx_profiles_last_active ON public.profiles(last_active);
+
 CREATE OR REPLACE FUNCTION clean_expired_ephemeral_messages() 
 RETURNS trigger AS $$
 BEGIN
@@ -274,3 +282,9 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Attach the cleanup trigger to messages table (was missing before)
+DROP TRIGGER IF EXISTS trigger_clean_ephemeral ON public.messages;
+CREATE TRIGGER trigger_clean_ephemeral
+    AFTER INSERT ON public.messages
+    FOR EACH ROW EXECUTE FUNCTION clean_expired_ephemeral_messages();

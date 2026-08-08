@@ -250,6 +250,11 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	var newProfile db.Profile
 	json.NewDecoder(r.Body).Decode(&newProfile)
 
+	if newProfile.DeviceID == "" {
+		http.Error(w, "device_id is required", http.StatusBadRequest)
+		return
+	}
+
 	existing, err := db.GetProfile(newProfile.DeviceID)
 	if err == nil && existing != nil {
 		// Enforce Rules: Do not allow changing locked/system fields if they already exist
@@ -257,6 +262,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		newProfile.Coins = existing.Coins
 		newProfile.Verified = existing.Verified
 		newProfile.Karma = existing.Karma
+		newProfile.IsBanned = existing.IsBanned // Ban state only settable by admin
 	} else {
 		// New profile defaults
 		newProfile.Karma = 100
