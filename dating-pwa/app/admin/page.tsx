@@ -28,7 +28,8 @@ import {
   RefreshCw,
   Unlock,
   Menu,
-  X
+  X,
+  Coins
 } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useUserStore } from "@/store/useUserStore";
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
 
   // Navigation Menu Tabs
   const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "revenue" | "feedbacks" | "verifications" | "sub_admins" | "broadcast" | "deleted_accounts"
+    "overview" | "users" | "revenue" | "coin_sales" | "feedbacks" | "verifications" | "sub_admins" | "broadcast" | "deleted_accounts"
   >("overview");
 
   // User Filter State
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
   const [reports, setReports] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
+  const [coinTransactions, setCoinTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Sub-Admin Management State
@@ -186,10 +188,16 @@ export default function AdminDashboard() {
         .select("*")
         .eq("studentVerificationStatus", "pending");
 
+      const { data: coinTxData } = await supabase
+        .from("coin_transactions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
       // Set REAL DB data without any fake fallbacks
       setUsers(usersData || []);
       setReports(reportsData || []);
       setFeedbacks(feedbackData || []);
+      setCoinTransactions(coinTxData || []);
       setPendingStudents(
         (pendingData || []).map((p) => ({
           id: p.device_id || p.id,
@@ -199,7 +207,8 @@ export default function AdminDashboard() {
         }))
       );
       // Dynamically compute real revenue metrics from actual database rows
-      const realCoinRevenue = (usersData || []).reduce((acc: number, u: any) => acc + ((u.coins || 0) * 0.5), 0);
+      const earnedTxs = (coinTxData || []).filter((tx: any) => tx.amount > 0 || tx.transaction_type === "EARNED");
+      const realCoinRevenue = earnedTxs.reduce((acc: number, tx: any) => acc + (tx.amount * 1.5), 0);
       const realAdImpressions = (usersData || []).length * 12; // Real active user impression multiplier
       const realAdRevenue = (realAdImpressions / 1000) * 2.50; // $2.50 eCPM
 
@@ -380,6 +389,7 @@ export default function AdminDashboard() {
   const navItems = [
     { id: "overview", label: "Overview & Financials", icon: BarChart3 },
     { id: "users", label: "Manage Users", icon: Users, badge: users.length },
+    { id: "coin_sales", label: "User Coin Purchases & Ledger", icon: Coins, badge: coinTransactions.length },
     { id: "revenue", label: "Ads & Earnings", icon: DollarSign },
     { id: "feedbacks", label: "User Feedbacks", icon: MessageSquare, badge: feedbacks.length },
     { id: "verifications", label: "Student Verification", icon: GraduationCap, badge: pendingStudents.length },
@@ -507,6 +517,7 @@ export default function AdminDashboard() {
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               {activeTab === "overview" && "📊 Platform Overview & Financials"}
               {activeTab === "users" && "👥 User Management & Filtering"}
+              {activeTab === "coin_sales" && "🪙 User Coin Purchases & Transaction Audit Ledger"}
               {activeTab === "revenue" && "💵 Ads Revenue & Monetization Analytics"}
               {activeTab === "feedbacks" && "📩 User Feedback & Inquiries"}
               {activeTab === "verifications" && "🎓 Student Card Verification Queue"}
@@ -834,6 +845,150 @@ export default function AdminDashboard() {
                   {adEarnings.adImpressionsToday.toLocaleString()}
                 </div>
                 <p className="text-[10px] text-indigo-300 mt-1">99.8% Fill rate</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: REAL USER COIN PURCHASES & LEDGER */}
+        {activeTab === "coin_sales" && (
+          <div className="space-y-6">
+            {/* Top Stat Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-amber-950/40 via-black to-purple-950/40 border border-amber-500/30 rounded-3xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+                  <span>Total Purchases / Earned</span>
+                  <Coins size={20} className="text-amber-400" />
+                </div>
+                <div className="text-3xl font-black text-amber-400">
+                  +{coinTransactions.filter(t => t.amount > 0 || t.transaction_type === 'EARNED').reduce((a, b) => a + (b.amount || 0), 0)} 🪙
+                </div>
+                <p className="text-[11px] text-amber-300/80 font-semibold mt-1">
+                  From {coinTransactions.filter(t => t.amount > 0 || t.transaction_type === 'EARNED').length} transactions
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-rose-950/40 via-black to-indigo-950/40 border border-rose-500/30 rounded-3xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+                  <span>Total Coins Spent</span>
+                  <Sparkles size={20} className="text-rose-400" />
+                </div>
+                <div className="text-3xl font-black text-rose-400">
+                  {coinTransactions.filter(t => t.amount < 0 || t.transaction_type === 'SPENT').reduce((a, b) => a + Math.abs(b.amount || 0), 0)} 🪙
+                </div>
+                <p className="text-[11px] text-rose-300/80 font-semibold mt-1">
+                  Across random chats, 3-min audio &amp; boosts
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-950/40 via-black to-blue-950/40 border border-emerald-500/30 rounded-3xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+                  <span>Total Recorded Ledger Entries</span>
+                  <TrendingUp size={20} className="text-emerald-400" />
+                </div>
+                <div className="text-3xl font-black text-emerald-400">
+                  {coinTransactions.length}
+                </div>
+                <p className="text-[11px] text-emerald-300/80 font-semibold mt-1">
+                  100% Real Supabase Audit Records
+                </p>
+              </div>
+            </div>
+
+            {/* Real Data Table */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-base text-white flex items-center gap-2">
+                    <Coins size={18} className="text-amber-400" /> Real User Coin Sales &amp; Usage Ledger
+                  </h3>
+                  <p className="text-xs text-gray-400">Live records from `coin_transactions` PostgreSQL table</p>
+                </div>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-black">
+                  LIVE DB SYNCED
+                </span>
+              </div>
+
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left text-xs whitespace-nowrap">
+                  <thead className="bg-black/60 text-gray-400 uppercase text-[10px] font-black border-b border-white/10">
+                    <tr>
+                      <th className="p-4">User Details</th>
+                      <th className="p-4">Device Fingerprint ID</th>
+                      <th className="p-4">Type</th>
+                      <th className="p-4">Coin Amount</th>
+                      <th className="p-4">Transaction Description / Package</th>
+                      <th className="p-4 text-right">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {coinTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">
+                          No coin transactions recorded in database yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      coinTransactions.map((tx, idx) => {
+                        const matchedUser = users.find((u) => u.device_id === tx.device_id);
+                        const isEarned = tx.amount > 0 || tx.transaction_type === "EARNED";
+                        return (
+                          <tr key={tx.id || idx} className="hover:bg-white/5 transition-colors">
+                            <td className="p-4 flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-2xl bg-gray-800 overflow-hidden border border-white/10 shrink-0">
+                                {matchedUser?.photo_url ? (
+                                  <img src={matchedUser.photo_url} alt="User" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-black text-gray-400 text-xs">
+                                    {matchedUser?.name?.[0] || "👤"}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-bold text-white">
+                                  {matchedUser?.name || "Single User"}
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                  {matchedUser?.campus || matchedUser?.location || "India Hub"}
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="p-4 font-mono text-gray-400 text-[11px]">
+                              {tx.device_id ? `${tx.device_id.substring(0, 14)}...` : "N/A"}
+                            </td>
+
+                            <td className="p-4">
+                              {isEarned ? (
+                                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                                  EARNED / PURCHASED
+                                </span>
+                              ) : (
+                                <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                                  SPENT
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="p-4 font-black text-sm">
+                              <span className={isEarned ? "text-amber-400" : "text-rose-400"}>
+                                {isEarned ? "+" : ""}{tx.amount} 🪙
+                              </span>
+                            </td>
+
+                            <td className="p-4 font-bold text-gray-200 text-xs">
+                              {tx.description || (isEarned ? "Coin Package Purchased" : "Feature Unlock")}
+                            </td>
+
+                            <td className="p-4 text-right font-medium text-gray-400 text-[11px]">
+                              {tx.created_at ? new Date(tx.created_at).toLocaleString() : "Recently"}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

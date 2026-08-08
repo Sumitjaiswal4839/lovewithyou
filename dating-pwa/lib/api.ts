@@ -5,7 +5,9 @@
  * directly to the Go microservices and Supabase PostgreSQL backend.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+  ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1`
+  : (process.env.NEXT_PUBLIC_API_URL || "https://lovewithyou.onrender.com/api/v1");
 
 export interface RadarPingPayload {
   senderId: string;
@@ -291,5 +293,20 @@ export const API = {
       });
       return await res.json();
     } catch (e) { return { status: "webrtc_signal_routed_offline" }; }
+  },
+
+  /**
+   * Fetches the transparent coin transaction ledger for a given device.
+   */
+  async fetchCoinHistory(deviceId: string) {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+      const res = await fetch(`${backendUrl}/api/v1/coins/history/${deviceId}`);
+      if (!res.ok) throw new Error("Failed to fetch coin history");
+      return await res.json();
+    } catch (e) {
+      console.warn("[API] Coin history offline fallback:", e);
+      return [];
+    }
   }
 };

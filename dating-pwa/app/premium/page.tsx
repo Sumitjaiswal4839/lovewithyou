@@ -71,6 +71,64 @@ export default function PremiumPage() {
     toast(`🎉 Successfully redeemed perk: ${perkName}! (-${cost} Coins)`, "success");
   };
 
+  const handleRazorpayBuyCoins = (coinAmount: number, priceINR: number, packName: string) => {
+    const finalPrice = isStudent ? Math.floor(priceINR / 2) : priceINR;
+    const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+    // Safety check: prevent accidental charges or broken flows if live keys aren't set
+    if (!razorpayKey || razorpayKey.includes("test_LoveWithYouKey")) {
+      toast(`⚠️ Pre-Launch Mode: Live Razorpay key not added in Vercel. Adding ${coinAmount} test coins to your account for preview!`, "info");
+      addCoins(coinAmount, `Pre-Launch Preview Pack (${packName})`);
+      return;
+    }
+
+    toast(`Processing ₹${finalPrice} Razorpay checkout for ${packName}...`, "info");
+
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        if ((window as any).Razorpay) {
+          resolve(true);
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+    };
+
+    loadRazorpayScript().then((loaded) => {
+      if (!loaded) {
+        toast("Razorpay SDK failed to load. Check network connection.", "error");
+        return;
+      }
+
+      const options = {
+        key: razorpayKey,
+        amount: finalPrice * 100, // amount in paise
+        currency: "INR",
+        name: "LoveWithYou Dating",
+        description: `Purchase ${packName} (${coinAmount} Coins)`,
+        image: "/favicon.png",
+        handler: async function (response: any) {
+          toast(`🎉 Payment Successful! Razorpay Tx ID: ${response.razorpay_payment_id || 'rzp_paid'}`, "success");
+          await addCoins(coinAmount, `Bought ${packName} (₹${finalPrice}) via Razorpay`);
+        },
+        prefill: {
+          name: profile?.name || "Single User",
+          email: "user@lovewithyou.app",
+        },
+        theme: {
+          color: "#f43f5e",
+        },
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#07050e] text-white overflow-y-auto font-sans pb-24">
       {/* Header */}
@@ -96,6 +154,48 @@ export default function PremiumPage() {
       </div>
 
       <div className="p-4 space-y-6">
+        {/* RAZORPAY INSTANT COIN PACKAGES */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <Coins size={18} className="text-amber-400" /> Buy Coins (Razorpay UPI / Cards)
+            </h3>
+            <span className="text-xs text-amber-300 font-bold">
+              Balance: <span className="font-black text-white">{coins} 🪙</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { amount: 100, price: 99, name: "Starter Pack" },
+              { amount: 300, price: 249, name: "Popular Pack" },
+              { amount: 800, price: 499, name: "VIP Value Pack" },
+              { amount: 2000, price: 999, name: "Ultra Royal Pack" },
+            ].map((pack) => {
+              const finalP = isStudent ? Math.floor(pack.price / 2) : pack.price;
+              return (
+                <div
+                  key={pack.name}
+                  className="bg-white/[0.03] border border-amber-500/30 hover:border-amber-400 rounded-3xl p-4 text-center transition shadow-lg relative overflow-hidden"
+                >
+                  <div className="text-2xl font-black text-amber-400 mb-1">
+                    🪙 {pack.amount}
+                  </div>
+                  <h4 className="font-bold text-xs text-white">{pack.name}</h4>
+                  <div className="text-base font-black text-emerald-400 my-2">
+                    ₹{finalP} {isStudent && <span className="text-[10px] text-gray-500 line-through font-normal">₹{pack.price}</span>}
+                  </div>
+                  <button
+                    onClick={() => handleRazorpayBuyCoins(pack.amount, pack.price, pack.name)}
+                    className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 font-black text-xs text-black transition shadow-md active:scale-95 flex items-center justify-center gap-1"
+                  >
+                    Buy via Razorpay
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
         {/* 1. CASHBACK COINS REFUND SYSTEM BANNER */}
         <div className="bg-gradient-to-r from-pink-500/15 via-rose-500/10 to-purple-500/15 border border-rose-500/30 rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">

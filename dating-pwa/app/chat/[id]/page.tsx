@@ -57,12 +57,35 @@ export default function ChatRoomPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  const wsRef = useRef<WebSocket | null>(null);
+
   useEffect(() => {
     if (!deviceId || !matchId) return;
 
-    // Fetch initial messages
+    // 1. Generate consistent Room ID for private routing
+    const roomId = [deviceId, matchId].sort().join("_");
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${roomId}&device_id=${deviceId}`;
+
+    try {
+      wsRef.current = new WebSocket(wsUrl);
+      wsRef.current.onmessage = (event) => {
+        try {
+          const incoming = JSON.parse(event.data);
+          if (incoming.content && incoming.sender_id !== deviceId) {
+            setMessages((prev) => [...prev, incoming as Message]);
+          }
+        } catch (e) {
+          console.error("WS Parse Error:", e);
+        }
+      };
+    } catch (wsErr) {
+      console.warn("WebSocket Connection Error:", wsErr);
+    }
+
+    // Fetch initial messages from Supabase DB
     const fetchMessages = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${deviceId},receiver_id.eq.${matchId}),and(sender_id.eq.${matchId},receiver_id.eq.${deviceId})`)
@@ -71,39 +94,36 @@ export default function ChatRoomPage() {
         
       if (data) {
         setMessages(data);
-        
-        // Simulate them typing if you have no messages yet
         if (data.length === 0) {
           setIsTyping(true);
-          setTimeout(() => setIsTyping(false), 5000); // Stop after 5s
+          setTimeout(() => setIsTyping(false), 3000);
         }
       }
     };
 
     fetchMessages();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime postgres changes
     const channel = supabase
-      .channel(`chat_${Math.min(Number(deviceId), Number(matchId))}_${Math.max(Number(deviceId), Number(matchId))}`)
+      .channel(`chat_${roomId}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'messages',
-        filter: `receiver_id=eq.${deviceId}` // Only listen to incoming messages to avoid duplicates
+        filter: `receiver_id=eq.${deviceId}`
       }, (payload) => {
           if (payload.new.sender_id !== deviceId) {
-            // Trigger haptic feedback for incoming messages if enabled
             const { appSettings } = useUserStore.getState();
             if (appSettings?.hapticsEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
               navigator.vibrate([100, 50, 100]);
             }
+            setMessages((prev) => [...prev, payload.new as Message]);
           }
-          
-          setMessages((prev) => [...prev, payload.new as Message]);
       })
       .subscribe();
 
     return () => {
+      if (wsRef.current) wsRef.current.close();
       supabase.removeChannel(channel);
     };
   }, [deviceId, matchId]);
@@ -113,9 +133,20 @@ export default function ChatRoomPage() {
     if (!newMessage.trim() || !deviceId) return;
 
     const msgContent = newMessage.trim();
+    const roomId = [deviceId, matchId].sort().join("_");
     setNewMessage(""); // Optimistic UI clear
     
-    // Optimistic insert
+    // Send over WebSocket for real-time private room routing
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        room_id: roomId,
+        sender_id: deviceId,
+        receiver_id: matchId,
+        content: msgContent
+      }));
+    }
+
+    // Optimistic insert into UI state
     const tempMsg: Message = {
       id: Date.now().toString(),
       sender_id: deviceId,
@@ -126,6 +157,7 @@ export default function ChatRoomPage() {
     
     setMessages((prev) => [...prev, tempMsg]);
 
+    // Persist to Supabase messages table
     const { error } = await supabase.from('messages').insert([{
       sender_id: deviceId,
       receiver_id: matchId,
@@ -134,14 +166,7 @@ export default function ChatRoomPage() {
 
     if (error) {
       toast("Failed to send message", "error");
-      // Remove temp message on failure
       setMessages((prev) => prev.filter(m => m.id !== tempMsg.id));
-    } else {
-      // Simulate reply typing
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-      }, 3000);
     }
   };
 
@@ -177,9 +202,25 @@ export default function ChatRoomPage() {
     }
   };
 
-  // Mock match data based on ID since we don't have a users table fetch yet
-  const matchName = matchId === "1" ? "Priya" : "Match " + matchId.substring(0,4);
-  const matchImg = matchId === "1" ? "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80" : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80";
+  const [partnerProfile, setPartnerProfile] = useState<{ name: string; photo_url: string } | null>(null);
+
+  useEffect(() => {
+    const fetchPartnerDetails = async () => {
+      if (!matchId) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("name, photo_url")
+        .or(`device_id.eq.${matchId},id.eq.${matchId}`)
+        .single();
+      if (data) {
+        setPartnerProfile(data);
+      }
+    };
+    fetchPartnerDetails();
+  }, [matchId]);
+
+  const matchName = partnerProfile?.name || (matchId === "1" ? "Priya" : "Single Partner");
+  const matchImg = partnerProfile?.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80";
 
   return (
     <div className="flex flex-col h-screen bg-dark-bg">

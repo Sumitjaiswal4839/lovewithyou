@@ -143,8 +143,9 @@ export default function SetupPage() {
       return;
     }
 
-    if (photos.some(p => p === "")) {
-      toast("You must upload all 6 photos to proceed.", "error");
+    const filledPhotos = photos.filter(p => p !== "");
+    if (filledPhotos.length < 1) {
+      toast("Please upload at least 1 main profile photo to proceed.", "error");
       return;
     }
 
@@ -152,8 +153,8 @@ export default function SetupPage() {
     toast("Uploading your photos... Please wait ⏳", "message");
 
     try {
-      // Upload all 6 photos to Cloudinary and get back secure URLs
-      const uploadedUrls = await uploadMultipleToCloudinary(photos);
+      // Upload provided photos to Cloudinary and get back secure URLs
+      const uploadedUrls = await uploadMultipleToCloudinary(filledPhotos);
       const primaryPhoto = uploadedUrls[0];
 
       // Save to Zustand — setProfile also syncs to backend if deviceId is set
@@ -328,8 +329,19 @@ export default function SetupPage() {
 
         </div>
         
+        {/* Safety & Respect Pledge Banner */}
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-pink-500/10 border border-rose-500/30 flex items-start gap-3 my-3">
+          <CheckCircle2 className="text-rose-400 shrink-0 mt-0.5" size={20} />
+          <div>
+            <h4 className="text-xs font-bold text-white">🔒 Safety &amp; Respect Pledge</h4>
+            <p className="text-[10px] text-gray-300 mt-0.5">
+              By entering LoveWithYou, you pledge to treat all users with dignity. No harassment, screenshotting private media, or fake profiles allowed.
+            </p>
+          </div>
+        </div>
+
         {/* Terms and Conditions Checkbox */}
-        <div className="pt-2">
+        <div className="pt-1">
            <label className="flex items-start gap-3 cursor-pointer">
              <input 
                type="checkbox" 
@@ -338,18 +350,18 @@ export default function SetupPage() {
                onChange={(e) => setTermsAgreed(e.target.checked)}
              />
              <span className="text-xs text-gray-400 leading-tight">
-               I agree that my gender is permanently locked based on my live photo. Changing my name will not alter my verified gender. Read the <Link href="/terms" target="_blank" className="text-primary-500 hover:underline">Terms & Conditions</Link>.
+               I agree to the <Link href="/terms" target="_blank" className="text-primary-500 hover:underline">Terms &amp; Conditions</Link> &amp; <Link href="/privacy" target="_blank" className="text-primary-500 hover:underline">Privacy Policy</Link>. My verified gender is bound to my photo capture.
              </span>
            </label>
         </div>
 
         <Button 
           onClick={handleComplete} 
-          className="w-full mt-8" 
+          className="w-full mt-6" 
           size="lg" 
-          disabled={!!cameraError || !formData.photo_url || !termsAgreed || photos.some(p => p === "") || isUploading}
+          disabled={!!cameraError || !formData.photo_url || !termsAgreed || photos.filter(p => p !== "").length < 1 || isUploading}
         >
-          {isUploading ? "Uploading Photos... ⏳" : "Start Matching"}
+          {isUploading ? "Uploading Photos... ⏳" : "Start Matching 🎉"}
         </Button>
       </Card>
     </div>

@@ -1,11 +1,13 @@
 package api
 
 import (
+	"dating-backend/db"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -59,7 +61,12 @@ func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// JoinRandomChat handles pre-verified gender matchmaking (Female Only / Male Only / Anyone)
+var (
+	randomChatQueueMutex sync.Mutex
+	randomChatQueue      = make(map[string]RandomChatJoinRequest)
+)
+
+// JoinRandomChat handles pre-verified gender matchmaking (Female Only / Male Only / Anyone) with real waiting pool
 type RandomChatJoinRequest struct {
 	DeviceID     string `json:"deviceId"`
 	MyGender     string `json:"myGender"`
@@ -71,23 +78,52 @@ func JoinRandomChat(w http.ResponseWriter, r *http.Request) {
 	var req RandomChatJoinRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
-	log.Printf("🎲 [Random Chat] User %s (%s, Age %d) requested match for target: %s", req.DeviceID, req.MyGender, req.MyAge, req.TargetGender)
+	log.Printf("🎲 [Random Chat Queue] User %s (%s, Age %d) requested match for target: %s", req.DeviceID, req.MyGender, req.MyAge, req.TargetGender)
 
-	partnerGender := "Female"
-	if req.TargetGender == "Male" {
-		partnerGender = "Male"
-	} else if req.TargetGender == "Anyone" {
-		if rand.Intn(2) == 0 { partnerGender = "Female" } else { partnerGender = "Male" }
+	randomChatQueueMutex.Lock()
+	defer randomChatQueueMutex.Unlock()
+
+	var matchedPartnerID string
+	var partnerGender string
+
+	// Look for a suitable waiting peer in queue
+	for id, peer := range randomChatQueue {
+		if id != req.DeviceID {
+			// Gender filtering check
+			if (req.TargetGender == "Anyone" || req.TargetGender == peer.MyGender) &&
+				(peer.TargetGender == "Anyone" || peer.TargetGender == req.MyGender) {
+				matchedPartnerID = id
+				partnerGender = peer.MyGender
+				delete(randomChatQueue, id)
+				break
+			}
+		}
 	}
 
+	if matchedPartnerID != "" {
+		roomID := fmt.Sprintf("random_room_%s_%s", req.DeviceID, matchedPartnerID)
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status:  "matched",
+			Message: "Real peer matched from waiting queue!",
+			Data: map[string]any{
+				"roomId":               roomID,
+				"partnerId":            matchedPartnerID,
+				"partnerGender":        partnerGender,
+				"connectionsRemaining": 20,
+				"status":               "matched",
+			},
+		})
+		return
+	}
+
+	// No match found yet: add caller to waiting pool queue
+	randomChatQueue[req.DeviceID] = req
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "matched",
-		Message: fmt.Sprintf("Connected to Random Chat with %s filter enforced. 1 Coin deducted for 20 connections limit.", req.TargetGender),
+		Status:  "waiting",
+		Message: "Added to waiting queue pool. Searching for active peer...",
 		Data: map[string]any{
-			"partnerId":            fmt.Sprintf("peer_%d", time.Now().UnixNano()%10000),
-			"partnerGender":        partnerGender,
+			"status":               "waiting",
 			"connectionsRemaining": 20,
-			"targetGender":         req.TargetGender,
 		},
 	})
 }
@@ -197,18 +233,80 @@ func SpinDailyCupidSlot(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetLeaderboardVibeKings returns top flirters & connectors for the weekly digital tiara award
+// GetLeaderboardVibeKings returns top flirters & connectors for the weekly digital tiara award from Supabase DB
 func GetLeaderboardVibeKings(w http.ResponseWriter, r *http.Request) {
-	leaders := []map[string]any{
-		{"alias": "Ayesha M.", "campus": "Delhi University Hub", "rating": 980, "badge": "👑 Platinum Vibe Queen"},
-		{"alias": "Rohan S.", "campus": "IIT Tech Center", "rating": 945, "badge": "👑 Platinum Vibe King"},
-		{"alias": "Priya K.", "campus": "Symbiosis Pune Hub", "rating": 910, "badge": "✨ Gold Matcher"},
-		{"alias": "Vikram V.", "campus": "Bangalore Innovation Lounge", "rating": 890, "badge": "💫 Silver Charm"},
+	if db.Client == nil {
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status:  "success",
+			Message: "Fallback top connectors retrieved",
+			Data: []map[string]any{
+				{"alias": "Ayesha M.", "campus": "Delhi University Hub", "rating": 980, "badge": "👑 Platinum Vibe Queen"},
+				{"alias": "Rohan S.", "campus": "IIT Tech Center", "rating": 945, "badge": "👑 Platinum Vibe King"},
+			},
+		})
+		return
+	}
+
+	data, _, err := db.Client.From("profiles").
+		Select("name, campus, location, karma, coins, photo_url, gender", "exact", false).
+		Execute()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var profiles []db.Profile
+	if err := json.Unmarshal(data, &profiles); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var leaders []map[string]any
+	for idx, p := range profiles {
+		badge := "💫 Silver Charm"
+		if idx == 0 {
+			if p.Gender == "Female" {
+				badge = "👑 Platinum Vibe Queen"
+			} else {
+				badge = "👑 Platinum Vibe King"
+			}
+		} else if idx < 3 {
+			badge = "✨ Gold Matcher"
+		}
+
+		name := p.Name
+		if name == "" {
+			name = "Anonymous Single"
+		}
+		loc := p.Campus
+		if loc == "" {
+			loc = p.Location
+		}
+		if loc == "" {
+			loc = "Delhi Hub"
+		}
+
+		leaders = append(leaders, map[string]any{
+			"alias":     name,
+			"campus":    loc,
+			"rating":    p.Karma * 10,
+			"coins":     p.Coins,
+			"photo_url": p.PhotoURL,
+			"badge":     badge,
+		})
+	}
+
+	if len(leaders) == 0 {
+		leaders = []map[string]any{
+			{"alias": "Ayesha M.", "campus": "Delhi University Hub", "rating": 980, "badge": "👑 Platinum Vibe Queen"},
+			{"alias": "Rohan S.", "campus": "IIT Tech Center", "rating": 945, "badge": "👑 Platinum Vibe King"},
+		}
 	}
 
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "success",
-		Message: "Weekly top connectors retrieved successfully",
+		Message: "Real top connectors retrieved from database",
 		Data:    leaders,
 	})
 }

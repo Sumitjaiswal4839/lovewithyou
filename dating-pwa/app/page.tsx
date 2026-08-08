@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
-import { useUserStore } from "@/store/useUserStore";
+import { useUserStore, Match } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { Heart, X, MapPin, Sparkles, Filter, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { Flame, Coins, WifiOff, ShieldAlert, MoreVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { calculateCompatibility } from "@/lib/compatibility";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
@@ -63,6 +64,8 @@ export default function Home() {
   const [isOffline, setIsOffline] = useState(false);
   const [liveUserCount, setLiveUserCount] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedProfile, setMatchedProfile] = useState<any>(null);
   
   const { toast } = useToast();
   const spendCoins = useUserStore((state) => state.spendCoins);
@@ -100,8 +103,8 @@ export default function Home() {
           img: p.photo_url || (p.photos && p.photos[0]) || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
           images: p.photos || [p.photo_url],
           lastActive: p.updated_at ? new Date(p.updated_at) : new Date(),
-          chemistryScore: Math.floor(Math.random() * 20) + 80,
-          crossedPathsCount: Math.floor(Math.random() * 5) + 1,
+          chemistryScore: calculateCompatibility(profile || {}, p),
+          crossedPathsCount: Math.floor(Math.random() * 3) + 1,
           mode: p.mode || "Date",
           zodiacSign: p.zodiacSign || "Leo",
         }));
@@ -246,11 +249,42 @@ export default function Home() {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
           const data = await res.json();
           const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state || `${lat.toFixed(2)},${lon.toFixed(2)}`;
+          
           setLocation(city);
-          toast(`Location found: ${city}! Showing nearby profiles.`, "success");
+
+          // ✅ Save latitude, longitude & last_active directly to Supabase
+          if (deviceId) {
+            await supabase
+              .from("profiles")
+              .update({
+                latitude: lat,
+                longitude: lon,
+                location: city,
+                last_active: new Date().toISOString()
+              })
+              .eq("device_id", deviceId);
+          }
+
+          toast(`Location found: ${city}! Saved GPS coordinates.`, "success");
         } catch (e) {
-          setLocation(`${position.coords.latitude.toFixed(2)},${position.coords.longitude.toFixed(2)}`);
-          toast("Location found! Showing nearby profiles.", "success");
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const fallbackLoc = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+          setLocation(fallbackLoc);
+
+          if (deviceId) {
+            await supabase
+              .from("profiles")
+              .update({
+                latitude: lat,
+                longitude: lon,
+                location: fallbackLoc,
+                last_active: new Date().toISOString()
+              })
+              .eq("device_id", deviceId);
+          }
+
+          toast("Location saved! Showing nearby profiles.", "success");
         }
       },
       (error) => {
@@ -309,13 +343,29 @@ export default function Home() {
            
            // If right or super like, check for match
            if (direction === "right" || isSuperLike) {
-             if (data.is_match || targetProfile.id === "1") { 
-                // For demo purposes, let's auto-match with Priya (id 1) if swiped right
+             if (data.is_match || targetProfile.id === "1" || Math.random() > 0.4) { 
                 if (targetProfile.id === "1" && !data.is_match) {
                    const u1 = deviceId < targetProfile.id ? deviceId : targetProfile.id;
                    const u2 = deviceId > targetProfile.id ? deviceId : targetProfile.id;
                    await supabase.from("matches").insert({ user1_id: u1, user2_id: u2 });
                 }
+                 const matchItem: Match = {
+                   id: targetProfile.id,
+                   name: targetProfile.name,
+                   img: targetProfile.img || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
+                   karma: targetProfile.karma || 100,
+                   campus: targetProfile.campus || "University",
+                   hobbies: targetProfile.hobbies || ["Dating"],
+                   lastActive: targetProfile.lastActive || new Date(),
+                   chemistryScore: targetProfile.chemistryScore || 90,
+                   crossedPathsCount: targetProfile.crossedPathsCount || 1,
+                   mode: (targetProfile.mode as any) || "Date",
+                   isMutual: true,
+                   matchTimestamp: Date.now(),
+                 };
+                 addMatch(matchItem);
+                setMatchedProfile(targetProfile);
+                setShowMatchModal(true);
                 toast(`It's a Match with ${targetProfile.name}! 🎉`, "success");
              }
            }
@@ -716,6 +766,58 @@ export default function Home() {
               className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold transition"
             >
               Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Match Celebration Modal */}
+      {showMatchModal && matchedProfile && (
+        <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white mb-6 shadow-[0_0_40px_rgba(244,63,94,0.6)] animate-bounce">
+            <Heart size={48} fill="currentColor" />
+          </div>
+
+          <span className="text-xs font-black uppercase tracking-widest text-rose-400 bg-rose-500/20 px-3 py-1 rounded-full border border-rose-500/30 mb-2">
+            IT&apos;S A MATCH! 🎉
+          </span>
+
+          <h2 className="text-3xl font-black text-white mb-2">
+            You &amp; {matchedProfile.name} Liked Each Other!
+          </h2>
+          <p className="text-xs text-gray-400 max-w-xs mb-8">
+            Spark a connection right now! Send a message or try a flirt game.
+          </p>
+
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <img
+              src={profile?.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80"}
+              alt="My Avatar"
+              className="w-20 h-20 rounded-full object-cover border-4 border-rose-500 shadow-lg"
+            />
+            <div className="text-rose-500 text-2xl font-black">💖</div>
+            <img
+              src={matchedProfile.img || matchedProfile.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&q=80"}
+              alt="Match Avatar"
+              className="w-20 h-20 rounded-full object-cover border-4 border-pink-500 shadow-lg"
+            />
+          </div>
+
+          <div className="w-full max-w-xs space-y-3">
+            <button
+              onClick={() => {
+                setShowMatchModal(false);
+                router.push(`/chat/${matchedProfile.id}`);
+              }}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 text-white font-black text-sm shadow-lg shadow-rose-500/40 active:scale-95 transition"
+            >
+              💬 Send a Message Now
+            </button>
+
+            <button
+              onClick={() => setShowMatchModal(false)}
+              className="w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs transition"
+            >
+              Keep Swiping
             </button>
           </div>
         </div>

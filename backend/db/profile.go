@@ -102,7 +102,7 @@ func GetOrCreateProfile(deviceID string) (*Profile, error) {
 }
 
 // UpdateCoins adds or subtracts coins from a profile securely
-func UpdateCoins(deviceID string, amount int) (*Profile, error) {
+func UpdateCoins(deviceID string, amount int, description string) (*Profile, error) {
 	profile, err := GetProfile(deviceID)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,63 @@ func UpdateCoins(deviceID string, amount int) (*Profile, error) {
 	}
 
 	profile.Coins = newBalance
-	return UpsertProfile(*profile)
+	updated, err := UpsertProfile(*profile)
+	if err == nil {
+		transType := "EARNED"
+		if amount < 0 {
+			transType = "SPENT"
+		}
+		if description == "" {
+			if amount > 0 {
+				description = "Coins Earned"
+			} else {
+				description = "Coins Spent"
+			}
+		}
+		_ = LogCoinTransaction(deviceID, amount, transType, description)
+	}
+	return updated, err
+}
+
+type CoinTransaction struct {
+	ID              string `json:"id,omitempty"`
+	DeviceID        string `json:"device_id"`
+	Amount          int    `json:"amount"`
+	TransactionType string `json:"transaction_type"`
+	Description     string `json:"description"`
+	CreatedAt       string `json:"created_at,omitempty"`
+}
+
+func LogCoinTransaction(deviceID string, amount int, transType string, description string) error {
+	if Client == nil {
+		return nil
+	}
+	tx := CoinTransaction{
+		DeviceID:        deviceID,
+		Amount:          amount,
+		TransactionType: transType,
+		Description:     description,
+	}
+	_, _, err := Client.From("coin_transactions").Insert(tx, false, "", "", "").Execute()
+	return err
+}
+
+func GetCoinHistory(deviceID string) ([]CoinTransaction, error) {
+	if Client == nil {
+		return []CoinTransaction{}, nil
+	}
+	data, _, err := Client.From("coin_transactions").
+		Select("*", "exact", false).
+		Eq("device_id", deviceID).
+		Execute()
+	if err != nil {
+		return []CoinTransaction{}, err
+	}
+	var history []CoinTransaction
+	if err := json.Unmarshal(data, &history); err != nil {
+		return []CoinTransaction{}, err
+	}
+	return history, nil
 }
 
 type Swipe struct {

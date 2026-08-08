@@ -16,7 +16,10 @@ const FULLSCREEN_PAGES = [
   "/midnight-roulette", "/nearby-map", "/chat/"
 ];
 
+import { usePresence } from "@/hooks/usePresence";
+
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
+  usePresence();
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin");
   const isSetup = pathname?.startsWith("/setup");

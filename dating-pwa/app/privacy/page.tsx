@@ -1,73 +1,100 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, MapPin, Database, Server, Smartphone, Cpu } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function PrivacyPolicyPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col h-screen bg-dark-bg">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-10">
-        <button onClick={() => router.back()} className="p-2 bg-white/10 rounded-full text-white">
+      <div className="flex items-center gap-4 p-4 border-b border-white/10 bg-black/60 backdrop-blur-md sticky top-0 z-20">
+        <button onClick={() => router.back()} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-white">Privacy Policy</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            Privacy Policy <Shield size={18} className="text-rose-500" />
+          </h1>
+          <p className="text-xs text-gray-400">Data Protection &amp; Privacy Safeguards</p>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed pb-24">
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">1. Introduction</h2>
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed pb-24 max-w-2xl mx-auto w-full">
+        
+        {/* Banner */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-start gap-3">
+          <Lock className="text-blue-400 shrink-0 mt-1" size={24} />
+          <div>
+            <h3 className="font-bold text-white text-base">Your Privacy Matters</h3>
+            <p className="text-xs text-blue-200/90 mt-1">
+              LoveWithYou uses end-to-end device security, zero password authentication, and encrypted PostgreSQL storage to protect your identity and personal conversations.
+            </p>
+          </div>
+        </div>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Smartphone size={18} className="text-rose-400" /> 1. Device Identifiers &amp; Hardware Auth
+          </h2>
           <p>
-            At LoveWithYou, your privacy is our priority. This Privacy Policy explains how we collect, use, and protect your personal data when you use our Progressive Web Application (PWA) and services.
+            We do not require or collect your password. Accounts are secured using hardware device fingerprinting (<code className="text-rose-300 font-mono text-xs bg-rose-500/10 px-1 py-0.5 rounded">device_id</code>). This hardware token is used solely to authenticate your session with our Go microservices and Supabase PostgreSQL database.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">2. Information We Collect</h2>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Profile Information:</strong> Name, age, gender, sexual orientation, faith, hobbies, and bio provided during setup.</li>
-            <li><strong>Photos & Voice:</strong> Images uploaded for your profile, voice prompts, and photos used temporarily for AI Face Verification.</li>
-            <li><strong>Location Data:</strong> When permitted, we collect your location to facilitate location-based matching (e.g., matching you with users in your State or City). We use third-party APIs (like OpenStreetMap) for reverse geocoding, but we do not track your live GPS continuously.</li>
-            <li><strong>Usage Data:</strong> Likes, matches, Karma score, and app settings (like theme and language preferences).</li>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <MapPin size={18} className="text-rose-400" /> 2. GPS Location Coordinates &amp; Radar Sonar
+          </h2>
+          <p>
+            When location permissions are explicitly granted:
+          </p>
+          <ul className="list-disc pl-5 space-y-1.5 text-gray-400 text-xs mt-2">
+            <li>We collect your exact <code className="text-rose-300 font-mono">latitude</code> and <code className="text-rose-300 font-mono">longitude</code> coordinates to display active singles on the nearby Radar Map.</li>
+            <li>City and town locality names are reverse-geocoded via secure OpenStreetMap APIs.</li>
+            <li>You can disable location permissions at any time from your device settings or profile.</li>
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">3. How We Use Your Data</h2>
-          <p>We use your information strictly to operate and improve the LoveWithYou experience:</p>
-          <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>To run our matching algorithm and show you relevant profiles based on your preferences.</li>
-            <li>To manage virtual currency (Coins) and daily unlock limits.</li>
-            <li>To send Push Notifications regarding matches or messages.</li>
-            <li>To verify your identity (Blue Tick verification) to keep the community safe.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">4. Data Sharing & Security</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Database size={18} className="text-rose-400" /> 3. Media &amp; Cloudinary Storage
+          </h2>
           <p>
-            We <strong>do not</strong> sell your personal data to third-party data brokers. We may share limited data with trusted service providers (like Supabase for database hosting and Render for backend services) solely for operating the App. All data is transmitted securely via HTTPS.
+            Profile photos, student verification cards, and chat media are securely processed and hosted via Cloudinary encrypted media servers. We never sell your photos or share them with third-party advertisers.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">5. User Control & Deletion</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Cpu size={18} className="text-rose-400" /> 4. WebRTC Audio Streaming Privacy
+          </h2>
           <p>
-            You have full control over your data. You can edit your profile details or change your location preferences at any time. You may also permanently delete your account, matches, and data via the Settings menu. Upon deletion, your profile will immediately be removed from our systems.
+            3-Minute Blind Date voice calls operate on direct peer-to-peer WebRTC connections with encrypted media channels. Microphone audio streams directly between users during active calls and is <strong>never recorded, listened to, or stored</strong> on our servers.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">6. Contact Us</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Server size={18} className="text-rose-400" /> 5. Payment Transaction Privacy (Razorpay)
+          </h2>
           <p>
-            If you have questions about this Privacy Policy or how your data is handled, you can use the "Send Feedback" option within the App settings.
+            Razorpay processes all coin purchases securely. LoveWithYou never stores your full Credit Card numbers or UPI PINs. We store only anonymized transaction receipts and coin audit ledger entries in our Supabase backend.
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Eye size={18} className="text-rose-400" /> 6. Data Rights &amp; Deletion
+          </h2>
+          <p>
+            You retain 100% ownership of your profile. Tapping &quot;Delete Account&quot; in Settings permanently purges your profile, photos, chat history, and coin records from Supabase PostgreSQL tables instantly.
           </p>
         </section>
 
         <div className="text-center pt-8 pb-4 text-xs text-gray-500">
-          Last Updated: July 2026
+          Last Updated: August 2026 • LoveWithYou Data Protection Office
         </div>
       </div>
     </div>

@@ -69,6 +69,13 @@ func (h *Hub) Run() {
 			}
 			h.mu.Unlock()
 		case message := <-h.broadcast:
+			var rm struct {
+				RoomID   string `json:"room_id,omitempty"`
+				DeviceID string `json:"device_id,omitempty"`
+				Content  string `json:"content,omitempty"`
+			}
+			_ = json.Unmarshal(message, &rm)
+
 			// Basic Toxicity AI Filter Mock
 			msgStr := string(message)
 			if strings.Contains(strings.ToLower(msgStr), "stupid") || strings.Contains(strings.ToLower(msgStr), "idiot") {
@@ -83,7 +90,9 @@ func (h *Hub) Run() {
 				
 				h.mu.Lock()
 				for client := range h.clients {
-					client.send <- warnBytes
+					if rm.RoomID == "" || client.RoomID == rm.RoomID {
+						client.send <- warnBytes
+					}
 				}
 				h.mu.Unlock()
 				continue
@@ -91,6 +100,16 @@ func (h *Hub) Run() {
 
 			h.mu.Lock()
 			for client := range h.clients {
+				// Room-based routing: If room_id is specified in message or client, only route within that room
+				if rm.RoomID != "" {
+					if client.RoomID != rm.RoomID {
+						continue
+					}
+				} else if client.RoomID != "" {
+					// Client is in a private room, skip global broadcasts
+					continue
+				}
+
 				select {
 				case client.send <- message:
 				default:

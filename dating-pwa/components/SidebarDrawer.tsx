@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
+import { CoinHistoryModal } from "@/components/CoinHistoryModal";
 
 interface SidebarDrawerProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const profile = useUserStore((state) => state.profile);
   const coins = useUserStore((state) => state.coins);
   const spendCoins = useUserStore((state) => state.spendCoins);
+  const [showCoinHistory, setShowCoinHistory] = useState(false);
   const canSearch = useUserStore((state) => state.canSearch);
   const incrementSearchCount = useUserStore((state) => state.incrementSearchCount);
   const matchPreferences = useUserStore((state) => state.matchPreferences);
@@ -158,9 +160,12 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-bold bg-pink-500/20 text-pink-300 px-2.5 py-0.5 rounded-full border border-pink-500/30">
+                    <button 
+                      onClick={() => setShowCoinHistory(true)}
+                      className="flex items-center gap-1 text-xs font-bold bg-pink-500/20 text-pink-300 hover:bg-pink-500/30 px-2.5 py-0.5 rounded-full border border-pink-500/30 transition cursor-pointer"
+                    >
                       🪙 {coins || 0} Coins
-                    </span>
+                    </button>
 
                     <button 
                       onClick={() => navigateTo("/premium")}
@@ -341,6 +346,15 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   )}
                 </div>
 
+                {/* Coin History & Ledger */}
+                <button onClick={() => setShowCoinHistory(true)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
+                  <div className="flex items-center gap-4">
+                    <Coins size={20} className="text-amber-500" />
+                    <span className="text-sm font-extrabold text-slate-800">Coin History &amp; Ledger</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">Transparent</span>
+                </button>
+
                 {/* Daily Cupid's Slot Machine */}
                 <button onClick={() => navigateTo('/profile')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
                   <Award size={20} className="text-amber-500" />
@@ -381,6 +395,9 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
               <span className="text-[10px] text-gray-400">v5.4.30 VIP</span>
             </div>
           </motion.div>
+
+          {/* Coin History Modal */}
+          <CoinHistoryModal isOpen={showCoinHistory} onClose={() => setShowCoinHistory(false)} />
 
           {/* User Search Detail Popup */}
           {selectedUser && (

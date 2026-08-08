@@ -1,78 +1,104 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Scale, Coins, CreditCard, Lock, Radio, UserCheck, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function TermsPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col h-screen bg-dark-bg">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-10">
-        <button onClick={() => router.back()} className="p-2 bg-white/10 rounded-full text-white">
+      <div className="flex items-center gap-4 p-4 border-b border-white/10 bg-black/60 backdrop-blur-md sticky top-0 z-20">
+        <button onClick={() => router.back()} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-white">Terms & Conditions</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            Terms &amp; Conditions <Scale size={18} className="text-rose-500" />
+          </h1>
+          <p className="text-xs text-gray-400">LoveWithYou Platform Agreement</p>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed pb-24">
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">1. Acceptance of Terms</h2>
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 text-gray-300 text-sm leading-relaxed pb-24 max-w-2xl mx-auto w-full">
+        
+        {/* Banner */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-500/20 to-purple-500/20 border border-rose-500/30 flex items-start gap-3">
+          <ShieldCheck className="text-rose-400 shrink-0 mt-1" size={24} />
+          <div>
+            <h3 className="font-bold text-white text-base">Legal Agreement</h3>
+            <p className="text-xs text-rose-200/90 mt-1">
+              Please read these terms carefully before accessing LoveWithYou (&quot;Platform&quot;). By creating an account or swiping on the platform, you agree to all terms outlined below.
+            </p>
+          </div>
+        </div>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <UserCheck size={18} className="text-rose-400" /> 1. Eligibility &amp; Age Limit
+          </h2>
           <p>
-            By accessing or using the LoveWithYou application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree to all the terms and conditions, then you may not access the App.
+            You must be at least 18 years of age to access or use LoveWithYou. By accessing the platform, you warrant that you are legally authorized under Indian law and local jurisdiction to enter into binding agreements. Accounts suspected of underage usage will be permanently terminated with zero refund.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">2. Eligibility</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Lock size={18} className="text-rose-400" /> 2. Hardware Device Fingerprint Authentication
+          </h2>
           <p>
-            You must be at least 18 years of age to create an account on LoveWithYou and use the Service. By creating an account, you represent and warrant that you are legally capable of entering into a binding contract.
+            LoveWithYou utilizes passwordless hardware device fingerprinting (<code className="text-rose-300 font-mono text-xs bg-rose-500/10 px-1 py-0.5 rounded">device_id</code>) for seamless authentication. Your account is bound to your physical device fingerprint. You are solely responsible for maintaining physical control over your device to prevent unauthorized access to your coin wallet or private chats.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">3. User Conduct & Safety</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Coins size={18} className="text-rose-400" /> 3. Virtual Coins &amp; Transaction Audit Ledger
+          </h2>
           <p>
-            You agree to use LoveWithYou for its intended purposes (Date, BFF, or Bizz) in a respectful manner. You agree NOT to:
+            LoveWithYou operates on a virtual currency model (&quot;Coins&quot;). Coins are used to unlock premium flirt features, secret crushes, 3-minute blind voice calls, and direct matches.
           </p>
-          <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>Post any content that is hate speech, threatening, sexually explicit or pornographic.</li>
-            <li>Use the Service for any illegal or unauthorized purpose.</li>
-            <li>Spam, solicit money from, or defraud any members.</li>
-            <li>Impersonate any person or entity without permission.</li>
+          <ul className="list-disc pl-5 space-y-1.5 text-gray-400 text-xs mt-2">
+            <li>Coins have no real-world monetary value and cannot be exchanged for fiat currency.</li>
+            <li>All coin earnings and expenditures are permanently logged in our Supabase Transaction Audit Ledger.</li>
+            <li>Verified college students with approved Student IDs enjoy an automatic 50% discount on all coin store packages.</li>
           </ul>
-          <p className="mt-2">
-            Users reported for violating these guidelines may suffer a drop in their "Karma Score" or face permanent account termination.
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <CreditCard size={18} className="text-rose-400" /> 4. Razorpay Payment Gateway &amp; Refund Policy
+          </h2>
+          <p>
+            Coin purchases processed via Razorpay (UPI, NetBanking, Credit/Debit Cards) are processed immediately. All payment sales are final and non-refundable once coins are credited to your device account. In the event of a failed transaction where money was debited without coins being credited, please contact support with your Razorpay Payment ID for instant manual verification.
           </p>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">4. Virtual Currency (Coins) & Features</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Radio size={18} className="text-rose-400" /> 5. WebRTC Live Voice Calls &amp; Conduct
+          </h2>
           <p>
-            The App utilizes a virtual currency system ("Coins"). Coins can be earned through app engagement (like referrals) or purchased. Coins are used to unlock premium features, such as unlocking daily likes and matches (e.g., spending 50 coins to unblur connections).
+            During 3-minute Blind Audio Dates and P2P voice sessions, peer-to-peer WebRTC connections stream live microphone audio between users.
           </p>
-          <p className="mt-2">
-            All purchases of Coins are final and non-refundable. Coins have no real-world monetary value and cannot be exchanged for cash. LoveWithYou reserves the right to modify the cost of features at any time.
-          </p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-400 text-xs mt-2">
+            <li>Harassment, abusive language, non-consensual sexual speech, or recording call audio is strictly prohibited.</li>
+            <li>Mutual &quot;YES&quot; votes are required before profile avatars and real names are unblurred.</li>
+          </ul>
         </section>
 
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">5. Account Termination</h2>
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <AlertTriangle size={18} className="text-amber-400" /> 6. Code of Conduct &amp; Karma System
+          </h2>
           <p>
-            You can delete your account at any time via the Settings menu. LoveWithYou reserves the right to suspend or terminate your account without notice if we believe you have violated these Terms. Upon deletion, all your data, matches, and accumulated coins will be permanently removed.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-white font-bold text-lg mb-2">6. Changes to Terms</h2>
-          <p>
-            We reserve the right to modify these terms at any time. Your continued use of the App following any changes constitutes acceptance of those changes.
+            Every user maintains a dynamic Karma Score (default 100). Harassment, screenshotting private media, fake profiles, or spamming will result in immediate Karma deductions, temporary bans, or permanent device bans without refund.
           </p>
         </section>
 
         <div className="text-center pt-8 pb-4 text-xs text-gray-500">
-          Last Updated: July 2026
+          Last Updated: August 2026 • LoveWithYou Legal Compliance
         </div>
       </div>
     </div>

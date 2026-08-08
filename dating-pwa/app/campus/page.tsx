@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Lock, Calendar, Users, ChevronRight, Zap, Heart, Flame, Send, MessageCircle, Sparkles, UserPlus, ShieldCheck, ThumbsUp } from "lucide-react";
+import { GraduationCap, Lock, Calendar, Users, ChevronRight, Zap, Heart, Flame, Send, MessageCircle, Sparkles, UserPlus, ShieldCheck, ThumbsUp, Tag, Percent, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,27 +33,57 @@ export default function CampusPage() {
     { id: "c3", text: "Best luck to everyone in Third Year Engineering for tomorrow's lab evaluations! Let's crush this! 🚀", tag: "CS Department", time: "1d ago", likes: 18, liked: false },
   ]);
 
-  // If not a student or not verified, show lock screen
+  // If not a student or not verified, show lock screen with Guidelines
   const isVerifiedStudent = profile?.isStudent && profile?.studentVerificationStatus === 'verified';
 
   if (!isVerifiedStudent) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-dark-bg px-6 text-center font-sans">
-        <div className="w-24 h-24 rounded-full bg-indigo-500/10 flex items-center justify-center mb-6 relative border border-indigo-500/30">
-          <GraduationCap size={48} className="text-indigo-400 opacity-80" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-dark-bg px-6 py-10 text-center font-sans pb-24">
+        <div className="w-20 h-20 rounded-full bg-indigo-500/10 flex items-center justify-center mb-4 relative border border-indigo-500/30">
+          <GraduationCap size={44} className="text-indigo-400 opacity-80" />
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] rounded-full flex items-center justify-center">
-            <Lock size={32} className="text-white" />
+            <Lock size={28} className="text-white" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Campus Mode Locked 🔒</h1>
-        <p className="text-gray-400 text-sm mb-8 max-w-xs leading-relaxed">
-          Verify your student identity in your Profile to unlock Exclusive Campus Mode, Secret Crush matching, and anonymous college confessions!
+
+        <h1 className="text-2xl font-bold text-white mb-2">Campus Mode &amp; Student Perks 🎓</h1>
+        <p className="text-gray-400 text-xs mb-6 max-w-xs leading-relaxed">
+          Verify your student status to unlock Exclusive Campus Fests, Secret Crushes, and 50% Off Coin Store!
         </p>
+
+        {/* Guidelines Box */}
+        <div className="w-full max-w-xs bg-white/5 border border-indigo-500/30 rounded-2xl p-4 text-left space-y-3 mb-6 shadow-xl">
+          <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-white/10 pb-2">
+            <Percent size={14} className="text-rose-400" /> Student Verification Perks
+          </h3>
+          
+          <div className="flex items-start gap-2.5 text-xs text-gray-300">
+            <CheckCircle2 size={16} className="text-green-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white">50% Discount on Coins:</span> Automatically unlocked on all Razorpay coin packages.
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 text-xs text-gray-300">
+            <CheckCircle2 size={16} className="text-pink-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white">Secret Crush Lockbox:</span> Add 3 campus crushes privately with 100% mutual reveal matching.
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2.5 text-xs text-gray-300">
+            <CheckCircle2 size={16} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white">Anonymous Campus Confessions:</span> Post &amp; read college stories safely.
+            </div>
+          </div>
+        </div>
+
         <button 
           onClick={() => router.push('/profile')}
-          className="w-full max-w-xs py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+          className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition text-sm shadow-[0_0_20px_rgba(99,102,241,0.4)]"
         >
-          Verify Student Status Now
+          Verify Student ID Now
         </button>
       </div>
     );
@@ -112,7 +142,7 @@ export default function CampusPage() {
             Campus Hub <GraduationCap size={26} className="text-rose-400" />
           </h1>
           <span className="bg-rose-500/15 text-rose-300 px-3 py-1 rounded-full text-[11px] font-bold border border-rose-500/30 flex items-center gap-1 shadow">
-            <Zap size={13} /> Student Verified
+            <Zap size={13} /> 50% Student Discount Active
           </span>
         </div>
         <p className="text-gray-400 text-xs">{profile?.campus || "Delhi University Hub"}&apos;s Private Student Circle</p>
@@ -125,7 +155,7 @@ export default function CampusPage() {
               activeTab === "hub" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Users size={14} /> Fests & Rooms
+            <Users size={14} /> Fests &amp; Rooms
           </button>
           <button
             onClick={() => setActiveTab("crush")}
@@ -151,6 +181,20 @@ export default function CampusPage() {
           {/* TAB 1: HUB & EVENTS */}
           {activeTab === "hub" && (
             <motion.div key="hub" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+              {/* Student Perks Banner */}
+              <div className="bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 border border-indigo-500/30 rounded-2xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Tag size={24} className="text-pink-400 shrink-0" />
+                  <div>
+                    <h3 className="text-xs font-bold text-white">50% Student Discount Active 🎉</h3>
+                    <p className="text-[10px] text-gray-300">All Coin Store packages in VIP Store automatically discounted.</p>
+                  </div>
+                </div>
+                <button onClick={() => router.push('/premium')} className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] rounded-xl shrink-0">
+                  Buy Coins
+                </button>
+              </div>
+
               {/* Events Section */}
               <section>
                 <div className="flex items-center justify-between mb-4 px-1">
@@ -170,7 +214,7 @@ export default function CampusPage() {
                     </div>
                     <div className="p-4">
                       <h3 className="text-white font-bold text-sm mb-1">Tech Symphony &apos;26</h3>
-                      <p className="text-gray-400 text-xs">Annual Hackathon & Musical Night</p>
+                      <p className="text-gray-400 text-xs">Annual Hackathon &amp; Musical Night</p>
                       <div className="mt-3 flex items-center justify-between">
                         <div className="flex -space-x-2">
                           <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-dark-bg text-[10px] flex items-center justify-center font-bold">S</div>
@@ -190,7 +234,7 @@ export default function CampusPage() {
                       </div>
                     </div>
                     <div className="p-4">
-                      <h3 className="text-white font-bold text-sm mb-1">EDM & Glow Night</h3>
+                      <h3 className="text-white font-bold text-sm mb-1">EDM &amp; Glow Night</h3>
                       <p className="text-gray-400 text-xs">Exclusive student IDs entry only</p>
                       <div className="mt-3 flex items-center justify-between">
                         <div className="flex -space-x-2">
@@ -207,7 +251,7 @@ export default function CampusPage() {
               {/* Student Communities */}
               <section>
                 <h2 className="text-white font-bold text-base flex items-center gap-2 mb-4 px-1">
-                  <Users size={18} className="text-blue-400" /> Study & Chill Hangouts
+                  <Users size={18} className="text-blue-400" /> Study &amp; Chill Hangouts
                 </h2>
                 
                 <div className="space-y-3">

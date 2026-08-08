@@ -16,9 +16,11 @@ const (
 )
 
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	hub      *Hub
+	conn     *websocket.Conn
+	send     chan []byte
+	RoomID   string
+	DeviceID string
 }
 
 func (c *Client) readPump() {
@@ -82,12 +84,15 @@ func (c *Client) writePump() {
 }
 
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	roomID := r.URL.Query().Get("room_id")
+	deviceID := r.URL.Query().Get("device_id")
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), RoomID: roomID, DeviceID: deviceID}
 	client.hub.register <- client
 
 	go client.writePump()

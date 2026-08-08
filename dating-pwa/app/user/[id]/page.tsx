@@ -17,7 +17,7 @@ export default function UserProfilePage() {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", id)
+        .or(`device_id.eq.${id},id.eq.${id}`)
         .single();
         
       if (data) {

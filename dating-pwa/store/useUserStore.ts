@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { supabase } from "@/lib/supabase";
 
 export interface UserProfile {
   name: string;
@@ -69,11 +70,21 @@ export interface Friend {
   addedAt: number;
 }
 
+export interface CoinTransaction {
+  id: string;
+  device_id: string;
+  amount: number;
+  transaction_type: string;
+  description: string;
+  created_at: string;
+}
+
 interface UserState {
   deviceId: string | null;
   isAuthenticated: boolean;
   profile: UserProfile | null;
   coins: number;
+  coinHistory: CoinTransaction[];
   cashbackVault: number;
   adFreeEnabled: boolean;
   locationEnabled: boolean;
@@ -103,8 +114,9 @@ interface UserState {
   lastSearchDate: string | null;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
-  addCoins: (amount: number) => void;
-  spendCoins: (amount: number) => void;
+  addCoins: (amount: number, description?: string) => Promise<void>;
+  spendCoins: (amount: number, description?: string) => Promise<void>;
+  loadCoinHistory: () => Promise<void>;
   claimCashback: () => number;
   toggleAdFree: () => void;
   requestLocation: () => void;
@@ -249,7 +261,21 @@ export const useUserStore = create<UserState>()(
           }
         }
       },
-      addCoins: async (amount) => {
+      coinHistory: [],
+      loadCoinHistory: async () => {
+        const state = get();
+        if (!state.deviceId) return;
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/v1/coins/history/${state.deviceId}`);
+          if (res.ok) {
+            const history = await res.json();
+            set({ coinHistory: history || [] });
+          }
+        } catch (e) {
+          console.error("Error fetching coin history:", e);
+        }
+      },
+      addCoins: async (amount, description = "Earned Coins") => {
         const state = useUserStore.getState();
         const isVerifiedStudent = state.profile?.isStudent || state.profile?.studentVerificationStatus === 'verified';
         const finalAmount = isVerifiedStudent ? amount * 2 : amount;
@@ -266,15 +292,15 @@ export const useUserStore = create<UserState>()(
             await fetch(`${BACKEND_URL}/coins/earn`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount }),
+              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
+            state.loadCoinHistory();
           }
         } catch (e) {
           console.error("Failed to add coins to backend", e);
-          set({ coins: state.coins });
         }
       },
-      spendCoins: async (amount) => {
+      spendCoins: async (amount, description = "Spent Coins") => {
         const state = useUserStore.getState();
         const isVerifiedStudent = state.profile?.isStudent || state.profile?.studentVerificationStatus === 'verified';
         const finalAmount = isVerifiedStudent ? Math.floor(amount / 2) : amount;
@@ -291,12 +317,12 @@ export const useUserStore = create<UserState>()(
             await fetch(`${BACKEND_URL}/coins/spend`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount }),
+              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
+            state.loadCoinHistory();
           }
         } catch (e) {
           console.error("Failed to spend coins on backend", e);
-          set({ coins: state.coins });
         }
       },
       claimCashback: () => {
@@ -311,7 +337,30 @@ export const useUserStore = create<UserState>()(
         return claimed;
       },
       toggleAdFree: () => set((state) => ({ adFreeEnabled: !state.adFreeEnabled })),
-      requestLocation: () => set({ locationEnabled: true }),
+      requestLocation: async () => {
+        set({ locationEnabled: true });
+        if (typeof navigator !== "undefined" && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              const state = useUserStore.getState();
+              if (state.profile) {
+                const updated = { ...state.profile, latitude: lat, longitude: lng };
+                set({ profile: updated });
+              }
+              if (state.deviceId) {
+                await supabase
+                  .from("profiles")
+                  .update({ latitude: lat, longitude: lng })
+                  .eq("device_id", state.deviceId);
+              }
+            },
+            (err) => console.warn("GPS Geolocation error:", err),
+            { enableHighAccuracy: true }
+          );
+        }
+      },
       setLocation: (loc: string) => set((state) => ({ profile: state.profile ? { ...state.profile, location: loc } : null })),
       setLiveUserCount: (count) => set({ liveUserCount: count }),
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),

@@ -20,12 +20,17 @@ export function useDeviceAuth() {
         const result = await fp.get();
         const visitorId = result.visitorId;
 
-        // Optionally, you can hit your Go backend here:
-        // await fetch("http://localhost:8080/auth/device", {
-        //   method: "POST",
-        //   headers: { "Content-Type": "application/json" },
-        //   body: JSON.stringify({ device_id: visitorId })
-        // });
+        // Sync device authentication with Go backend & Supabase
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+        try {
+          await fetch(`${BACKEND_URL}/auth/device`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ device_id: visitorId }),
+          });
+        } catch (authErr) {
+          console.warn("Backend auth registration offline fallback:", authErr);
+        }
 
         setDeviceId(visitorId);
         

@@ -53,6 +53,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/auth/device", DeviceAuth).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/earn", EarnCoins).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/spend", SpendCoins).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/coins/history/{device_id}", GetCoinHistory).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/profile/{device_id}", GetProfile).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/profile", UpdateProfile).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/swipes", RecordSwipe).Methods(http.MethodPost, http.MethodOptions)
@@ -88,6 +89,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/safety/sos-confirm", ConfirmSafeCheckin).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/screenshot-violation", ReportScreenshotViolation).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/p2p/webrtc-signal", WebRTCSignalExchange).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/push/broadcast", BroadcastPushNotification).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/redis/pubsub/publish", RedisPubSubClusterBroadcast).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
@@ -126,6 +128,46 @@ func SendPushNotification(deviceID, message string) {
 	defer res.Body.Close()
 }
 
+func BroadcastPushNotification(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	if req.Message == "" {
+		req.Message = "A new event is live near you! 💖"
+	}
+	if req.Title == "" {
+		req.Title = "LoveWithYou Update"
+	}
+
+	payload, _ := json.Marshal(map[string]string{
+		"title": req.Title,
+		"body":  req.Message,
+	})
+
+	successCount := 0
+	for _, sub := range pushSubscriptions {
+		res, err := webpush.SendNotification(payload, sub, &webpush.Options{
+			Subscriber:      "mailto:admin@lovewithyou.app",
+			VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
+			VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
+			TTL:             30,
+		})
+		if err == nil && res != nil {
+			successCount++
+			res.Body.Close()
+		}
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":           "broadcast_sent",
+		"sentCount":        successCount,
+		"totalSubscribers": len(pushSubscriptions),
+	})
+}
+
 func DeviceAuth(w http.ResponseWriter, r *http.Request) {
 	var req map[string]string
 	json.NewDecoder(r.Body).Decode(&req)
@@ -145,8 +187,9 @@ func DeviceAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 type CoinRequest struct {
-	DeviceID string `json:"device_id"`
-	Amount   int    `json:"amount"`
+	DeviceID    string `json:"device_id"`
+	Amount      int    `json:"amount"`
+	Description string `json:"description,omitempty"`
 }
 
 func EarnCoins(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +199,12 @@ func EarnCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := db.UpdateCoins(req.DeviceID, req.Amount)
+	desc := req.Description
+	if desc == "" {
+		desc = "Earned Coins"
+	}
+
+	profile, err := db.UpdateCoins(req.DeviceID, req.Amount, desc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -171,12 +219,31 @@ func SpendCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := db.UpdateCoins(req.DeviceID, -req.Amount)
+	desc := req.Description
+	if desc == "" {
+		desc = "Spent Coins"
+	}
+
+	profile, err := db.UpdateCoins(req.DeviceID, -req.Amount, desc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]interface{}{"status": "success", "coins": profile.Coins})
+}
+
+func GetCoinHistory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	deviceID := vars["device_id"]
+
+	history, err := db.GetCoinHistory(deviceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
 }
 
 type SwipeRequest struct {

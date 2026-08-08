@@ -287,8 +287,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE TABLE IF NOT EXISTS public.coin_transactions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    device_id TEXT NOT NULL REFERENCES public.profiles(device_id) ON DELETE CASCADE,
+    amount INT NOT NULL, -- Positive for earn, negative for spend
+    transaction_type TEXT NOT NULL, -- e.g., 'EARNED', 'SPENT'
+    description TEXT NOT NULL, -- e.g., 'Watched an Ad', 'Played Flirt Game', 'Random Chat Unlock'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.coin_transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public access on coin_transactions" ON public.coin_transactions;
+CREATE POLICY "Allow public access on coin_transactions" ON public.coin_transactions FOR ALL USING (true) WITH CHECK (true);
+CREATE INDEX IF NOT EXISTS idx_coin_tx_device ON public.coin_transactions(device_id);
+
 -- Attach the cleanup trigger to messages table (was missing before)
 DROP TRIGGER IF EXISTS trigger_clean_ephemeral ON public.messages;
 CREATE TRIGGER trigger_clean_ephemeral
     AFTER INSERT ON public.messages
     FOR EACH ROW EXECUTE FUNCTION clean_expired_ephemeral_messages();
+

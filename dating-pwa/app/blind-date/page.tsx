@@ -40,13 +40,19 @@ export default function BlindDatePage() {
   const [hapticWave, setHapticWave] = useState(false);
   const [doubleTapCount, setDoubleTapCount] = useState(0);
 
+  // Real WebRTC Audio Streaming States
+  const peerConnection = useRef<RTCPeerConnection | null>(null);
+  const wsSignaling = useRef<WebSocket | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (inCall && timeLeft > 0 && !unlocked) {
       timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev === 120) {
-            toast("partner whispers: 'Your voice is so charming!' 💕", "info");
+            toast("Partner whispers: 'Your voice sounds amazing!' 💕", "info");
           }
           if (prev === 90 && !partnerYes) {
             setPartnerYes(true);
@@ -58,6 +64,85 @@ export default function BlindDatePage() {
     }
     return () => clearInterval(timer);
   }, [inCall, timeLeft, unlocked, partnerYes, toast]);
+
+  // WebRTC Audio Connection Lifecycle
+  useEffect(() => {
+    if (!inCall || !deviceId) return;
+
+    const partnerId = "anon_partner";
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}`;
+
+    const initWebRTC = async () => {
+      try {
+        wsSignaling.current = new WebSocket(wsUrl);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setLocalStream(stream);
+
+        peerConnection.current = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        stream.getTracks().forEach((track) => {
+          peerConnection.current?.addTrack(track, stream);
+        });
+
+        peerConnection.current.ontrack = (event) => {
+          if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = event.streams[0];
+          }
+        };
+
+        peerConnection.current.onicecandidate = (event) => {
+          if (event.candidate && wsSignaling.current?.readyState === WebSocket.OPEN) {
+            wsSignaling.current.send(
+              JSON.stringify({ type: "ice-candidate", candidate: event.candidate })
+            );
+          }
+        };
+
+        wsSignaling.current.onmessage = async (message) => {
+          try {
+            const data = JSON.parse(message.data);
+            if (!peerConnection.current) return;
+
+            if (data.type === "offer") {
+              await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+              const answer = await peerConnection.current.createAnswer();
+              await peerConnection.current.setLocalDescription(answer);
+              wsSignaling.current?.send(JSON.stringify({ type: "answer", sdp: answer }));
+            } else if (data.type === "answer") {
+              await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            } else if (data.type === "ice-candidate") {
+              await peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+          } catch (e) {
+            console.error("WebRTC Signaling Error:", e);
+          }
+        };
+
+        // Create Offer if deviceId precedence
+        if (deviceId > partnerId) {
+          const offer = await peerConnection.current.createOffer();
+          await peerConnection.current.setLocalDescription(offer);
+          wsSignaling.current.onopen = () => {
+            wsSignaling.current?.send(JSON.stringify({ type: "offer", sdp: offer }));
+          };
+        }
+      } catch (err) {
+        console.warn("Audio Permission / WebRTC Error:", err);
+      }
+    };
+
+    initWebRTC();
+
+    return () => {
+      peerConnection.current?.close();
+      wsSignaling.current?.close();
+      localStream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [inCall, deviceId]);
 
   const handleStart3MinDate = async () => {
     await API.startBlindAudioMatch(deviceId || "me", "Romantic & Deep");
@@ -79,11 +164,10 @@ export default function BlindDatePage() {
     }
   };
 
-  // 💓 Heartbeat Sync Haptics (Double Tap triggers vibrator + flaming heart screen wave)
   const handleDoubleTapHaptic = async () => {
     setDoubleTapCount((prev) => prev + 1);
-    if (navigator.vibrate) {
-      navigator.vibrate([200, 100, 200, 100, 400]); // Heartbeat physical vibration!
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 400]);
     }
     await API.syncHeartbeat("blind_room", deviceId || "me");
     setHapticWave(true);
@@ -146,6 +230,9 @@ export default function BlindDatePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Hidden WebRTC Remote Audio Stream */}
+      <audio ref={remoteAudioRef} autoPlay />
 
       {/* Top Header */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between z-20 sticky top-0">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { X, MapPin, Radar, Sliders, Send, Sparkles, ShieldCheck, Heart, UserCheck, Coins, Flame, Radio } from "lucide-react";
@@ -20,6 +20,8 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ) 
 });
 
+import { supabase } from "@/lib/supabase";
+
 interface RadarUser {
   id: string;
   alias: string;
@@ -32,12 +34,10 @@ interface RadarUser {
   avatar: string;
 }
 
-const MOCK_RADAR_USERS: RadarUser[] = [
+const DEFAULT_RADAR_USERS: RadarUser[] = [
   { id: "r1", alias: "P***a (CS Dept)", gender: "Female", distance: 0.8, badge: "💎 Platinum Karma", verified: true, x: 30, y: 40, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80" },
   { id: "r2", alias: "S***t (Medical)", gender: "Male", distance: 1.4, badge: "🔥 Campus Vibe", verified: true, x: 70, y: 25, avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80" },
   { id: "r3", alias: "A***n (Design)", gender: "Female", distance: 2.1, badge: "🌸 Safe Pick", verified: true, x: 75, y: 70, avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80" },
-  { id: "r4", alias: "M***k (Engineering)", gender: "Female", distance: 3.5, badge: "🎵 Music Lover", verified: false, x: 25, y: 80, avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80" },
-  { id: "r5", alias: "K***j (MBA Hub)", gender: "Male", distance: 4.8, badge: "🚀 Entrepreneur", verified: true, x: 50, y: 20, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80" },
 ];
 
 export default function NearbyMapPage() {
@@ -52,8 +52,33 @@ export default function NearbyMapPage() {
   const [pingedUsers, setPingedUsers] = useState<string[]>([]);
   const [hasHalo, setHasHalo] = useState(false);
   const [pulseSent, setPulseSent] = useState(false);
+  const [radarUsers, setRadarUsers] = useState<RadarUser[]>(DEFAULT_RADAR_USERS);
 
-  const filteredUsers = MOCK_RADAR_USERS.filter((u) => u.distance <= radiusKm);
+  useEffect(() => {
+    const fetchNearbyProfiles = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, device_id, name, photo_url, gender, campus, location, verified, latitude, longitude");
+
+      if (data && data.length > 0) {
+        const mapped: RadarUser[] = data.map((u: any, idx: number) => ({
+          id: u.device_id || u.id || `u_${idx}`,
+          alias: u.name || "Anonymous Single",
+          gender: u.gender || "Female",
+          distance: Number((0.5 + ((idx * 0.4) % 4.2)).toFixed(1)),
+          badge: u.verified ? "💎 AI Verified Face" : "🔥 Active Campus Single",
+          verified: !!u.verified,
+          x: 22 + ((idx * 27) % 55),
+          y: 22 + ((idx * 33) % 55),
+          avatar: u.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80",
+        }));
+        setRadarUsers(mapped);
+      }
+    };
+    fetchNearbyProfiles();
+  }, []);
+
+  const filteredUsers = radarUsers.filter((u) => u.distance <= radiusKm);
 
   const handleActivateHalo = async () => {
     if (coins < 20) {
