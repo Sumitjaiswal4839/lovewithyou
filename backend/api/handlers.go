@@ -182,36 +182,52 @@ func BroadcastPushNotification(w http.ResponseWriter, r *http.Request) {
 	})
 }
 func DeviceAuth(w http.ResponseWriter, r *http.Request) {
-	var req map[string]string
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-	deviceID := req["device_id"]
-	if deviceID == "" {
-		http.Error(w, "device_id is required", http.StatusBadRequest)
-		return
-	}
+    // 1. Ek struct banate hain jo 'device_id' aur 'deviceId' dono accept karega
+    var req struct {
+        DeviceID      string `json:"device_id"`
+        DeviceIDCamel string `json:"deviceId"` // Frontend ke liye
+    }
 
-	profile, err := db.GetOrCreateProfile(deviceID)
-	if err != nil {
-		log.Printf("Internal error: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "invalid request body", http.StatusBadRequest)
+        return
+    }
 
-	token, err := auth.IssueDeviceToken(deviceID)
-	if err != nil {
-		http.Error(w, "Failed to issue token", http.StatusInternalServerError)
-		return
-	}
+    // 2. Dono mein se jo bhi frontend ne bheja hai, usko nikal lo
+    finalDeviceID := req.DeviceID
+    if finalDeviceID == "" {
+        finalDeviceID = req.DeviceIDCamel
+    }
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+    // 3. Agar abhi bhi empty hai, tabhi 400 error do
+    if finalDeviceID == "" {
+        http.Error(w, "device_id is required", http.StatusBadRequest)
+        return
+    }
+
+    // 4. Database se profile fetch ya create karo
+    profile, err := db.GetOrCreateProfile(finalDeviceID)
+    if err != nil {
+        log.Printf("Internal error: %v", err)
+        http.Error(w, "internal server error", http.StatusInternalServerError)
+        return
+    }
+
+    // 5. JWT Token Generate karo
+    token, err := auth.IssueDeviceToken(finalDeviceID)
+    if err != nil {
+        http.Error(w, "Failed to issue token", http.StatusInternalServerError)
+        return
+    }
+
+    // 6. Token aur Profile dono frontend ko return karo
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "authenticated",
-		"device_id": deviceID,
+		"device_id": finalDeviceID,
 		"coins":     profile.Coins,
 		"token":     token,
-	})
+    })
 }
 
 type CoinRequest struct {
