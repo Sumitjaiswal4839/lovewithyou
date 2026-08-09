@@ -90,6 +90,7 @@ export function AdminTrigger() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter passphrase"
+            autoComplete="new-password"
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center tracking-widest outline-none focus:border-red-500 text-white"
           />
           <Button type="submit" className="w-full bg-red-500 hover:bg-red-600 text-white">
