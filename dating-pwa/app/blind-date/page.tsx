@@ -70,7 +70,7 @@ export default function BlindDatePage() {
     if (!inCall || !deviceId) return;
 
     const partnerId = "anon_partner";
-    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com")?.replace(/\/+$/, "");
     const authToken = useUserStore.getState().authToken;
     const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}&token=${authToken}`;
 
@@ -399,3 +399,4 @@ export default function BlindDatePage() {
     </div>
   );
 }
+

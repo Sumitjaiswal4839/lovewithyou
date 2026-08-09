@@ -69,7 +69,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
       }
       setIsSearching(true);
       try {
-        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
         const res = await fetch(`${BACKEND_URL}/users/search?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
         setSearchResults(data || []);
@@ -436,3 +436,4 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
     </AnimatePresence>
   );
 }
+

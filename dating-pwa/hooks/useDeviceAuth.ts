@@ -21,7 +21,7 @@ export function useDeviceAuth() {
         const visitorId = result.visitorId;
 
         // Sync device authentication with Go backend & Supabase
-        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com")?.replace(/\/+$/, "");
         try {
           await fetch(`${BACKEND_URL}/auth/device`, {
             method: "POST",
@@ -44,3 +44,4 @@ export function useDeviceAuth() {
 
   return { isAuthenticated };
 }
+

@@ -8,9 +8,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { useUserStore } from "@/store/useUserStore";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
-  ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1`
-  : (process.env.NEXT_PUBLIC_API_URL || "https://lovewithyou.onrender.com/api/v1");
+const rawUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "https://lovewithyou.onrender.com";
+const cleanBaseUrl = rawUrl.replace(/\/+$/, ""); // Fix trailing slash bug
+export const API_BASE_URL = `${cleanBaseUrl}/api/v1`;
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const state = useUserStore.getState();
@@ -318,7 +318,7 @@ export const API = {
    */
   async fetchCoinHistory(deviceId: string) {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+      const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
       const res = await fetchWithAuth(`${backendUrl}/api/v1/coins/history/${deviceId}`);
       if (!res.ok) throw new Error("Failed to fetch coin history");
       return await res.json();
@@ -328,3 +328,4 @@ export const API = {
     }
   }
 };
+

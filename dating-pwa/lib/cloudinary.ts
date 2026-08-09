@@ -22,7 +22,7 @@ export async function uploadToCloudinary(
   }
 
   // 1. Fetch secure signature from our Go backend
-  const sigRes = await fetchWithAuth(`${API_BASE_URL}/api/v1/cloudinary/signature?folder=${folder}`);
+  const sigRes = await fetchWithAuth(`${API_BASE_URL}/cloudinary/signature?folder=${folder}`);
   if (!sigRes.ok) {
     throw new Error("Failed to get Cloudinary signature from backend");
   }

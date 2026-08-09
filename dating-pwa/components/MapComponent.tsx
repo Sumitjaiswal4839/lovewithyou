@@ -7,7 +7,7 @@ import L from "leaflet";
 import { useUserStore } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
 
 // Custom icon for clusters
 const createClusterIcon = (count: number) => {
@@ -109,3 +109,4 @@ export default function MapComponent() {
     </MapContainer>
   );
 }
+

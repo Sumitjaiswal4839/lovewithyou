@@ -13,7 +13,7 @@ import { Flame, Coins, WifiOff, ShieldAlert, MoreVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { calculateCompatibility } from "@/lib/compatibility";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
 
 interface DummyProfile {
   id: string;
@@ -826,3 +826,4 @@ export default function Home() {
     </div>
   );
 }
+
