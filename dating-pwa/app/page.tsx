@@ -148,7 +148,9 @@ export default function Home() {
   // WebSocket logic for Live Monitoring
   useEffect(() => {
     const authToken = useUserStore.getState().authToken;
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws"}?token=${authToken}`;
+    const baseHttp = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080").replace(/\/+$/, "");
+    const baseWs = baseHttp.replace(/^http/, 'ws');
+    const wsUrl = `${baseWs}/ws?token=${authToken}`;
     const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
