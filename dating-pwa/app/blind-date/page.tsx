@@ -71,7 +71,8 @@ export default function BlindDatePage() {
 
     const partnerId = "anon_partner";
     const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
-    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}`;
+    const authToken = useUserStore.getState().authToken;
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}&token=${authToken}`;
 
     const initWebRTC = async () => {
       try {

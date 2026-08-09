@@ -81,6 +81,7 @@ export interface CoinTransaction {
 
 interface UserState {
   deviceId: string | null;
+  authToken: string | null;
   isAuthenticated: boolean;
   profile: UserProfile | null;
   coins: number;
@@ -136,6 +137,7 @@ interface UserState {
   syncProfile: () => Promise<void>;
   subscribeToPush: () => Promise<void>;
   setLiveUserCount: (count: number) => void;
+  logout: () => void;
 }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
@@ -159,6 +161,7 @@ export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
       deviceId: null,
+      authToken: null,
       isAuthenticated: false,
       profile: null,
       coins: 100,
@@ -189,6 +192,21 @@ export const useUserStore = create<UserState>()(
       likes: [],
       friendRequests: [],
       friends: [],
+      logout: () => {
+        localStorage.removeItem("dating-storage");
+        set({
+          deviceId: null,
+          authToken: null,
+          isAuthenticated: false,
+          profile: null,
+          coins: 100,
+          matches: [],
+          likes: [],
+          friendRequests: [],
+          friends: [],
+          coinHistory: [],
+        });
+      },
       setDeviceId: async (id: string) => {
         set({ deviceId: id, isAuthenticated: true })
         try {
@@ -202,6 +220,9 @@ export const useUserStore = create<UserState>()(
             if (data.coins !== undefined) {
               set({ coins: data.coins });
             }
+            if (data.token) {
+              set({ authToken: data.token });
+            }
           }
         } catch (e) {
           console.error("Backend auth failed", e)
@@ -214,7 +235,10 @@ export const useUserStore = create<UserState>()(
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/profile`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.authToken}`
+              },
               body: JSON.stringify({ ...profile, device_id: state.deviceId }),
             })
           }
@@ -226,7 +250,9 @@ export const useUserStore = create<UserState>()(
         const state = useUserStore.getState()
         if (state.deviceId) {
           try {
-            const res = await fetch(`${BACKEND_URL}/profile/${state.deviceId}`)
+            const res = await fetch(`${BACKEND_URL}/profile/${state.deviceId}`, {
+              headers: { 'Authorization': `Bearer ${state.authToken}` }
+            })
             if (res.ok) {
               const data = await res.json()
               set({ profile: data })
@@ -252,7 +278,10 @@ export const useUserStore = create<UserState>()(
 
             await fetch(`${BACKEND_URL}/webpush/subscribe`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.authToken}`
+              },
               body: JSON.stringify({ device_id: state.deviceId, subscription: subscription })
             });
             console.log("Push notifications active!");
@@ -266,7 +295,9 @@ export const useUserStore = create<UserState>()(
         const state = get();
         if (!state.deviceId) return;
         try {
-          const res = await fetch(`${BACKEND_URL}/api/v1/coins/history/${state.deviceId}`);
+          const res = await fetch(`${BACKEND_URL}/api/v1/coins/history/${state.deviceId}`, {
+            headers: { 'Authorization': `Bearer ${state.authToken}` }
+          });
           if (res.ok) {
             const history = await res.json();
             set({ coinHistory: history || [] });
@@ -291,7 +322,10 @@ export const useUserStore = create<UserState>()(
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/coins/earn`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.authToken}`
+              },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
             state.loadCoinHistory();
@@ -316,7 +350,10 @@ export const useUserStore = create<UserState>()(
           if (state.deviceId) {
             await fetch(`${BACKEND_URL}/coins/spend`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.authToken}`
+              },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
             state.loadCoinHistory();

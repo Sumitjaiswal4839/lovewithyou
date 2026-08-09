@@ -5,7 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"dating-backend/auth"
+	"dating-backend/db"
+
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -31,6 +35,10 @@ func (c *Client) readPump() {
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	
+	// Allow 5 messages per 200ms burst
+	limiter := rate.NewLimiter(rate.Every(200*time.Millisecond), 5) 
+
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -39,6 +47,11 @@ func (c *Client) readPump() {
 			}
 			break
 		}
+		
+		if !limiter.Allow() {
+			continue // Silently drop message if rate limited
+		}
+		
 		c.hub.broadcast <- message
 	}
 }
@@ -84,8 +97,24 @@ func (c *Client) writePump() {
 }
 
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		// Fallback for query param just in case, though AuthMiddleware handles it
+		deviceID = r.URL.Query().Get("device_id")
+		if deviceID == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	roomID := r.URL.Query().Get("room_id")
-	deviceID := r.URL.Query().Get("device_id")
+	if roomID != "" {
+		isParticipant, err := db.IsMatchParticipant(deviceID, roomID)
+		if err != nil || !isParticipant {
+			http.Error(w, "forbidden - not a room participant", http.StatusForbidden)
+			return
+		}
+	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

@@ -3,9 +3,13 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   // Security check: Only allow requests with a specific Cron Secret (useful for Vercel Cron)
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET || 'dev_secret_key';
+  const cronSecret = process.env.CRON_SECRET;
 
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
+  const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

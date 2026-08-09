@@ -5,9 +5,27 @@
  * directly to the Go microservices and Supabase PostgreSQL backend.
  */
 
+import { v4 as uuidv4 } from "uuid";
+import { useUserStore } from "@/store/useUserStore";
+
 export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
   ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1`
   : (process.env.NEXT_PUBLIC_API_URL || "https://lovewithyou.onrender.com/api/v1");
+
+export async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const state = useUserStore.getState();
+  const headers = new Headers(options.headers);
+  if (state.authToken) {
+    headers.set("Authorization", `Bearer ${state.authToken}`);
+  }
+  
+  // Attach X-Request-ID on all modifying requests to prevent Replay Attacks
+  if (options.method && ["POST", "PUT", "DELETE"].includes(options.method.toUpperCase())) {
+      headers.set("X-Request-ID", uuidv4());
+  }
+  
+  return fetch(url, { ...options, headers });
+}
 
 export interface RadarPingPayload {
   senderId: string;
@@ -33,7 +51,7 @@ export const API = {
    */
   async syncState(deviceId: string, payload: any) {
     try {
-      const response = await fetch(`${API_BASE_URL}/sync`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/sync`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,7 +71,7 @@ export const API = {
    * Retrieves the user profile across devices via Hardware Hash.
    */
   async fetchProfile(deviceId: string) {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await fetchWithAuth(`${API_BASE_URL}/profile`, {
       headers: { "X-Device-Id": deviceId },
     });
     return response.json();
@@ -64,7 +82,7 @@ export const API = {
    */
   async sendRadarPing(payload: RadarPingPayload) {
     try {
-      const response = await fetch(`${API_BASE_URL}/radar/ping`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/radar/ping`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -81,7 +99,7 @@ export const API = {
    */
   async submitSecretCrush(payload: SecretCrushPayload) {
     try {
-      const response = await fetch(`${API_BASE_URL}/campus/crush`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/campus/crush`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -98,7 +116,7 @@ export const API = {
    */
   async postConfession(payload: ConfessionPayload) {
     try {
-      const response = await fetch(`${API_BASE_URL}/campus/confessions`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/campus/confessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -115,7 +133,7 @@ export const API = {
    */
   async joinAfterDarkLounge(payload: { deviceId?: string; myGender: string; targetGender: string; vibeTag: string }) {
     try {
-      const response = await fetch(`${API_BASE_URL}/lounge/join`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/lounge/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -132,7 +150,7 @@ export const API = {
    */
   async leaveAfterDarkLounge(sessionToken: string) {
     try {
-      const response = await fetch(`${API_BASE_URL}/lounge/disconnect`, {
+      const response = await fetchWithAuth(`${API_BASE_URL}/lounge/disconnect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionToken }),
@@ -146,7 +164,7 @@ export const API = {
   // --- V1 Romance & Gamified Discovery Layer ---
   async startBlindAudioMatch(deviceId: string, vibe: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/blind-audio/match`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/blind-audio/match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, vibe }),
@@ -157,7 +175,7 @@ export const API = {
 
   async syncHeartbeat(roomId: string, senderId: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/haptic/heartbeat`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/haptic/heartbeat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId, senderId, tapTimestamp: Date.now() }),
@@ -168,7 +186,7 @@ export const API = {
 
   async startDoubleDateSquad(leaderId: string, friendTag: string, squadName: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/squad/match`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/squad/match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leaderId, friendTag, squadName }),
@@ -179,7 +197,7 @@ export const API = {
 
   async rewindLastSwipe(deviceId: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/swipes/rewind`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/swipes/rewind`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
@@ -189,7 +207,7 @@ export const API = {
 
   async playFlirtGame(roomId: string, gameType: string, action: string, wager: number) {
     try {
-      const res = await fetch(`${API_BASE_URL}/chat/game/play`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/chat/game/play`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId, gameType, action, wager }),
@@ -200,7 +218,7 @@ export const API = {
 
   async broadcastPheromonePulse(senderId: string, latitude: number, longitude: number) {
     try {
-      const res = await fetch(`${API_BASE_URL}/radar/broadcast`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/radar/broadcast`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ senderId, latitude, longitude, broadcastMsg: "Someone attractive within 3km just boosted their radar!" }),
@@ -211,7 +229,7 @@ export const API = {
 
   async activateVipHalo(deviceId: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/profile/vip-halo`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/profile/vip-halo`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
@@ -221,14 +239,14 @@ export const API = {
 
   async spinDailyCupidSlot() {
     try {
-      const res = await fetch(`${API_BASE_URL}/rewards/daily-slot`, { method: "POST" });
+      const res = await fetchWithAuth(`${API_BASE_URL}/rewards/daily-slot`, { method: "POST" });
       return await res.json();
     } catch (e) { return { status: "prize_won", data: { prize: "15 Free Coins 🪙" } }; }
   },
 
   async getTopConnectorsLeaderboard() {
     try {
-      const res = await fetch(`${API_BASE_URL}/leaderboard/top-connectors`);
+      const res = await fetchWithAuth(`${API_BASE_URL}/leaderboard/top-connectors`);
       return await res.json();
     } catch (e) { 
       return { 
@@ -243,7 +261,7 @@ export const API = {
   // --- V1 Safety & High-Concurrency Infrastructure ---
   async verifySmileCatfish(deviceId: string, selfieBase64: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/safety/verify-smile`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/verify-smile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, selfieBase64 }),
@@ -254,7 +272,7 @@ export const API = {
 
   async startSosCheckinTimer(deviceId: string, locationName: string, emergencyContact: string, durationMinutes = 120) {
     try {
-      const res = await fetch(`${API_BASE_URL}/safety/sos-timer`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/sos-timer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, locationName, emergencyContact, durationMinutes }),
@@ -265,7 +283,7 @@ export const API = {
 
   async confirmSafeCheckin(deviceId: string) {
     try {
-      const res = await fetch(`${API_BASE_URL}/safety/sos-confirm`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/sos-confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
@@ -275,7 +293,7 @@ export const API = {
 
   async reportScreenshotViolation(violatorId: string, roomId: string, mediaType = "private_chat") {
     try {
-      const res = await fetch(`${API_BASE_URL}/safety/screenshot-violation`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/screenshot-violation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ violatorId, roomId, mediaType }),
@@ -286,7 +304,7 @@ export const API = {
 
   async sendWebRTCSignal(payload: { roomId: string; senderId: string; targetId: string; signalData: string; channelType: string }) {
     try {
-      const res = await fetch(`${API_BASE_URL}/p2p/webrtc-signal`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/p2p/webrtc-signal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -301,7 +319,7 @@ export const API = {
   async fetchCoinHistory(deviceId: string) {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-      const res = await fetch(`${backendUrl}/api/v1/coins/history/${deviceId}`);
+      const res = await fetchWithAuth(`${backendUrl}/api/v1/coins/history/${deviceId}`);
       if (!res.ok) throw new Error("Failed to fetch coin history");
       return await res.json();
     } catch (e) {

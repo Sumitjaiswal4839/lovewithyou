@@ -25,7 +25,7 @@ export default function AdvancedDatingWidget() {
   // 3. Emergency SOS Check-in Timer States
   const [sosActive, setSosActive] = useState(false);
   const [sosLocation, setSosLocation] = useState("Starbucks Cafe, Connaught Place");
-  const [sosPhone, setSosPhone] = useState("+91 98765-XXXXX (Best Friend)");
+  const [sosPhone, setSosPhone] = useState("friend@example.com");
 
   // 4. Finish My Sentence Teasers States
   const [sentencePrompt, setSentencePrompt] = useState("On our first weekend together, we are eating at...");
@@ -220,17 +220,19 @@ export default function AdvancedDatingWidget() {
           </div>
 
           <div className="bg-black/60 border border-white/10 focus-within:border-rose-500/50 rounded-2xl p-3 px-4 transition-all">
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-rose-400 uppercase tracking-wider mb-1">
-              <PhoneCall size={12} className="text-rose-400" /> Trusted Friend Phone / SOS Contact
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1.5">
+                <PhoneCall size={12} className="text-rose-400" /> Trusted Friend's Email ID / SOS Contact
+              </label>
+              <input 
+                type="email"
+                placeholder="friend@example.com (Best Friend's Email)"
+                value={sosPhone}
+                disabled={sosActive}
+                onChange={(e) => setSosPhone(e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-rose-500 text-xs font-bold text-white placeholder-gray-600 disabled:opacity-50"
+              />
             </div>
-            <input
-              type="text"
-              value={sosPhone}
-              disabled={sosActive}
-              onChange={(e) => setSosPhone(e.target.value)}
-              className="w-full bg-transparent text-xs sm:text-sm text-white outline-none font-bold"
-              placeholder="+91 98765-XXXXX"
-            />
           </div>
 
           <button

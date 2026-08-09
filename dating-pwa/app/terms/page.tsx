@@ -39,7 +39,7 @@ export default function TermsPage() {
             <UserCheck size={18} className="text-rose-400" /> 1. Eligibility &amp; Age Limit
           </h2>
           <p>
-            You must be at least 18 years of age to access or use LoveWithYou. By accessing the platform, you warrant that you are legally authorized under Indian law and local jurisdiction to enter into binding agreements. Accounts suspected of underage usage will be permanently terminated with zero refund.
+            Age Restriction: LoveWithYou (including the After-Dark Lounge and Midnight Roulette) is strictly for adults aged 18 and older. By accessing the platform, you warrant that you are legally authorized under Indian law and local jurisdiction to enter into binding agreements. Any user found violating this will face an immediate, permanent device ban with zero refund.
           </p>
         </section>
 
@@ -57,10 +57,10 @@ export default function TermsPage() {
             <Coins size={18} className="text-rose-400" /> 3. Virtual Coins &amp; Transaction Audit Ledger
           </h2>
           <p>
-            LoveWithYou operates on a virtual currency model (&quot;Coins&quot;). Coins are used to unlock premium flirt features, secret crushes, 3-minute blind voice calls, and direct matches.
+            LoveWithYou operates on a virtual currency model (&quot;Coins&quot;). Coins are a virtual currency used for features like Super Likes, VIP Halos, and Radar Pings.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-gray-400 text-xs mt-2">
-            <li>Coins have no real-world monetary value and cannot be exchanged for fiat currency.</li>
+            <li>Coins hold no real-world monetary value and cannot be exchanged for fiat currency or cashed out.</li>
             <li>All coin earnings and expenditures are permanently logged in our Supabase Transaction Audit Ledger.</li>
             <li>Verified college students with approved Student IDs enjoy an automatic 50% discount on all coin store packages.</li>
           </ul>
@@ -71,7 +71,7 @@ export default function TermsPage() {
             <CreditCard size={18} className="text-rose-400" /> 4. Razorpay Payment Gateway &amp; Refund Policy
           </h2>
           <p>
-            Coin purchases processed via Razorpay (UPI, NetBanking, Credit/Debit Cards) are processed immediately. All payment sales are final and non-refundable once coins are credited to your device account. In the event of a failed transaction where money was debited without coins being credited, please contact support with your Razorpay Payment ID for instant manual verification.
+            Coin purchases processed via Razorpay (UPI, NetBanking, Credit/Debit Cards) are processed immediately. All purchases of Coin Packs via Razorpay are final and non-refundable, except where required by law. In the event of a failed transaction where money was debited without coins being credited, please contact support with your Razorpay Payment ID for instant manual verification.
           </p>
         </section>
 
@@ -83,17 +83,28 @@ export default function TermsPage() {
             During 3-minute Blind Audio Dates and P2P voice sessions, peer-to-peer WebRTC connections stream live microphone audio between users.
           </p>
           <ul className="list-disc pl-5 space-y-1 text-gray-400 text-xs mt-2">
-            <li>Harassment, abusive language, non-consensual sexual speech, or recording call audio is strictly prohibited.</li>
             <li>Mutual &quot;YES&quot; votes are required before profile avatars and real names are unblurred.</li>
           </ul>
         </section>
 
         <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
           <h2 className="text-white font-bold text-base flex items-center gap-2">
-            <AlertTriangle size={18} className="text-amber-400" /> 6. Code of Conduct &amp; Karma System
+            <AlertTriangle size={18} className="text-amber-400" /> 6. Code of Conduct, Anti-Screenshot &amp; Karma System
           </h2>
           <p>
-            Every user maintains a dynamic Karma Score (default 100). Harassment, screenshotting private media, fake profiles, or spamming will result in immediate Karma deductions, temporary bans, or permanent device bans without refund.
+            Every user maintains a dynamic Karma Score (default 100). Zero-Tolerance Policy: Harassment, hate speech, deepfakes, or unsolicited explicit content will result in an instant ban and Karma deduction. 
+          </p>
+          <p className="mt-2">
+            Anti-Screenshot Rule: We employ anti-screenshot mechanisms in private chats. Attempting to bypass this to leak private conversations violates our terms and will result in heavy Karma penalties or account termination.
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <ShieldCheck size={18} className="text-rose-400" /> 7. SOS Feature Disclaimer
+          </h2>
+          <p>
+            Best-Effort Safety Tool: The &quot;Date Safe Check-in&quot; SOS timer is a supplementary safety tool, not a replacement for emergency services (Police/Ambulance). We do not guarantee 100% delivery of email alerts due to external network factors. Always exercise personal caution when meeting someone offline.
           </p>
         </section>
 

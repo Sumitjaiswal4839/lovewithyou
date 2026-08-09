@@ -65,7 +65,8 @@ export default function ChatRoomPage() {
     // 1. Generate consistent Room ID for private routing
     const roomId = [deviceId, matchId].sort().join("_");
     const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
-    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${roomId}&device_id=${deviceId}`;
+    const authToken = useUserStore.getState().authToken;
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${roomId}&device_id=${deviceId}&token=${authToken}`;
 
     try {
       wsRef.current = new WebSocket(wsUrl);
@@ -133,18 +134,7 @@ export default function ChatRoomPage() {
     if (!newMessage.trim() || !deviceId) return;
 
     const msgContent = newMessage.trim();
-    const roomId = [deviceId, matchId].sort().join("_");
     setNewMessage(""); // Optimistic UI clear
-    
-    // Send over WebSocket for real-time private room routing
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        room_id: roomId,
-        sender_id: deviceId,
-        receiver_id: matchId,
-        content: msgContent
-      }));
-    }
 
     // Optimistic insert into UI state
     const tempMsg: Message = {
@@ -157,14 +147,17 @@ export default function ChatRoomPage() {
     
     setMessages((prev) => [...prev, tempMsg]);
 
-    // Persist to Supabase messages table
-    const { error } = await supabase.from('messages').insert([{
+    // Persist to Supabase messages table and fetch real UUID
+    const { data, error } = await supabase.from('messages').insert([{
       sender_id: deviceId,
       receiver_id: matchId,
       content: msgContent
-    }]);
+    }]).select().single();
 
-    if (error) {
+    if (!error && data) {
+      // Replace the temp message with the real one from the database
+      setMessages((prev) => prev.map(m => m.id === tempMsg.id ? data as Message : m));
+    } else {
       toast("Failed to send message", "error");
       setMessages((prev) => prev.filter(m => m.id !== tempMsg.id));
     }

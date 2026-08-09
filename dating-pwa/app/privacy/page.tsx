@@ -39,48 +39,43 @@ export default function PrivacyPolicyPage() {
             <Smartphone size={18} className="text-rose-400" /> 1. Device Identifiers &amp; Hardware Auth
           </h2>
           <p>
-            We do not require or collect your password. Accounts are secured using hardware device fingerprinting (<code className="text-rose-300 font-mono text-xs bg-rose-500/10 px-1 py-0.5 rounded">device_id</code>). This hardware token is used solely to authenticate your session with our Go microservices and Supabase PostgreSQL database.
+            We do not collect your passwords. We use secure Device IDs to create a frictionless, anonymous login experience. Your identity is cryptographically tied to your device. This hardware token is used solely to authenticate your session with our Go microservices and Supabase PostgreSQL database.
           </p>
         </section>
 
         <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
           <h2 className="text-white font-bold text-base flex items-center gap-2">
-            <MapPin size={18} className="text-rose-400" /> 2. GPS Location Coordinates &amp; Radar Sonar
+            <MapPin size={18} className="text-rose-400" /> 2. Location &amp; Emergency SOS Data
           </h2>
           <p>
-            When location permissions are explicitly granted:
-          </p>
-          <ul className="list-disc pl-5 space-y-1.5 text-gray-400 text-xs mt-2">
-            <li>We collect your exact <code className="text-rose-300 font-mono">latitude</code> and <code className="text-rose-300 font-mono">longitude</code> coordinates to display active singles on the nearby Radar Map.</li>
-            <li>City and town locality names are reverse-geocoded via secure OpenStreetMap APIs.</li>
-            <li>You can disable location permissions at any time from your device settings or profile.</li>
-          </ul>
-        </section>
-
-        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
-          <h2 className="text-white font-bold text-base flex items-center gap-2">
-            <Database size={18} className="text-rose-400" /> 3. Media &amp; Cloudinary Storage
-          </h2>
-          <p>
-            Profile photos, student verification cards, and chat media are securely processed and hosted via Cloudinary encrypted media servers. We never sell your photos or share them with third-party advertisers.
+            When location permissions are explicitly granted, we display active singles on the nearby Radar Map. If you use the &quot;Date Safe Check-in&quot; feature, we temporarily collect your location and your emergency contact&apos;s email address. This data is strictly used to trigger automated safety alerts via our email provider (Resend) and is never used for marketing. You can disable location permissions at any time from your device settings.
           </p>
         </section>
 
         <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
           <h2 className="text-white font-bold text-base flex items-center gap-2">
-            <Cpu size={18} className="text-rose-400" /> 4. WebRTC Audio Streaming Privacy
+            <Database size={18} className="text-rose-400" /> 3. Media &amp; Photos
           </h2>
           <p>
-            3-Minute Blind Date voice calls operate on direct peer-to-peer WebRTC connections with encrypted media channels. Microphone audio streams directly between users during active calls and is <strong>never recorded, listened to, or stored</strong> on our servers.
+            Your profile photos, student verification cards, and 5-second disappearing snaps are securely processed via Cloudinary using signed, authenticated uploads to prevent unauthorized access. We never sell your photos or share them with third-party advertisers.
           </p>
         </section>
 
         <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
           <h2 className="text-white font-bold text-base flex items-center gap-2">
-            <Server size={18} className="text-rose-400" /> 5. Payment Transaction Privacy (Razorpay)
+            <Server size={18} className="text-rose-400" /> 4. Financial Data &amp; Payment Transaction Privacy
           </h2>
           <p>
-            Razorpay processes all coin purchases securely. LoveWithYou never stores your full Credit Card numbers or UPI PINs. We store only anonymized transaction receipts and coin audit ledger entries in our Supabase backend.
+            We do not store your credit card or UPI details. All transactions are securely processed and verified via Razorpay. We only store your virtual &quot;Coin&quot; balance and transaction history in our Supabase backend.
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Lock size={18} className="text-rose-400" /> 5. Strict Access Control
+          </h2>
+          <p>
+            Your private messages and matches are locked behind enterprise-grade Row Level Security (RLS). Nobody, not even other users, can access your private chats without authorized cryptographic tokens.
           </p>
         </section>
 
@@ -89,7 +84,16 @@ export default function PrivacyPolicyPage() {
             <Eye size={18} className="text-rose-400" /> 6. Data Rights &amp; Deletion
           </h2>
           <p>
-            You retain 100% ownership of your profile. Tapping &quot;Delete Account&quot; in Settings permanently purges your profile, photos, chat history, and coin records from Supabase PostgreSQL tables instantly.
+            You can request account deletion at any time from the Settings menu. Upon deletion, your profile, matches, and chat history are permanently purged from our active databases.
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
+            <Cpu size={18} className="text-rose-400" /> 7. WebRTC Audio Streaming Privacy
+          </h2>
+          <p>
+            3-Minute Blind Date voice calls operate on direct peer-to-peer WebRTC connections with encrypted media channels. Microphone audio streams directly between users during active calls and is <strong>never recorded, listened to, or stored</strong> on our servers.
           </p>
         </section>
 

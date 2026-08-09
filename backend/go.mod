@@ -17,4 +17,5 @@ require (
 	github.com/supabase-community/supabase-go v0.0.4 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 )

@@ -54,8 +54,7 @@ export default function AdminDashboard() {
   const [currentAdminName, setCurrentAdminName] = useState("Master Admin");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Master Secret Password
-  const MASTER_PASSWORD = "***REMOVED***";
+  // Master password handled by backend API
 
   // Navigation Menu Tabs
   const [activeTab, setActiveTab] = useState<
@@ -129,32 +128,39 @@ export default function AdminDashboard() {
   };
 
   // Handle Admin Login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (passwordInput === MASTER_PASSWORD) {
-      setIsAuthenticated(true);
-      setAdminRole("master");
-      setCurrentAdminName("Master Owner (Full Access)");
-      fetchData();
-      toast("👑 Welcome Master Admin! Full Control Unlocked.", "success");
-      return;
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordInput, username: usernameInput }),
+      });
+
+      if (!res.ok) {
+        toast("❌ Incorrect Admin Password or Username!", "error");
+        return;
+      }
+
+      const data = await res.json();
+      
+      if (data.success) {
+        setIsAuthenticated(true);
+        if (data.role === "master") {
+          setAdminRole("master");
+          setCurrentAdminName("Master Owner (Full Access)");
+          toast("👑 Welcome Master Admin! Full Control Unlocked.", "success");
+        } else {
+          setAdminRole("subadmin");
+          setCurrentAdminName(usernameInput || "Sub-Admin");
+          toast(`✅ Logged in as Sub-Admin: ${usernameInput}`, "success");
+        }
+        fetchData();
+      }
+    } catch (error) {
+      toast("❌ Connection error. Please try again.", "error");
     }
-
-    const matchedSub = subAdmins.find(
-      (sub) => sub.username.toLowerCase() === usernameInput.toLowerCase()
-    );
-
-    if (matchedSub && passwordInput === "***REMOVED***") {
-      setIsAuthenticated(true);
-      setAdminRole("subadmin");
-      setCurrentAdminName(matchedSub.username);
-      fetchData();
-      toast(`✅ Logged in as Sub-Admin: ${matchedSub.username}`, "success");
-      return;
-    }
-
-    toast("❌ Incorrect Admin Password or Username!", "error");
   };
 
   const handleLogout = () => {

@@ -8,13 +8,28 @@ import { motion, AnimatePresence } from "framer-motion";
 const faqs = [
   {
     category: "Security & Auth",
-    question: "How does passwordless hardware device authentication work?",
-    answer: "LoveWithYou does not use passwords or emails that can be leaked. Your account is bound directly to your physical hardware device fingerprint (device_id). When you open the app, you are instantly authenticated securely!"
+    question: "How does the login work without an email or password?",
+    answer: "We use advanced Device Fingerprinting. Your phone or browser acts as your unique key. Just open the app, and you are securely logged in."
+  },
+  {
+    category: "Chat Privacy",
+    question: "Are my private chats and disappearing snaps really safe?",
+    answer: "Yes! We use strict database security rules. Private chats are restricted only to the two matched users. Disappearing snaps self-destruct after 10 seconds and cannot be recovered."
+  },
+  {
+    category: "Safety",
+    question: "How does the SOS \"Date Safe Check-in\" work?",
+    answer: "Before going on a date, you set a timer (e.g., 2 hours) and provide a friend's email address. If you don't return to the app and confirm you are safe before the timer runs out, our server automatically emails your friend with your last known location."
+  },
+  {
+    category: "Safety",
+    question: "Why did my Karma score drop?",
+    answer: "Karma points drop if you are reported for bad behavior, ghosting, or if you attempt to take screenshots in private chat rooms. Keep your Karma high to unlock the VIP Golden Halo!"
   },
   {
     category: "Monetization & Coins",
-    question: "How do Coins and the Coin History Ledger work?",
-    answer: "Coins are used to unlock secret crushes, send super likes, unblur profiles, and join 3-minute blind audio dates. Every coin earned, spent, or purchased is logged in your transparent Coin Audit Ledger."
+    question: "How do I get more Coins?",
+    answer: "You can earn free coins through the Daily Cupid's Slot Machine, by inviting friends, or you can purchase Coin Packs securely via UPI/Cards in our Premium Store."
   },
   {
     category: "Payments",
@@ -32,19 +47,9 @@ const faqs = [
     answer: "When location permissions are granted, your exact GPS latitude and longitude coordinates are saved to our Supabase database to show active singles near your campus or city on an interactive radar grid."
   },
   {
-    category: "Chat Privacy",
-    question: "Are private 1-on-1 chats secure?",
-    answer: "Yes! Private chats connect directly through isolated WebSocket room IDs (room_id). Only you and your match can send and receive messages within your room."
-  },
-  {
     category: "Gamification",
     question: "How is the Compatibility Meter calculated?",
     answer: "Instead of random numbers, our Compatibility Meter compares your hobbies and interests with your match. It starts at a base score of 65% and adds 10% for every matching interest (up to 99%)!"
-  },
-  {
-    category: "Safety",
-    question: "Why is screenshotting blocked and how does Karma work?",
-    answer: "Screenshotting private chats and photos is blocked to prevent harassment. Every user has a dynamic Karma score (default 100). Polite interactions increase Karma, while abusive behavior leads to deductions and device bans."
   }
 ];
 

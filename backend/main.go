@@ -4,9 +4,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"dating-backend/api"
 	"dating-backend/db"
+	"dating-backend/workers"
 	"dating-backend/ws"
 
 	"github.com/joho/godotenv"
@@ -26,6 +28,9 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
+	// Start the SOS Background Cron Worker
+	workers.StartSOSMonitor()
+
 	// Setup API Routes
 	router := api.SetupRoutes(hub)
 
@@ -35,7 +40,16 @@ func main() {
 	}
 
 	log.Printf("🚀 Server running on :%s\n", port)
-	err = http.ListenAndServe(":"+port, router)
+	
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

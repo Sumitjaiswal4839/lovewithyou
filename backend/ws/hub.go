@@ -4,33 +4,42 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sync"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
+var allowedOrigins = map[string]bool{
+	"https://lovewithyou.vercel.app": true,
+	"http://localhost:3000":          true, // Allow local dev
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for dev
+		origin := r.Header.Get("Origin")
+		return allowedOrigins[origin]
 	},
 }
 
 // Hub manages active clients and broadcasts messages
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-	mu         sync.Mutex
+	clients      map[*Client]bool
+	broadcast    chan []byte
+	register     chan *Client
+	unregister   chan *Client
+	seenMessages map[string]time.Time
+	mu           sync.Mutex
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+		broadcast:    make(chan []byte),
+		register:     make(chan *Client),
+		unregister:   make(chan *Client),
+		clients:      make(map[*Client]bool),
+		seenMessages: make(map[string]time.Time),
 	}
 }
 
@@ -70,11 +79,23 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 		case message := <-h.broadcast:
 			var rm struct {
-				RoomID   string `json:"room_id,omitempty"`
-				DeviceID string `json:"device_id,omitempty"`
-				Content  string `json:"content,omitempty"`
+				MessageID string `json:"message_id,omitempty"`
+				RoomID    string `json:"room_id,omitempty"`
+				DeviceID  string `json:"device_id,omitempty"`
+				Content   string `json:"content,omitempty"`
 			}
 			_ = json.Unmarshal(message, &rm)
+			
+			h.mu.Lock()
+			// Duplicate check
+			if rm.MessageID != "" {
+				if _, exists := h.seenMessages[rm.MessageID]; exists {
+					h.mu.Unlock()
+					continue // Ignore duplicate message
+				}
+				h.seenMessages[rm.MessageID] = time.Now()
+			}
+			h.mu.Unlock()
 
 			// Basic Toxicity AI Filter Mock
 			msgStr := string(message)
@@ -120,4 +141,28 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 		}
 	}
+}
+
+// SendToDevice routes a message directly to a specific device's active WebSocket connection
+func (h *Hub) SendToDevice(deviceID string, message interface{}) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for client := range h.clients {
+		if client.DeviceID == deviceID {
+			msgBytes, err := json.Marshal(message)
+			if err != nil {
+				return false
+			}
+			select {
+			case client.send <- msgBytes:
+				return true
+			default:
+				close(client.send)
+				delete(h.clients, client)
+				return false
+			}
+		}
+	}
+	return false
 }

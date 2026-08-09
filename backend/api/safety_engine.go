@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"dating-backend/db"
+	"dating-backend/ws"
 )
 
 // --- Bulletproof Safety, P2P WebRTC Signaling & Redis Pub/Sub Cluster Engine ---
@@ -44,32 +46,55 @@ type RedisPubSubPayload struct {
 
 // VerifyFaceCatfishBuster runs an AI smile ratio evaluation against stored photos
 func VerifyFaceCatfishBuster(w http.ResponseWriter, r *http.Request) {
-	var req SmileVerifyRequest
+    deviceID := r.Context().Value("device_id").(string)
+	var req struct {
+        ClientConfidence float64 `json:"client_confidence"`
+    }
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("👁️ [AI Catfish Buster] Scanning smile ratio and facial geometries for %s", req.DeviceID)
+
+    // ✅ FIX: Don't unconditionally pass. Require client model to pass a threshold.
+    if req.ClientConfidence < 85.0 {
+        http.Error(w, "Face verification failed threshold", http.StatusBadRequest)
+        return
+    }
+
+    // Update profile verified status in DB
+    db.Client.From("profiles").Update(map[string]interface{}{"verified": true}, "", "").Eq("device_id", deviceID).Execute()
 
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "verified_blue_diamond",
-		Message: "Selfie facial smile ratio matched 99.4% with uploaded gallery! Blue Diamond Shield granted.",
-		Data:    map[string]bool{"smileVerified": true, "catfishFree": true},
+		Message: "Verification successful.",
 	})
 }
 
 // StartSosCheckinTimer starts a 2-hour physical date safety check-in countdown
 func StartSosCheckinTimer(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Context().Value("device_id").(string) // Securely get ID
 	var req SosCheckinRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
+	
 	if req.DurationMinutes == 0 {
-		req.DurationMinutes = 120 // Default 2 hours
+		req.DurationMinutes = 120
 	}
-
 	dueAt := time.Now().Add(time.Duration(req.DurationMinutes) * time.Minute)
-	log.Printf("🚨 [Emergency SOS Check-in] User %s bound 2-hour date safety timer for location '%s' | Emergency contact: %s", req.DeviceID, req.LocationName, req.EmergencyContact)
+
+	// ✅ FIX: Persist the SOS timer to the database.
+	_, _, err := db.Client.From("safety_sos_checkins").Insert(map[string]interface{}{
+		"device_id":         deviceID,
+		"location_name":     req.LocationName,
+		"emergency_contact": req.EmergencyContact,
+		"due_at":            dueAt,
+		"status":            "active",
+	}, false, "", "", "exact").Execute()
+
+	if err != nil {
+		http.Error(w, "Failed to arm SOS", http.StatusInternalServerError)
+		return
+	}
 
 	sendJSONResponse(w, http.StatusCreated, ResponsePayload{
 		Status:  "timer_armed",
-		Message: fmt.Sprintf("Safety timer set for %d minutes. An automated emergency SOS ping with coordinates will alert %s if not confirmed safe!", req.DurationMinutes, req.EmergencyContact),
-		Data:    map[string]string{"dueAt": dueAt.Format(time.RFC3339)},
+		Message: "Safety timer armed and securely logged.",
 	})
 }
 
@@ -86,27 +111,43 @@ func ConfirmSafeCheckin(w http.ResponseWriter, r *http.Request) {
 
 // ReportScreenshotViolation penalizes violators by deducting 20 Karma immediately
 func ReportScreenshotViolation(w http.ResponseWriter, r *http.Request) {
-	var req ScreenshotViolationRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("📸 [Screenshot Violation!] User %s attempted screenshot in %s! Deducting 20 Karma points & alerting peer.", req.ViolatorID, req.RoomID)
+    // Extract offender's device ID from request
+    var req struct { OffenderID string `json:"offender_id"` }
+    json.NewDecoder(r.Body).Decode(&req)
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "violation_penalized",
-		Message: "Screenshot detected! Screen content blurred automatically & 20 Karma points deducted from violator.",
-		Data:    map[string]int{"karmaDeducted": 20},
-	})
+    // ✅ FIX: Actually deduct 20 karma points in the database.
+    _ = db.Client.Rpc("deduct_karma", "", map[string]interface{}{
+        "p_device_id": req.OffenderID,
+        "p_amount":    20,
+    })
+    
+    sendJSONResponse(w, http.StatusOK, ResponsePayload{Message: "Screenshot reported, 20 Karma deducted."})
 }
 
 // WebRTCSignalExchange routes ultra-low latency direct peer-to-peer data streams
-func WebRTCSignalExchange(w http.ResponseWriter, r *http.Request) {
-	var req WebRTCSignalPayload
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("⚡ [P2P WebRTC Signal] Routing direct %s stream between %s and %s in room %s", req.ChannelType, req.SenderID, req.TargetID, req.RoomID)
+func WebRTCSignalExchange(hub *ws.Hub) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req WebRTCSignalPayload
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		
+		if req.TargetID == "" || req.SignalData == "" {
+			http.Error(w, "missing target or signal data", http.StatusBadRequest)
+			return
+		}
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "signal_routed",
-		Message: "P2P WebRTC handshake transmitted. Direct encrypted client-to-client audio/media channel established!",
-	})
+		// ✅ FIX: Actually route the signal to the target device's WebSocket.
+		delivered := hub.SendToDevice(req.TargetID, req) 
+		
+		if !delivered {
+			sendJSONResponse(w, http.StatusOK, ResponsePayload{Status: "target_offline", Message: "Recipient is not currently connected."})
+			return
+		}
+		
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{Status: "signal_routed"})
+	}
 }
 
 // RedisPubSubClusterBroadcast buffers extreme high-concurrency radar sweeps & swipes in sub-30ms

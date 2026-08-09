@@ -45,20 +45,32 @@ type PheromoneBroadcastRequest struct {
 	BroadcastMsg string `json:"broadcastMsg"`
 }
 
+var blindDateWaitingUser string
+var blindDateMutex sync.Mutex
+
 // BlindAudioMatch connects users for 3-minute voice-first blind conversations
 func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
-	var req BlindAudioMatchRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("🎙️ [Blind Audio] Matching candidate %s for pure 3-min audio interaction", req.DeviceID)
+    deviceID := r.Context().Value("device_id").(string)
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "matched",
-		Message: "3-minute audio channel open. Photos remain locked until mutual YES tap at expiry.",
-		Data: map[string]any{
-			"partnerId": "anon_audio_peer",
-			"expiresInSeconds": 180,
-		},
-	})
+    blindDateMutex.Lock()
+    defer blindDateMutex.Unlock()
+
+    if blindDateWaitingUser == "" || blindDateWaitingUser == deviceID {
+        blindDateWaitingUser = deviceID
+        sendJSONResponse(w, http.StatusOK, ResponsePayload{Status: "waiting"})
+        return
+    }
+
+    // Pair them up
+    partner := blindDateWaitingUser
+    blindDateWaitingUser = "" 
+    roomID := "blind_" + deviceID + "_" + partner
+
+    sendJSONResponse(w, http.StatusOK, map[string]string{
+        "status":     "matched",
+        "room_id":    roomID,
+        "partner_id": partner,
+    })
 }
 
 var (
@@ -252,13 +264,15 @@ func GetLeaderboardVibeKings(w http.ResponseWriter, r *http.Request) {
 		Execute()
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Internal error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	var profiles []db.Profile
 	if err := json.Unmarshal(data, &profiles); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Internal error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
