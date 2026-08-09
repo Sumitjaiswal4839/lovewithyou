@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import fpPromise from "@fingerprintjs/fingerprintjs";
 import { useUserStore } from "@/store/useUserStore";
+import { v4 as uuidv4 } from "uuid";
 
 export function useDeviceAuth() {
   const setDeviceId = useUserStore((state) => state.setDeviceId);
@@ -25,7 +26,10 @@ export function useDeviceAuth() {
         try {
           await fetch(`${BACKEND_URL}/auth/device`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "X-Request-ID": uuidv4()
+            },
             body: JSON.stringify({ device_id: visitorId }),
           });
         } catch (authErr) {

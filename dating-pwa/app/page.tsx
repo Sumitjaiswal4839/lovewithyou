@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { Flame, Coins, WifiOff, ShieldAlert, MoreVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 import { calculateCompatibility } from "@/lib/compatibility";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
@@ -335,7 +336,10 @@ export default function Home() {
        try {
          const res = await fetch(`${BACKEND_URL}/swipes`, {
            method: "POST",
-           headers: { "Content-Type": "application/json" },
+           headers: { 
+             "Content-Type": "application/json",
+             "X-Request-ID": uuidv4()
+           },
            body: JSON.stringify({ swiper_id: deviceId, swiped_id: targetProfile.id, direction: direction })
          });
          

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { v4 as uuidv4 } from "uuid";
 import { persist } from "zustand/middleware";
 import { supabase } from "@/lib/supabase";
 
@@ -212,7 +213,10 @@ export const useUserStore = create<UserState>()(
         try {
           const res = await fetch(`${BACKEND_URL}/auth/device`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Request-ID': uuidv4()
+            },
             body: JSON.stringify({ device_id: id }),
           })
           if (res.ok) {
@@ -237,7 +241,8 @@ export const useUserStore = create<UserState>()(
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.authToken}`
+                'Authorization': `Bearer ${state.authToken}`,
+                'X-Request-ID': uuidv4()
               },
               body: JSON.stringify({ ...profile, device_id: state.deviceId }),
             })
@@ -280,7 +285,8 @@ export const useUserStore = create<UserState>()(
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.authToken}`
+                'Authorization': `Bearer ${state.authToken}`,
+                'X-Request-ID': uuidv4()
               },
               body: JSON.stringify({ device_id: state.deviceId, subscription: subscription })
             });
@@ -324,7 +330,8 @@ export const useUserStore = create<UserState>()(
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.authToken}`
+                'Authorization': `Bearer ${state.authToken}`,
+                'X-Request-ID': uuidv4()
               },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
@@ -352,7 +359,8 @@ export const useUserStore = create<UserState>()(
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.authToken}`
+                'Authorization': `Bearer ${state.authToken}`,
+                'X-Request-ID': uuidv4()
               },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
