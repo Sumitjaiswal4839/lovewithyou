@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"dating-backend/auth"
 	"dating-backend/db"
 	"dating-backend/ws"
 )
@@ -100,13 +101,23 @@ func StartSosCheckinTimer(w http.ResponseWriter, r *http.Request) {
 
 // ConfirmSafeCheckin disarms the emergency SOS panic timer safely
 func ConfirmSafeCheckin(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.Header.Get("X-Device-Id")
-	log.Printf("✅ [Safety Check-in Confirmed] Device %s reported back safe from date meetup!", deviceID)
+    // Device ID Context se lena hai, Header se nahi
+    deviceID := r.Context().Value(auth.DeviceIDKey).(string) 
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "safe_confirmed",
-		Message: "Emergency SOS date protection timer disarmed successfully. Glad you had a great date!",
-	})
+    // Database mein 'active' timer ko 'confirmed' mark karo
+    _, _, err := db.Client.From("safety_sos_checkins").
+        Update(map[string]interface{}{"status": "confirmed"}, "", "").
+        Eq("device_id", deviceID).
+        Eq("status", "active").
+        Execute()
+
+    if err != nil {
+        http.Error(w, "failed to confirm checkin", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"status": "safe_confirmed"})
 }
 
 // ReportScreenshotViolation penalizes violators by deducting 20 Karma immediately

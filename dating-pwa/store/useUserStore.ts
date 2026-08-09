@@ -319,6 +319,9 @@ export const useUserStore = create<UserState>()(
         // 10% Cashback Bonus on coin addition
         const cashbackEarned = Math.max(1, Math.floor(finalAmount * 0.1));
 
+        const prevCoins = state.coins;
+        const prevCashback = state.cashbackVault;
+
         set({ 
           coins: state.coins + finalAmount,
           cashbackVault: state.cashbackVault + cashbackEarned
@@ -326,7 +329,7 @@ export const useUserStore = create<UserState>()(
 
         try {
           if (state.deviceId) {
-            await fetch(`${BACKEND_URL}/coins/earn`, {
+            const res = await fetch(`${BACKEND_URL}/coins/earn`, {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
@@ -335,10 +338,12 @@ export const useUserStore = create<UserState>()(
               },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
+            if (!res.ok) throw new Error('Server update failed');
             state.loadCoinHistory();
           }
         } catch (e) {
           console.error("Failed to add coins to backend", e);
+          set({ coins: prevCoins, cashbackVault: prevCashback });
         }
       },
       spendCoins: async (amount, description = "Spent Coins") => {
@@ -348,6 +353,9 @@ export const useUserStore = create<UserState>()(
         // 10% Cashback refund on coin spending
         const cashbackRefund = Math.max(1, Math.floor(finalAmount * 0.1));
 
+        const prevCoins = state.coins;
+        const prevCashback = state.cashbackVault;
+
         set({ 
           coins: Math.max(0, state.coins - finalAmount),
           cashbackVault: state.cashbackVault + cashbackRefund
@@ -355,7 +363,7 @@ export const useUserStore = create<UserState>()(
 
         try {
           if (state.deviceId) {
-            await fetch(`${BACKEND_URL}/coins/spend`, {
+            const res = await fetch(`${BACKEND_URL}/coins/spend`, {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
@@ -364,10 +372,12 @@ export const useUserStore = create<UserState>()(
               },
               body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
             });
+            if (!res.ok) throw new Error('Server update failed');
             state.loadCoinHistory();
           }
         } catch (e) {
           console.error("Failed to spend coins on backend", e);
+          set({ coins: prevCoins, cashbackVault: prevCashback });
         }
       },
       claimCashback: () => {

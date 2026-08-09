@@ -117,8 +117,9 @@ func UpdateCoinsAtomic(deviceID string, amount int, description string) (int, er
 	// For this setup, we assume the RPC handles the atomic constraint
 	// and throws an exception if the balance would drop below zero.
 	res := Client.Rpc("update_coins_atomic", "", params)
-	// We do a basic check on the result. Real implementation might need to unmarshal 'res'
-	_ = res
+	if res != "" && (strings.Contains(res, "error") || strings.Contains(res, "insufficient_coins")) {
+		return 0, fmt.Errorf("failed to update coins: %s", res)
+	}
 
 	transType := "EARNED"
 	if amount < 0 {
