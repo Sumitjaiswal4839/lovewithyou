@@ -63,6 +63,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/coins/daily-reward", auth.AuthMiddleware(ClaimDailyReward)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/payments/verify", auth.AuthMiddleware(VerifyRazorpayPayment)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/spend", auth.AuthMiddleware(SpendCoins)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/coins/earn", auth.AuthMiddleware(EarnCoins)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/coins/history/{device_id}", auth.AuthMiddleware(GetCoinHistory)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/profile/{device_id}", auth.AuthMiddleware(GetProfile)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/profile", auth.AuthMiddleware(UpdateProfile)).Methods(http.MethodPost, http.MethodOptions)
@@ -252,6 +253,30 @@ func ClaimDailyReward(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status": "success", "message": "Claimed 10 coins"}`))
+}
+
+func EarnCoins(w http.ResponseWriter, r *http.Request) {
+	var req CoinRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Internal error: %v", err)
+		http.Error(w, "internal server error", http.StatusBadRequest)
+		return
+	}
+
+	desc := req.Description
+	if desc == "" {
+		desc = "Earned Coins"
+	}
+
+	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+
+	_, err := db.UpdateCoinsAtomic(deviceID, req.Amount, desc)
+	if err != nil {
+		log.Printf("Internal error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"status": "success"})
 }
 
 func SpendCoins(w http.ResponseWriter, r *http.Request) {

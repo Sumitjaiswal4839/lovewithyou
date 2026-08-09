@@ -38,15 +38,27 @@ export function AdminTrigger() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "***REMOVED***") {
-      setShowModal(false);
-      setPassword("");
-      toast("Admin access granted", "success");
-      router.push("/admin");
-    } else {
-      toast("Invalid admin password", "error");
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      
+      if (data.success && data.role === "master") {
+        setShowModal(false);
+        setPassword("");
+        toast("Admin access granted", "success");
+        router.push("/admin");
+      } else {
+        toast("Invalid admin password", "error");
+        setPassword("");
+      }
+    } catch (err) {
+      toast("Authentication error", "error");
       setPassword("");
     }
   };
