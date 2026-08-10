@@ -4,9 +4,9 @@ export async function POST(req: Request) {
   try {
     const { password, username } = await req.json();
 
-    const MASTER_PASSWORD = process.env.ADMIN_PASSWORD || "***REMOVED***";
+    const MASTER_PASSWORD = process.env.ADMIN_PASSWORD;
 
-    if (password === MASTER_PASSWORD || password === "***REMOVED***") {
+    if (password === MASTER_PASSWORD) {
       return NextResponse.json({ success: true, role: "master" });
     }
 
