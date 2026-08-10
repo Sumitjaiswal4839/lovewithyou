@@ -201,6 +201,37 @@ export default function SetupPage() {
           </p>
         </div>
 
+        {/* Local Development Skip Button */}
+        {process.env.NODE_ENV === 'development' && (
+          <Button 
+            onClick={() => {
+              setProfile({
+                name: "Dev User",
+                bio: "Local testing",
+                hobbies: [],
+                interests: [],
+                location: "Localhost",
+                campus: "Dev Campus",
+                age: 22,
+                photo_url: "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+                photos: ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+                gender: "Male",
+                verified: true,
+                karma: 500,
+                analytics: { views: 0, likes: 0, matches: 0 },
+                mode: "Date",
+                isAnonymous: false
+              });
+              addCoins(500);
+              toast("Dev Mode: Setup Skipped!", "success");
+              router.push("/");
+            }}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-extrabold shadow-lg shadow-yellow-500/20"
+          >
+            🚧 Dev Mode: Skip Setup
+          </Button>
+        )}
+
         {/* AI Face Scan Section */}
         <div className="space-y-3 pt-2">
           {!aiVerifiedAge ? (

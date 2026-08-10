@@ -13,6 +13,7 @@ import { Flame, Coins, WifiOff, ShieldAlert, MoreVertical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { calculateCompatibility } from "@/lib/compatibility";
+import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
 
@@ -68,7 +69,7 @@ export default function Home() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<any>(null);
   
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const spendCoins = useUserStore((state) => state.spendCoins);
   const addMatch = useUserStore((state) => state.addMatch);
   const { appSettings } = useUserStore();
@@ -168,7 +169,7 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("ref") && !localStorage.getItem("referral_claimed")) {
       useUserStore.getState().addCoins(50);
-      toast("Welcome! You got +50 Coins from your friend's invite! 🎉", "success");
+      uiToast("Welcome! You got +50 Coins from your friend's invite! 🎉", "success");
       localStorage.setItem("referral_claimed", "true");
       
       // Clean up URL
@@ -176,7 +177,7 @@ export default function Home() {
     }
     
     return () => ws.close();
-  }, [router, toast]);
+  }, [router, uiToast]);
 
   // Filter profiles based on Campus Mode and User's active Mode (Date/BFF/Bizz)
   let displayProfiles = activeProfiles.filter(p => p.mode === (profile?.mode || "Date"));
@@ -269,7 +270,7 @@ export default function Home() {
               .eq("device_id", deviceId);
           }
 
-          toast(`Location found: ${city}! Saved GPS coordinates.`, "success");
+          uiToast(`Location found: ${city}! Saved GPS coordinates.`, "success");
         } catch (e) {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
@@ -288,7 +289,7 @@ export default function Home() {
               .eq("device_id", deviceId);
           }
 
-          toast("Location saved! Showing nearby profiles.", "success");
+          uiToast("Location saved! Showing nearby profiles.", "success");
         }
       },
       (error) => {
@@ -320,14 +321,14 @@ export default function Home() {
 
     if (isSuperLike) {
       if (coins < 10) {
-        toast("Not enough coins for Super Like!", "error");
+        uiToast("Not enough coins for Super Like!", "error");
         return;
       }
       spendCoins(10);
-      toast("Super Liked! 🌟 (-10 Coins)", "success");
+      uiToast("Super Liked! 🌟 (-10 Coins)", "success");
     } else if (direction === "right") {
       if (coins < 2) {
-        toast("Not enough coins to like!", "error");
+        uiToast("Not enough coins to like!", "error");
         return;
       }
       spendCoins(2);
@@ -373,7 +374,7 @@ export default function Home() {
                  addMatch(matchItem);
                 setMatchedProfile(targetProfile);
                 setShowMatchModal(true);
-                toast(`It's a Match with ${targetProfile.name}! 🎉`, "success");
+                uiToast(`It's a Match with ${targetProfile.name}! 🎉`, "success");
              }
            }
          }
@@ -395,7 +396,7 @@ export default function Home() {
     if (!profile) return;
     if (!lastSwipedProfile) return;
     if (coins < 5) {
-      toast("Not enough coins to Rewind!", "error");
+      uiToast("Not enough coins to Rewind!", "error");
       return;
     }
     spendCoins(5);
@@ -410,12 +411,12 @@ export default function Home() {
     
     setProfiles((prev) => [lastSwipedProfile, ...prev]);
     setLastSwipedProfile(null);
-    toast("Swipe Rewinded! ⏪ (-5 Coins)", "success");
+    uiToast("Swipe Rewinded! ⏪ (-5 Coins)", "success");
   };
 
   const handleReport = async (reason: string) => {
     setShowReportModal(false);
-    toast(`User reported for: ${reason}. Thank you for keeping the community safe.`, "success");
+    uiToast(`User reported for: ${reason}. Thank you for keeping the community safe.`, "success");
     // Optimistically remove user from stack
     setProfiles((prev) => prev.slice(1));
     
@@ -464,7 +465,9 @@ export default function Home() {
     <div className="relative flex flex-col items-center justify-center w-full h-[calc(100vh-4rem)] overflow-hidden bg-background">
       
       {/* Top Header & Toggles */}
-      <div className="absolute top-0 w-full p-4 z-10 flex justify-between items-center glass border-b border-glass-border">
+      <div className="absolute top-0 w-full z-10 flex flex-col glass border-b border-glass-border">
+        <MatchPreferencesHeader />
+        <div className="flex justify-between items-center p-4">
         <div 
           onClick={requestLocation}
           className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded-md transition-colors"
@@ -491,6 +494,7 @@ export default function Home() {
             {profile?.mode || "Date"} Mode
           </div>
         </div>
+      </div>
       </div>
 
       {isLoadingProfiles ? (
@@ -733,7 +737,7 @@ export default function Home() {
               onClick={() => {
                 setShowDailyStreak(false);
                 useUserStore.getState().addCoins(10);
-                toast("Claimed 10 Coins!", "success");
+                uiToast("Claimed 10 Coins!", "success");
               }} 
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-lg hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(249,115,22,0.4)]"
             >

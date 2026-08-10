@@ -434,6 +434,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		newProfile.Verified = existing.Verified
 		newProfile.Karma = existing.Karma
 		newProfile.IsBanned = existing.IsBanned // Ban state only settable by admin
+		newProfile.IsStudent = existing.IsStudent // Prevent users from self-verifying as students
 	} else {
 		// New profile defaults
 		newProfile.Karma = 100

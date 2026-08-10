@@ -60,6 +60,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [showSecretArenas, setShowSecretArenas] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -70,7 +71,12 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
       setIsSearching(true);
       try {
         const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
-        const res = await fetch(`${BACKEND_URL}/users/search?q=${encodeURIComponent(searchQuery)}`);
+        const token = useUserStore.getState().authToken;
+        const res = await fetch(`${BACKEND_URL}/users/search?q=${encodeURIComponent(searchQuery)}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await res.json();
         setSearchResults(data || []);
       } catch (err) {
@@ -150,11 +156,11 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 </div>
 
                 {/* Profile Info & Voucher */}
-                <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="space-y-1.5 flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-2">
                     <h3 className="font-black text-base text-white truncate">{profile.name || "User"}</h3>
                     <span className="text-xs font-bold text-gray-300">({profile.age || 22})</span>
-                    <button onClick={() => navigateTo("/settings")} className="text-white/70 hover:text-white transition ml-auto">
+                    <button onClick={() => navigateTo("/settings")} className="text-white/70 hover:text-white transition">
                       <SettingsIcon size={16} />
                     </button>
                   </div>
@@ -244,46 +250,65 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
                 </button>
 
-                {/* 3-Min Blind Date */}
-                <button onClick={() => navigateTo('/blind-date')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-purple-50/50 transition text-left">
-                  <div className="flex items-center gap-4">
-                    <Headphones size={20} className="text-purple-600" />
-                    <span className="text-sm font-extrabold text-purple-950">3-Min Blind Date</span>
-                  </div>
-                  <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">Audio</span>
-                </button>
+                {/* Secret Match Arenas Accordion */}
+                <div className="border-y border-slate-100 my-1">
+                  <button 
+                    onClick={() => setShowSecretArenas(!showSecretArenas)}
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Sparkles size={20} className="text-fuchsia-600 animate-pulse" />
+                      <span className="text-sm font-extrabold text-slate-800">Secret Match Arenas 🎭</span>
+                    </div>
+                    <ChevronRight size={18} className={`text-slate-400 transition-transform ${showSecretArenas ? 'rotate-90' : ''}`} />
+                  </button>
 
-                {/* Random Chat */}
-                <button onClick={() => navigateTo('/random-chat')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <div className="flex items-center gap-4">
-                    <Users size={20} className="text-orange-500" />
-                    <span className="text-sm font-extrabold text-slate-800">Random Chat</span>
-                  </div>
-                  <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase">Live</span>
-                </button>
+                  <AnimatePresence>
+                    {showSecretArenas && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden bg-slate-50/50"
+                      >
+                        {/* 3-Min Blind Date */}
+                        <button onClick={() => navigateTo('/blind-date')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-purple-50/50 transition text-left pl-14">
+                          <div className="flex items-center gap-3">
+                            <Headphones size={16} className="text-purple-600" />
+                            <span className="text-sm font-bold text-purple-950">3-Min Blind Date</span>
+                          </div>
+                          <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">Audio</span>
+                        </button>
 
-                {/* Nearby Radar & VIP Boosts */}
-                <button onClick={() => navigateTo('/nearby-map')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <Compass size={20} className="text-emerald-600" />
-                  <span className="text-sm font-extrabold text-slate-800">Nearby Radar &amp; VIP Boosts</span>
-                </button>
+                        {/* Random Chat */}
+                        <button onClick={() => navigateTo('/random-chat')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition text-left pl-14">
+                          <div className="flex items-center gap-3">
+                            <Users size={16} className="text-orange-500" />
+                            <span className="text-sm font-bold text-slate-800">Random Chat</span>
+                          </div>
+                          <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase">Live</span>
+                        </button>
 
-                {/* 18+ Anonymous After-Dark */}
-                <button onClick={() => navigateTo('/after-dark')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-rose-50/50 transition text-left">
-                  <div className="flex items-center gap-4">
-                    <Flame size={20} className="text-rose-600 animate-pulse" />
-                    <span className="text-sm font-extrabold text-rose-950">18+ After-Dark Lounge</span>
-                  </div>
-                  <span className="text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full uppercase">18+</span>
-                </button>
+                        {/* 18+ Anonymous After-Dark */}
+                        <button onClick={() => navigateTo('/after-dark')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-rose-50/50 transition text-left pl-14">
+                          <div className="flex items-center gap-3">
+                            <Flame size={16} className="text-rose-600 animate-pulse" />
+                            <span className="text-sm font-bold text-rose-950">18+ After-Dark</span>
+                          </div>
+                          <span className="text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full uppercase">18+</span>
+                        </button>
 
-                {/* Midnight Roulette & 2v2 Squads */}
-                <button onClick={() => navigateTo('/midnight-roulette')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-indigo-50/50 transition text-left">
-                  <div className="flex items-center gap-4">
-                    <Moon size={20} className="text-indigo-600" />
-                    <span className="text-sm font-extrabold text-indigo-950">Midnight Roulette &amp; 2v2 Squads</span>
-                  </div>
-                </button>
+                        {/* Midnight Roulette & 2v2 Squads */}
+                        <button onClick={() => navigateTo('/midnight-roulette')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-indigo-50/50 transition text-left pl-14 pb-4">
+                          <div className="flex items-center gap-3">
+                            <Moon size={16} className="text-indigo-600" />
+                            <span className="text-sm font-bold text-indigo-950">Midnight 2v2 Squads</span>
+                          </div>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* Campus Hub */}
                 <button onClick={() => navigateTo('/campus')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-purple-50/50 transition text-left">
@@ -311,40 +336,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   </div>
                 </button>
 
-                {/* Match Preferences Accordion */}
-                <div className="border-t border-slate-100 my-1">
-                  <button 
-                    onClick={() => setShowPreferences(!showPreferences)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      <SlidersHorizontal size={20} className="text-slate-700" />
-                      <span className="text-sm font-extrabold text-slate-800">Match Preferences</span>
-                    </div>
-                    <ChevronDown size={16} className={`text-slate-400 transition-transform ${showPreferences ? "rotate-180" : ""}`} />
-                  </button>
 
-                  {showPreferences && (
-                    <div className="px-5 py-3 bg-slate-50 space-y-3 border-t border-slate-100 text-xs">
-                      <div className="space-y-1.5">
-                        <label className="font-bold text-slate-600 text-[10px] uppercase">Gender Filter</label>
-                        <div className="grid grid-cols-3 gap-1">
-                          {["Everyone", "Male", "Female"].map((g) => (
-                            <button
-                              key={g}
-                              onClick={() => updateMatchPreferences({ gender: g as any })}
-                              className={`py-1.5 rounded-xl font-bold text-[11px] transition ${
-                                matchPreferences.gender === g ? "bg-rose-500 text-white font-extrabold" : "bg-white text-slate-600 border border-slate-200"
-                              }`}
-                            >
-                              {g}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 {/* Coin History & Ledger */}
                 <button onClick={() => setShowCoinHistory(true)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
@@ -378,6 +370,31 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <MessageCircle size={20} className="text-slate-700" />
                   <span className="text-sm font-extrabold text-slate-800">Send Feedback</span>
                 </button>
+
+                {/* Legal & Safety (Others) */}
+                <div className="border-t border-slate-100 mt-2 py-2">
+                  <h4 className="px-5 py-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">Legal &amp; Safety</h4>
+                  
+                  <button onClick={() => navigateTo('/terms')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
+                    <span className="text-xs font-bold text-slate-700">Terms of Service</span>
+                    <ChevronRight size={14} className="text-slate-300" />
+                  </button>
+                  
+                  <button onClick={() => navigateTo('/child-safety')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
+                    <span className="text-xs font-bold text-slate-700">Child Safety Policy</span>
+                    <ChevronRight size={14} className="text-slate-300" />
+                  </button>
+
+                  <button onClick={() => navigateTo('/privacy')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
+                    <span className="text-xs font-bold text-slate-700">Privacy Policy</span>
+                    <ChevronRight size={14} className="text-slate-300" />
+                  </button>
+
+                  <div className="w-full flex items-center justify-between px-5 py-2.5 text-left">
+                    <span className="text-xs font-bold text-slate-700">Version</span>
+                    <span className="text-xs font-black text-slate-400">5.4.30</span>
+                  </div>
+                </div>
 
                 {/* Sign Out */}
                 <button onClick={() => navigateTo('/setup')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-rose-50 transition text-left border-t border-slate-100 mt-2 text-rose-600">

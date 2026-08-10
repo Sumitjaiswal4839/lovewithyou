@@ -209,7 +209,7 @@ export const useUserStore = create<UserState>()(
         });
       },
       setDeviceId: async (id: string) => {
-        set({ deviceId: id, isAuthenticated: true })
+        set({ deviceId: id })
         try {
           const res = await fetch(`${BACKEND_URL}/auth/device`, {
             method: 'POST',
@@ -219,17 +219,17 @@ export const useUserStore = create<UserState>()(
             },
             body: JSON.stringify({ device_id: id }),
           })
-          if (res.ok) {
-            const data = await res.json();
-            if (data.coins !== undefined) {
-              set({ coins: data.coins });
-            }
-            if (data.token) {
-              set({ authToken: data.token });
-            }
+          if (!res.ok) {
+            throw new Error('Backend se token nahi mila (Cold start ya Network fail)');
           }
+          const data = await res.json();
+          if (data.coins !== undefined) {
+            set({ coins: data.coins });
+          }
+          set({ authToken: data.token, isAuthenticated: true });
         } catch (e) {
           console.error("Backend auth failed", e)
+          set({ isAuthenticated: false, authToken: null });
         }
       },
       setProfile: async (profile) => {

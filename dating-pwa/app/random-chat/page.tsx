@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { Send, RefreshCw, Plus, SkipForward, X as XIcon, Lock, Image as ImageIcon, Mic, StopCircle, EyeOff, ShieldAlert, User, BarChart2, Smile, AlertTriangle, CheckCircle2, Dices, Lightbulb, History, Heart, Clock } from "lucide-react";
 import RandomChatHeader from "@/components/RandomChatHeader";
+import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -516,6 +517,7 @@ export default function RandomChatPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#07050e] text-white">
+      <MatchPreferencesHeader />
       <RandomChatHeader 
         partner={partner} 
         onLike={() => handleLikePartner(partner)}

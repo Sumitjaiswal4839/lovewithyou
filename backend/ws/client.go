@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -52,6 +53,17 @@ func (c *Client) readPump() {
 			continue // Silently drop message if rate limited
 		}
 		
+		// 🔴 SECURITY FIX: MESSAGE INJECTION PREVENTION 🔴
+		// Overwrite the room_id and device_id with the client's actual authenticated values
+		var msgData map[string]interface{}
+		if err := json.Unmarshal(message, &msgData); err == nil {
+			msgData["room_id"] = c.RoomID
+			msgData["device_id"] = c.DeviceID
+			if newMsg, err := json.Marshal(msgData); err == nil {
+				message = newMsg
+			}
+		}
+
 		c.hub.broadcast <- message
 	}
 }

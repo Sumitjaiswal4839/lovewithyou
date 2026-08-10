@@ -8,35 +8,26 @@ import { v4 as uuidv4 } from "uuid";
 export function useDeviceAuth() {
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+  const token = useUserStore((state) => state.authToken);
+  const deviceId = useUserStore((state) => state.deviceId);
 
   useEffect(() => {
     async function initAuth() {
-      if (isAuthenticated) return;
+      // 1. SMART CHECK: Agar authenticated hai PAR token missing hai (purana bug), toh rukna nahi hai!
+      if (isAuthenticated && token) return;
 
       try {
-        // Initialize an agent at application startup.
-        const fp = await fpPromise.load();
-        
-        // Get the visitor identifier when you need it.
-        const result = await fp.get();
-        const visitorId = result.visitorId;
-
-        // Sync device authentication with Go backend & Supabase
-        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com")?.replace(/\/+$/, "");
-        try {
-          await fetch(`${BACKEND_URL}/auth/device`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "X-Request-ID": uuidv4()
-            },
-            body: JSON.stringify({ device_id: visitorId }),
-          });
-        } catch (authErr) {
-          console.warn("Backend auth registration offline fallback:", authErr);
+        let currentId = deviceId;
+        if (!currentId) {
+          // Initialize an agent at application startup.
+          const fp = await fpPromise.load();
+          const result = await fp.get();
+          currentId = result.visitorId;
         }
 
-        setDeviceId(visitorId);
+        // 3. Sirf store ka ek single function call karo. 
+        // KOI duplicate fetch('/auth/device') yahan NAHI karna hai!
+        await setDeviceId(currentId);
         
       } catch (error) {
         console.error("Failed to generate device fingerprint:", error);
@@ -44,7 +35,7 @@ export function useDeviceAuth() {
     }
 
     initAuth();
-  }, [isAuthenticated, setDeviceId]);
+  }, [deviceId, isAuthenticated, token, setDeviceId]);
 
   return { isAuthenticated };
 }

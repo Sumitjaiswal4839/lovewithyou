@@ -8,7 +8,14 @@ export async function POST(req: Request) {
     const ENCRYPTED_MASTER_USERNAME = "aXRtZXlvdW93bjI1QA=="; // Base64 encoded "itmeyouown25@" to hide from GitHub
 
     if (password === MASTER_PASSWORD && Buffer.from(username || "").toString("base64") === ENCRYPTED_MASTER_USERNAME) {
-      return NextResponse.json({ success: true, role: "master" });
+      const res = NextResponse.json({ success: true, role: "master" });
+      res.cookies.set("admin_session", process.env.ADMIN_SECRET_KEY || "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 4,
+      });
+      return res;
     }
 
     // Optional: Add sub-admin logic here if backed by a database later

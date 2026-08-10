@@ -266,8 +266,12 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, selfieBase64 }),
       });
+      if (!res.ok) throw new Error(`Catfish verification failed with status ${res.status}`);
       return await res.json();
-    } catch (e) { return { status: "verified_blue_diamond", data: { smileVerified: true } }; }
+    } catch (e) {
+      console.error("🚨 CRITICAL: Catfish API Failed:", e);
+      throw new Error("NETWORK_ERROR: Verification fail ho gayi hai. Phir se try karein.");
+    }
   },
 
   async startSosCheckinTimer(deviceId: string, locationName: string, emergencyContact: string, durationMinutes = 120) {
@@ -277,8 +281,12 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, locationName, emergencyContact, durationMinutes }),
       });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       return await res.json();
-    } catch (e) { return { status: "timer_armed_simulated", dueAt: new Date(Date.now() + durationMinutes * 60000).toISOString() }; }
+    } catch (e) {
+      console.error("🚨 CRITICAL: SOS Timer API Failed to reach server:", e);
+      throw new Error("NETWORK_ERROR: Tumhara SOS timer set NAHI hua hai. Kripya apna network check karein.");
+    }
   },
 
   async confirmSafeCheckin(deviceId: string) {
@@ -287,8 +295,12 @@ export const API = {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       return await res.json();
-    } catch (e) { return { status: "safe_confirmed" }; }
+    } catch (e) {
+      console.error("🚨 CRITICAL: SOS Confirm API Failed to reach server:", e);
+      throw new Error("NETWORK_ERROR: Tumhara SOS checkin confirm NAHI hua hai.");
+    }
   },
 
   async reportScreenshotViolation(violatorId: string, roomId: string, mediaType = "private_chat") {
@@ -298,8 +310,12 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ violatorId, roomId, mediaType }),
       });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       return await res.json();
-    } catch (e) { return { status: "violation_penalized", data: { karmaDeducted: 20 } }; }
+    } catch (e) {
+      console.error("🚨 CRITICAL: Screenshot Violation API Failed:", e);
+      throw new Error("NETWORK_ERROR: Violation report fail ho gaya.");
+    }
   },
 
   async sendWebRTCSignal(payload: { roomId: string; senderId: string; targetId: string; signalData: string; channelType: string }) {
@@ -318,13 +334,18 @@ export const API = {
    */
   async fetchCoinHistory(deviceId: string) {
     try {
-      const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
-      const res = await fetchWithAuth(`${backendUrl}/api/v1/coins/history/${deviceId}`);
-      if (!res.ok) throw new Error("Failed to fetch coin history");
-      return await res.json();
-    } catch (e) {
-      console.warn("[API] Coin history offline fallback:", e);
-      return [];
+      const response = await fetchWithAuth(`${API_BASE_URL}/coins/history/${deviceId}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch coin history');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Coin history fetch error:", error);
+      throw error;
     }
   }
 };

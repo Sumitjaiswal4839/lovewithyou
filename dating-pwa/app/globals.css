@@ -143,3 +143,13 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Screenshot and copy protection */
+.protect-content {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}

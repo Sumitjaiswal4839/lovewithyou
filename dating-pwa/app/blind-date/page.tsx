@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useUserStore } from "@/store/useUserStore";
 import { Heart, X, Play, Pause, Headphones, Clock, Flame, Unlock, Sparkles, PhoneCall, Volume2 } from "lucide-react";
 import { API } from "@/lib/api";
+import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
 
 const DUMMY_PROFILES = [
   { id: "1", name: "Stranger #842", gender: "Female", location: "New Delhi", age: 21, audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
@@ -234,6 +235,8 @@ export default function BlindDatePage() {
 
       {/* Hidden WebRTC Remote Audio Stream */}
       <audio ref={remoteAudioRef} autoPlay />
+
+      <MatchPreferencesHeader />
 
       {/* Top Header */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between z-20 sticky top-0">

@@ -1,43 +1,54 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/time/rate"
 )
 
-var limiters = struct {
-	sync.Mutex
-	m map[string]*rate.Limiter
-}{m: make(map[string]*rate.Limiter)}
+var (
+	limiters = make(map[string]*rate.Limiter)
+	mu       sync.Mutex
+)
 
-func getLimiter(ip string) *rate.Limiter {
-	limiters.Lock()
-	defer limiters.Unlock()
-
-	if l, ok := limiters.m[ip]; ok {
-		return l
+// IP nikalne ka secure function
+func getClientIP(r *http.Request) string {
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff != "" {
+		ips := strings.Split(xff, ",")
+		return strings.TrimSpace(ips[0])
 	}
-	// 5 requests per second burst limit
-	l := rate.NewLimiter(rate.Every(time.Second), 5)
-	limiters.m[ip] = l
-	return l
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
 }
 
-// RateLimitMiddleware applies a global rate limit per IP
 func RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get IP (simplistic approach, does not handle X-Forwarded-For properly for all setups, but good enough for now)
-		ip := strings.Split(r.RemoteAddr, ":")[0]
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			ip = strings.Split(xff, ",")[0]
+		// 🔴 NAYA LOGIC: Pehle Device ID dhundo (Header se)
+		identifier := r.Header.Get("X-Device-Id")
+		
+		// Agar Device ID nahi hai (jaise pehli baar login), tabhi IP use karo
+		if identifier == "" {
+			identifier = getClientIP(r)
 		}
 
-		if !getLimiter(ip).Allow() {
-			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		mu.Lock()
+		limiter, exists := limiters[identifier]
+		if !exists {
+			// 5 requests per second, burst of 10
+			limiter = rate.NewLimiter(5, 10)
+			limiters[identifier] = limiter
+		}
+		mu.Unlock()
+
+		if !limiter.Allow() {
+			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
 

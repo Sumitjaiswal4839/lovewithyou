@@ -484,26 +484,6 @@ export default function SettingsPage() {
               <ChevronRight size={16} className="text-gray-500" />
             </button>
 
-            <button onClick={() => router.push("/terms")} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition text-left">
-              <span className="text-xs font-bold text-gray-200">Terms of Service</span>
-              <ChevronRight size={16} className="text-gray-500" />
-            </button>
-
-            <button onClick={() => setActiveModal("child_safety")} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition text-left">
-              <span className="text-xs font-bold text-gray-200">Child Safety Policy</span>
-              <ChevronRight size={16} className="text-gray-500" />
-            </button>
-
-            <button onClick={() => router.push("/privacy")} className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition text-left">
-              <span className="text-xs font-bold text-gray-200">Privacy Policy</span>
-              <ChevronRight size={16} className="text-gray-500" />
-            </button>
-
-            <div className="flex items-center justify-between p-4">
-              <span className="text-xs font-bold text-gray-200">Version</span>
-              <span className="text-xs font-bold text-gray-400">5.4.30</span>
-            </div>
-
             {!showPauseConfirm ? (
               <button onClick={() => setShowPauseConfirm(true)} className="w-full flex items-center justify-between p-4 hover:bg-amber-500/10 transition text-left">
                 <span className="text-xs font-bold text-amber-300">{isAccountPaused ? "Resume Account" : "Snooze / Pause Account"}</span>

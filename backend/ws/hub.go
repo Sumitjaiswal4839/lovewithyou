@@ -44,6 +44,10 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) Run() {
+	// 🔴 1. Cleanup ticker lagao (Har 5 minute mein chalega)
+	cleanupTicker := time.NewTicker(5 * time.Minute)
+	defer cleanupTicker.Stop()
+
 	for {
 		select {
 		case client := <-h.register:
@@ -136,6 +140,18 @@ func (h *Hub) Run() {
 				default:
 					close(client.send)
 					delete(h.clients, client)
+				}
+			}
+			h.mu.Unlock()
+
+		// 🔴 2. Jab ticker tick kare, map saaf karo
+		case <-cleanupTicker.C:
+			h.mu.Lock() // Map ko lock karna zaroori hai panic se bachne ke liye
+			now := time.Now()
+			for msgID, timestamp := range h.seenMessages {
+				// Agar message 5 minute se purana hai, toh delete maar do
+				if now.Sub(timestamp) > 5*time.Minute {
+					delete(h.seenMessages, msgID)
 				}
 			}
 			h.mu.Unlock()

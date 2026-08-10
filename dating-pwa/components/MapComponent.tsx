@@ -51,7 +51,10 @@ export default function MapComponent() {
              setProfile({ ...profile, latitude: lat, longitude: lng });
           }
 
-          fetch(`${BACKEND_URL}/users/nearby?lat=${lat}&lng=${lng}`)
+          const token = useUserStore.getState().authToken;
+          const headers = token ? { 'Authorization': `Bearer ${token}` } : undefined;
+
+          fetch(`${BACKEND_URL}/users/nearby?lat=${lat}&lng=${lng}`, { headers })
             .then(res => res.json())
             .then(data => setClusters(data || []))
             .catch(err => console.error(err));
@@ -59,14 +62,20 @@ export default function MapComponent() {
         (err) => {
           toast("Location access denied. Showing default view.", "error");
           setUserLocation([28.6139, 77.2090]); // Delhi fallback
-          fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`)
+          const token = useUserStore.getState().authToken;
+          fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+          })
             .then(res => res.json())
             .then(data => setClusters(data || []));
         }
       );
     } else {
         setUserLocation([28.6139, 77.2090]);
-        fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`)
+        const token = useUserStore.getState().authToken;
+        fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+        })
           .then(res => res.json())
           .then(data => setClusters(data || []));
     }
