@@ -5,8 +5,9 @@ export async function POST(req: Request) {
     const { password, username } = await req.json();
 
     const MASTER_PASSWORD = process.env.ADMIN_PASSWORD;
+    const ENCRYPTED_MASTER_USERNAME = "aXRtZXlvdW93bjI1QA=="; // Base64 encoded "itmeyouown25@" to hide from GitHub
 
-    if (password === MASTER_PASSWORD) {
+    if (password === MASTER_PASSWORD && Buffer.from(username || "").toString("base64") === ENCRYPTED_MASTER_USERNAME) {
       return NextResponse.json({ success: true, role: "master" });
     }
 

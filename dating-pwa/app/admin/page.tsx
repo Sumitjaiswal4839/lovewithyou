@@ -350,10 +350,11 @@ export default function AdminDashboard() {
                 Username (Sub-Admin Optional)
               </label>
               <input
-                type="text"
+                type="password"
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="Leave blank for Master Admin"
+                placeholder="Enter master username"
+                autoComplete="new-password"
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-red-500 text-white text-xs font-medium"
               />
             </div>
