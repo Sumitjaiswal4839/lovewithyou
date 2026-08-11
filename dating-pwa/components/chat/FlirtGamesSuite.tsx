@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Gamepad2, Volume2, Mic, Sparkles, Coins, Gift, RotateCcw, Palette, Flame } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Gamepad2, Volume2, Mic, Coins, Palette } from "lucide-react";
 import { API } from "@/lib/api";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useUserStore } from "@/store/useUserStore";
@@ -145,18 +145,18 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
       <div className="bg-[#0c0817] border-t sm:border border-purple-500/30 w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(168,85,247,0.3)]">
         
         {/* Header */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+        <div className="p-4 border-b border-border flex items-center justify-between bg-surface-elevated">
           <div className="flex items-center gap-2">
             <Gamepad2 size={22} className="text-purple-400 animate-pulse" />
-            <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">Flirt & Intimate Suite 🔥</h2>
+            <h2 className="text-sm sm:text-base font-black text-foreground uppercase tracking-wider">Flirt & Intimate Suite 🔥</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-gray-400">
+          <button onClick={onClose} className="p-1.5 rounded-full bg-surface-elevated hover:bg-surface-elevated text-muted">
             <X size={18} />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex p-2 bg-black/60 gap-1 overflow-x-auto no-scrollbar border-b border-white/10 text-xs font-bold">
+        <div className="flex p-2 bg-surface-elevated gap-1 overflow-x-auto no-scrollbar border-b border-border text-xs font-bold">
           {[
             { id: "bottle", label: "🎡 Spin Bottle" },
             { id: "truths", label: "🃏 2 Truths & 1 Lie" },
@@ -166,9 +166,9 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as "bottle" | "truths" | "rps" | "canvas" | "whisper")}
               className={`px-3 py-2 rounded-xl whitespace-nowrap transition flex items-center gap-1 ${
-                activeTab === tab.id ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg" : "bg-white/5 text-gray-400 hover:bg-white/10"
+                activeTab === tab.id ? "bg-gradient-to-r from-purple-600 to-pink-600 text-foreground shadow-lg" : "bg-surface-elevated text-muted hover:bg-surface-elevated"
               }`}
             >
               {tab.label}
@@ -180,12 +180,12 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
         <div className="flex-1 p-5 overflow-y-auto">
           {activeTab === "bottle" && (
             <div className="text-center space-y-6">
-              <span className="text-[10px] bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider inline-block">
+              <span className="text-[10px] bg-primary/20 text-pink-300 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider inline-block">
                 3D Interactive Flirt Wheel
               </span>
               
               {/* Spinning Bottle Graphic */}
-              <div className="w-48 h-48 mx-auto relative flex items-center justify-center bg-white/5 rounded-full border-2 border-dashed border-white/20 shadow-inner">
+              <div className="w-48 h-48 mx-auto relative flex items-center justify-center bg-surface-elevated rounded-full border-2 border-dashed border-white/20 shadow-inner">
                 <motion.div
                   animate={{ rotate: bottleAngle }}
                   transition={{ duration: 2, ease: "easeInOut" }}
@@ -193,22 +193,22 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
                   onClick={!spinning ? handleSpinBottle : undefined}
                 >
                   <div className="w-5 h-6 bg-amber-400 rounded-t-lg border border-amber-600"></div>
-                  <span className="text-[9px] font-black text-white tracking-tighter transform -rotate-90 whitespace-nowrap uppercase">SPIN ME 🔥</span>
-                  <div className="w-8 h-8 rounded-full bg-white/20 mb-1"></div>
+                  <span className="text-[9px] font-black text-foreground tracking-tighter transform -rotate-90 whitespace-nowrap uppercase">SPIN ME 🔥</span>
+                  <div className="w-8 h-8 rounded-full bg-surface-elevated mb-1"></div>
                 </motion.div>
               </div>
 
               {currentDare && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-purple-950/60 border border-purple-500/40 rounded-2xl">
                   <p className="text-xs text-purple-300 font-bold">✨ Bottle Landed on You!</p>
-                  <p className="text-sm font-extrabold text-white mt-1">&quot;{currentDare}&quot;</p>
+                  <p className="text-sm font-extrabold text-foreground mt-1">&quot;{currentDare}&quot;</p>
                 </motion.div>
               )}
 
               <button
                 onClick={handleSpinBottle}
                 disabled={spinning}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-black text-sm shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 transition"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 text-foreground font-black text-sm shadow-[0_0_25px_rgba(236,72,153,0.4)] active:scale-95 transition"
               >
                 {spinning ? "Bottle Spinning... 🎡" : "Spin the Bottle Now! 🔥"}
               </button>
@@ -217,8 +217,8 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
 
           {activeTab === "truths" && (
             <div className="space-y-4 text-left">
-              <div className="bg-amber-500/15 border border-amber-500/40 rounded-2xl p-3 text-xs text-amber-200">
-                <span className="font-bold flex items-center gap-1 text-amber-400">
+              <div className="bg-warning/15 border border-amber-500/40 rounded-2xl p-3 text-xs text-amber-200">
+                <span className="font-bold flex items-center gap-1 text-warning">
                   <Coins size={14} /> Bet 2 Coins to Challenge
                 </span>
                 Partner must wager & correctly spot your Lie before unlocking deep profile secrets!
@@ -226,23 +226,23 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">Truth #1</label>
-                  <input type="text" value={t1} onChange={(e) => setT1(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none mt-1" />
+                  <label className="text-[11px] font-bold text-muted uppercase">Truth #1</label>
+                  <input type="text" value={t1} onChange={(e) => setT1(e.target.value)} className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-foreground outline-none mt-1" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-400 uppercase">Truth #2</label>
-                  <input type="text" value={t2} onChange={(e) => setT2(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none mt-1" />
+                  <label className="text-[11px] font-bold text-muted uppercase">Truth #2</label>
+                  <input type="text" value={t2} onChange={(e) => setT2(e.target.value)} className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-foreground outline-none mt-1" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-rose-400 uppercase">The Lie (Secret 🤫)</label>
-                  <input type="text" value={lie} onChange={(e) => setLie(e.target.value)} className="w-full bg-rose-950/30 border border-rose-500/40 rounded-xl px-3 py-2 text-xs text-rose-200 outline-none mt-1" />
+                  <label className="text-[11px] font-bold text-primary uppercase">The Lie (Secret 🤫)</label>
+                  <input type="text" value={lie} onChange={(e) => setLie(e.target.value)} className="w-full bg-rose-950/30 border border-primary/40 rounded-xl px-3 py-2 text-xs text-rose-200 outline-none mt-1" />
                 </div>
               </div>
 
               <button
                 onClick={handlePlaceBet2Truths}
                 disabled={betPlaced}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-sm shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 active:scale-95 transition"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-foreground font-black text-sm shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 active:scale-95 transition"
               >
                 <Coins size={18} /> {betPlaced ? "Wager Active in Chat! 🎲" : "Place Wager & Send (-2 Coins)"}
               </button>
@@ -264,10 +264,10 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
                   <button
                     key={item.id}
                     onClick={() => handlePlayRPS(item.id)}
-                    className="p-6 rounded-3xl bg-white/5 hover:bg-purple-600/30 border border-white/15 transition transform hover:scale-105 active:scale-95 flex flex-col items-center gap-2 shadow-lg"
+                    className="p-6 rounded-3xl bg-surface-elevated hover:bg-purple-600/30 border border-white/15 transition transform hover:scale-105 active:scale-95 flex flex-col items-center gap-2 shadow-lg"
                   >
                     <span className="text-4xl">{item.emoji}</span>
-                    <span className="text-xs font-black text-white">{item.label}</span>
+                    <span className="text-xs font-black text-foreground">{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -282,7 +282,7 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
 
           {activeTab === "canvas" && (
             <div className="space-y-4 text-center">
-              <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+              <div className="flex items-center justify-between text-xs font-bold text-secondary">
                 <span>Synchronized Couple Blackboard ✨</span>
                 <div className="flex items-center gap-2">
                   {["#f43f5e", "#06b6d4", "#a855f7", "#22c55e"].map((c) => (
@@ -313,7 +313,7 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
 
               <button
                 onClick={sendCanvasDoodle}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 font-black text-white text-xs shadow-lg flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 font-black text-foreground text-xs shadow-lg flex items-center justify-center gap-2"
               >
                 <Palette size={16} /> Send Glowing Canvas Stroke to Partner ✨
               </button>
@@ -322,20 +322,20 @@ export default function FlirtGamesSuite({ isOpen, onClose, onSendMessage }: Flir
 
           {activeTab === "whisper" && (
             <div className="text-center space-y-6 py-4">
-              <div className="w-24 h-24 rounded-full bg-rose-600/20 border-2 border-rose-500 mx-auto flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(244,63,94,0.4)]">
-                <Volume2 size={40} className="text-rose-400" />
+              <div className="w-24 h-24 rounded-full bg-primary-hover/20 border-2 border-primary mx-auto flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(244,63,94,0.4)]">
+                <Volume2 size={40} className="text-primary" />
               </div>
 
               <div>
-                <h3 className="text-lg font-black text-white">🤫 Intimate Whisper Voice Note</h3>
-                <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                  This special voice clip plays <span className="text-rose-400 font-bold">exclusively in the phone call ear-speaker</span> (not speakerphone)—for maximum romance and quiet privacy!
+                <h3 className="text-lg font-black text-foreground">🤫 Intimate Whisper Voice Note</h3>
+                <p className="text-xs text-muted mt-1 max-w-xs mx-auto">
+                  This special voice clip plays <span className="text-primary font-bold">exclusively in the phone call ear-speaker</span> (not speakerphone)—for maximum romance and quiet privacy!
                 </p>
               </div>
 
               <button
                 onClick={handleSendWhisperNote}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:brightness-110 text-white font-black text-sm shadow-[0_0_25px_rgba(244,63,94,0.5)] flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:brightness-110 text-foreground font-black text-sm shadow-[0_0_25px_rgba(244,63,94,0.5)] flex items-center justify-center gap-2"
               >
                 <Mic size={18} /> Record & Send Ear Whisper Note 🤫 (0:15s)
               </button>

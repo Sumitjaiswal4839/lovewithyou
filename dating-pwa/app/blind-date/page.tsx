@@ -71,7 +71,8 @@ export default function BlindDatePage() {
     if (!inCall || !deviceId) return;
 
     const partnerId = "anon_partner";
-    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com")?.replace(/\/+$/, "");
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
     const authToken = useUserStore.getState().authToken;
     const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}&token=${authToken}`;
 
@@ -215,7 +216,7 @@ export default function BlindDatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07050d] text-white font-sans flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#07050d] text-foreground font-sans flex flex-col relative overflow-hidden">
       {/* Flaming Heart Wave Haptic Effect */}
       <AnimatePresence>
         {hapticWave && (
@@ -223,11 +224,11 @@ export default function BlindDatePage() {
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 2 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center bg-rose-600/20 backdrop-blur-sm"
+            className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center bg-primary-hover/20 backdrop-blur-sm"
           >
             <div className="text-center animate-bounce flex flex-col items-center">
-              <Flame size={120} className="text-rose-500 fill-current drop-shadow-[0_0_50px_rgba(244,63,94,1)]" />
-              <p className="text-xl font-black text-rose-300 uppercase tracking-widest mt-4">💓 Heartbeats Synced!</p>
+              <Flame size={120} className="text-primary fill-current drop-shadow-[0_0_50px_rgba(244,63,94,1)]" />
+              <p className="text-xl font-black text-primary uppercase tracking-widest mt-4">💓 Heartbeats Synced!</p>
             </div>
           </motion.div>
         )}
@@ -239,24 +240,24 @@ export default function BlindDatePage() {
       <MatchPreferencesHeader />
 
       {/* Top Header */}
-      <div className="p-4 bg-black/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between z-20 sticky top-0">
+      <div className="p-4 bg-black/80 backdrop-blur-md border-b border-border flex items-center justify-between z-20 sticky top-0">
         <div className="flex items-center gap-2">
-          <Headphones className="text-pink-500" size={24} />
+          <Headphones className="text-primary" size={24} />
           <div>
-            <h1 className="text-sm font-extrabold text-white">&quot;Blind Audio&quot; Dates 🎙️</h1>
+            <h1 className="text-sm font-extrabold text-foreground">&quot;Blind Audio&quot; Dates 🎙️</h1>
             <p className="text-[10px] text-pink-300">Voice-Only • Haptic Heartbeats • No Photo until Mutual YES</p>
           </div>
         </div>
-        <div className="flex rounded-xl bg-white/5 p-1 border border-white/10 text-xs">
+        <div className="flex rounded-xl bg-surface-elevated p-1 border border-border text-xs">
           <button
             onClick={() => { setActiveMode("live3min"); setInCall(false); }}
-            className={`px-3 py-1 rounded-lg font-black transition ${activeMode === "live3min" ? "bg-pink-600 text-white shadow-md" : "text-gray-400"}`}
+            className={`px-3 py-1 rounded-lg font-black transition ${activeMode === "live3min" ? "bg-pink-600 text-foreground shadow-md" : "text-muted"}`}
           >
             3-Min Live ⏳
           </button>
           <button
             onClick={() => { setActiveMode("browse"); stopAudio(); }}
-            className={`px-3 py-1 rounded-lg font-black transition ${activeMode === "browse" ? "bg-purple-600 text-white shadow-md" : "text-gray-400"}`}
+            className={`px-3 py-1 rounded-lg font-black transition ${activeMode === "browse" ? "bg-purple-600 text-foreground shadow-md" : "text-muted"}`}
           >
             Deck Swiper
           </button>
@@ -269,31 +270,31 @@ export default function BlindDatePage() {
           !inCall ? (
             <div className="text-center space-y-6 w-full py-6">
               <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl opacity-50 animate-pulse"></div>
-                <div className="w-32 h-32 rounded-full bg-black/90 border-2 border-rose-500/50 flex items-center justify-center shadow-2xl relative z-10">
-                  <PhoneCall size={48} className="text-rose-400 animate-bounce" />
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl opacity-50 animate-pulse"></div>
+                <div className="w-32 h-32 rounded-full bg-black/90 border-2 border-primary/50 flex items-center justify-center shadow-2xl relative z-10">
+                  <PhoneCall size={48} className="text-primary animate-bounce" />
                 </div>
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-white">3-Minute Heart-to-Heart</h2>
-                <p className="text-xs text-gray-300 mt-2 max-w-xs mx-auto leading-relaxed">
-                  Only Voice! Koi photo nahi, koi name nahi. Complete 3 minutes of deep voice conversation. Agar dono time dhalne par <span className="text-emerald-400 font-bold">&quot;YES&quot;</span> karte hain tabhi Profile photo &amp; name unlock hogee!
+                <h2 className="text-2xl font-black text-foreground">3-Minute Heart-to-Heart</h2>
+                <p className="text-xs text-secondary mt-2 max-w-xs mx-auto leading-relaxed">
+                  Only Voice! Koi photo nahi, koi name nahi. Complete 3 minutes of deep voice conversation. Agar dono time dhalne par <span className="text-success font-bold">&quot;YES&quot;</span> karte hain tabhi Profile photo &amp; name unlock hogee!
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-left space-y-2">
-                <p className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
-                  <Flame size={16} className="text-rose-500" /> Haptic Heartbeat Synced
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-border text-left space-y-2">
+                <p className="text-xs font-bold text-primary flex items-center gap-1.5">
+                  <Flame size={16} className="text-primary" /> Haptic Heartbeat Synced
                 </p>
-                <p className="text-[11px] text-gray-400">
+                <p className="text-[11px] text-muted">
                   Double-tap center during your date to simultaneously vibrate both phones and flood screens with flaming heart waves!
                 </p>
               </div>
 
               <button
                 onClick={handleStart3MinDate}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-extrabold text-base text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-primary hover:to-pink-500 font-extrabold text-base text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
               >
                 <Sparkles size={20} /> Match &amp; Connect Voice Now 🎙️
               </button>
@@ -301,11 +302,11 @@ export default function BlindDatePage() {
           ) : (
             <div className="w-full flex flex-col items-center justify-between space-y-6 py-4">
               {/* Timer Bar */}
-              <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-                <span className="text-xs text-rose-300 font-bold flex items-center gap-1.5">
+              <div className="w-full bg-surface-elevated border border-border rounded-2xl p-4 flex items-center justify-between shadow-lg">
+                <span className="text-xs text-primary font-bold flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span> Audio Date Active
                 </span>
-                <span className="text-2xl font-black text-emerald-400 font-mono tracking-wider flex items-center gap-1.5">
+                <span className="text-2xl font-black text-success font-mono tracking-wider flex items-center gap-1.5">
                   <Clock size={20} /> {formatTime(timeLeft)}
                 </span>
               </div>
@@ -313,18 +314,18 @@ export default function BlindDatePage() {
               {/* Profile Avatar / Unlock Showcase */}
               <div
                 onDoubleClick={handleDoubleTapHaptic}
-                className="relative w-64 h-64 rounded-3xl overflow-hidden border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center cursor-pointer group select-none"
+                className="relative w-64 h-64 rounded-3xl overflow-hidden border border-border bg-white/[0.04] backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center cursor-pointer group select-none"
               >
                 {!unlocked ? (
                   <>
-                    <div className="w-28 h-28 rounded-full bg-white/5 border border-white/20 flex items-center justify-center filter blur-[2px] animate-pulse">
+                    <div className="w-28 h-28 rounded-full bg-surface-elevated border border-white/20 flex items-center justify-center filter blur-[2px] animate-pulse">
                       <Volume2 size={48} className="text-pink-400 animate-bounce" />
                     </div>
-                    <p className="mt-4 font-black text-white text-lg">Anonymous Date 🤫</p>
+                    <p className="mt-4 font-black text-foreground text-lg">Anonymous Date 🤫</p>
                     <p className="text-[10px] text-pink-300 font-medium mt-1">Double-tap to fire Heartbeat Haptics 💕</p>
                     <div className="flex items-center gap-1 mt-3">
                       {[...Array(6)].map((_, i) => (
-                        <div key={i} className="w-1.5 bg-pink-500 rounded-full animate-pulse" style={{ height: `${Math.random() * 24 + 8}px`, animationDelay: `${i * 0.15}s` }}></div>
+                        <div key={i} className="w-1.5 bg-primary rounded-full animate-pulse" style={{ height: `${Math.random() * 24 + 8}px`, animationDelay: `${i * 0.15}s` }}></div>
                       ))}
                     </div>
                   </>
@@ -333,11 +334,11 @@ export default function BlindDatePage() {
                     <div className="w-28 h-28 rounded-full border-2 border-emerald-400 bg-indigo-600 flex items-center justify-center shadow-lg text-4xl font-extrabold">
                       👩‍🦰
                     </div>
-                    <span className="mt-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[10px] px-3 py-0.5 rounded-full font-bold">
+                    <span className="mt-3 bg-success/20 border border-emerald-500/50 text-emerald-300 text-[10px] px-3 py-0.5 rounded-full font-bold">
                       ✨ Unlocked Profile!
                     </span>
-                    <h3 className="text-xl font-black text-white mt-1">Aanya Sharma, 21</h3>
-                    <p className="text-xs text-gray-300">Delhi University Hub</p>
+                    <h3 className="text-xl font-black text-foreground mt-1">Aanya Sharma, 21</h3>
+                    <p className="text-xs text-secondary">Delhi University Hub</p>
                   </motion.div>
                 )}
               </div>
@@ -346,15 +347,15 @@ export default function BlindDatePage() {
               <div className="w-full space-y-3">
                 <button
                   onClick={handleDoubleTapHaptic}
-                  className="w-full py-3 rounded-2xl bg-rose-950/40 border border-rose-500/40 hover:bg-rose-900/30 text-rose-300 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.2)]"
+                  className="w-full py-3 rounded-2xl bg-rose-950/40 border border-primary/40 hover:bg-rose-900/30 text-primary font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.2)]"
                 >
-                  <Flame size={16} className="text-rose-500 animate-bounce" /> Trigger Heartbeat Sync Vibrate 💓 ({doubleTapCount})
+                  <Flame size={16} className="text-primary animate-bounce" /> Trigger Heartbeat Sync Vibrate 💓 ({doubleTapCount})
                 </button>
 
                 <div className="grid grid-cols-2 gap-3 w-full">
                   <button
                     onClick={() => { setInCall(false); toast("Audio date ended.", "info"); }}
-                    className="py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-red-400 font-extrabold text-xs border border-white/10"
+                    className="py-3.5 rounded-2xl bg-surface-elevated hover:bg-white/15 text-red-400 font-extrabold text-xs border border-border"
                   >
                     End Date ❌
                   </button>
@@ -362,7 +363,7 @@ export default function BlindDatePage() {
                     onClick={handleTapYes}
                     disabled={myYes}
                     className={`py-3.5 rounded-2xl font-black text-xs shadow-lg transition flex items-center justify-center gap-1.5 ${
-                      myYes ? "bg-emerald-600 text-white opacity-90 cursor-default" : "bg-gradient-to-r from-pink-500 to-rose-500 hover:brightness-110 text-white"
+                      myYes ? "bg-emerald-600 text-white opacity-90 cursor-default" : "bg-gradient-to-r from-primary to-primary-hover hover:brightness-110 text-white"
                     }`}
                   >
                     <Unlock size={16} /> {myYes ? "YES Confirmed ✅" : "Tap YES to Unlock 💖"}
@@ -386,15 +387,15 @@ export default function BlindDatePage() {
                 <div className="w-24 h-24 rounded-full bg-purple-600/30 border border-purple-400 flex items-center justify-center mb-6">
                   <Volume2 size={40} className="text-purple-300 animate-pulse" />
                 </div>
-                <h3 className="text-2xl font-extrabold text-white">{profiles[0].name}</h3>
+                <h3 className="text-2xl font-extrabold text-foreground">{profiles[0].name}</h3>
                 <p className="text-sm text-purple-300 mt-1">Age: {profiles[0].age} • {profiles[0].location}</p>
                 <div className="flex items-center gap-6 mt-8">
-                  <button onClick={() => handleSwipe("left")} className="w-14 h-14 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg font-black text-xl">X</button>
-                  <button onClick={() => handleSwipe("right")} className="w-14 h-14 rounded-full bg-pink-600 text-white flex items-center justify-center shadow-lg font-black text-xl">♥</button>
+                  <button onClick={() => handleSwipe("left")} className="w-14 h-14 rounded-full bg-white text-error flex items-center justify-center shadow-lg font-black text-xl">X</button>
+                  <button onClick={() => handleSwipe("right")} className="w-14 h-14 rounded-full bg-pink-600 text-foreground flex items-center justify-center shadow-lg font-black text-xl">♥</button>
                 </div>
               </motion.div>
             ) : (
-              <p className="text-sm text-gray-400">No more voice cards! Return to 3-Min Live Mode above.</p>
+              <p className="text-sm text-muted">No more voice cards! Return to 3-Min Live Mode above.</p>
             )}
           </div>
         )}

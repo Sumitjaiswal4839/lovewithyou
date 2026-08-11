@@ -1,58 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  --color-coral: #E36E59;
-  --color-lime: #4BF02B;
-  --color-cyan: #4CF5EB;
-  --color-sapphire: #32A7F0;
-  --color-indigo-royal: #4B32F0;
-  --color-magenta: #D624B8;
-  --color-gold: #FFDC17;
+  /* Dynamic Variables Mapped */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-foreground: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-divider: var(--divider);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-romantic: var(--romantic-peach);
+  --color-coral: var(--muted-coral);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
 
-  --color-primary-50: #fdf2f8;
-  --color-primary-100: #fce7f3;
-  --color-primary-500: #D624B8;
-  --color-primary-600: #4B32F0;
-  --color-primary-900: #32A7F0;
-
-  --color-dark-bg: #07050e;
-  --color-glass-bg: rgba(255, 255, 255, 0.03);
-  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
 }
 
-:root {
-  --color-coral: #E36E59;
-  --color-lime: #4BF02B;
-  --color-cyan: #4CF5EB;
-  --color-sapphire: #32A7F0;
-  --color-indigo-royal: #4B32F0;
-  --color-magenta: #D624B8;
-  --color-gold: #FFDC17;
+/* --- LIGHT MODE (Purpose Site - Light Pink White Base) --- */
+:root, .light {
+  --background: #fff5f8;       /* Light Pink White */
+  --surface: #ffffff;          /* Pure White */
+  --surface-elevated: #fce7f3; /* Soft Pink Accent */
+  --text-primary: #1c1917;     /* Near Black */
+  --text-secondary: #9d174d;   /* Dark Rose */
+  --text-muted: #83787b;       /* Muted Grayish Pink */
+  --border: #fce7f3;           /* Soft Pink Border */
+  --divider: #fae0eb;          /* Slightly darker soft pink */
+  
+  --primary: #e11d48;          /* Rose Red */
+  --primary-hover: #ff4d6d;    /* Bright Pink */
+  --primary-soft: #ffe4e6;     /* Very Light Rose */
+  
+  --romantic-peach: #fb7185;   /* Coral Pink */
+  --muted-coral: #fda4af;      /* Lighter Coral */
+  
+  --error: #ef4444;            /* Red */
+  --warning: #f59e0b;          /* Amber */
+  --success: #10b981;          /* Emerald Green */
 
-  /* Light theme defaults */
-  --background: #f8f4ff;
-  --foreground: #1a0530;
-  --glass-bg: rgba(0, 0, 0, 0.03);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(252, 231, 243, 0.6);
 }
 
+/* --- DARK MODE (Purpose Site - Deep Midnight Purple Base) --- */
 .dark {
-  --background: #07050e;
-  --foreground: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.1);
-}
+  --background: #1a0a2e;       /* Deep Midnight Purple */
+  --surface: #16213e;          /* Dark Navy */
+  --surface-elevated: #0f3460; /* Deep Blue */
+  --text-primary: #f8fafc;     /* Clean White */
+  --text-secondary: #c084fc;   /* Lavender Purple */
+  --text-muted: #94a3b8;       /* Cool Slate Gray */
+  --border: #6c5ce7;           /* Indigo Purple Border */
+  --divider: #362a63;          /* Darker Muted Purple */
+  
+  --primary: #ff4d6d;          /* Bright Pink for Dark Mode Pop */
+  --primary-hover: #e11d48;    /* Rose Red */
+  --primary-soft: #38152e;     /* Deep Rose Background */
+  
+  --romantic-peach: #fb7185;   /* Coral Pink */
+  --muted-coral: #e17055;      /* Warm Coral */
+  
+  --error: #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
 
-.light {
-  --background: #f8f4ff;
-  --foreground: #1a0530;
-  --glass-bg: rgba(0, 0, 0, 0.03);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(22, 33, 62, 0.75);
+  --glass-border: rgba(108, 92, 231, 0.3);
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -66,66 +94,65 @@ body {
   to { width: 100%; }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Custom 7-Color Signature Utilities */
+/* --- Signature Romantic Gradient (Rose Red -> Coral -> Lavender) --- */
 .btn-signature-gradient {
-  background: linear-gradient(135deg, #D624B8 0%, #4B32F0 50%, #32A7F0 100%);
+  background: linear-gradient(135deg, #e11d48 0%, #fb7185 50%, #c084fc 100%);
   color: #ffffff;
   transition: all 0.3s ease;
+  border: none;
 }
 
 .btn-signature-gradient:hover {
   opacity: 0.95;
-  box-shadow: 0 0 25px rgba(214, 36, 184, 0.4);
+  box-shadow: 0 0 25px rgba(225, 29, 72, 0.5); /* Rose Red Glow */
+  transform: translateY(-2px);
 }
 
+.btn-signature-gradient:active {
+  transform: translateY(0);
+}
+
+/* --- Badges --- */
 .badge-gold {
-  background-color: rgba(255, 220, 23, 0.15);
-  border: 1px solid rgba(255, 220, 23, 0.4);
-  color: #FFDC17;
+  background-color: rgba(255, 200, 87, 0.15);
+  border: 1px solid rgba(255, 200, 87, 0.4);
+  color: #E8A93D;
 }
 
 .badge-lime {
-  background-color: rgba(75, 240, 43, 0.15);
-  border: 1px solid rgba(75, 240, 43, 0.4);
-  color: #4BF02B;
+  background-color: rgba(52, 194, 140, 0.15);
+  border: 1px solid rgba(52, 194, 140, 0.4);
+  color: #2FAE79;
 }
 
 .badge-cyan {
-  background-color: rgba(76, 245, 235, 0.15);
-  border: 1px solid rgba(76, 245, 235, 0.4);
-  color: #4CF5EB;
+  background-color: rgba(94, 197, 214, 0.15);
+  border: 1px solid rgba(94, 197, 214, 0.4);
+  color: #4CB8D4;
 }
 
 .badge-sapphire {
-  background-color: rgba(50, 167, 240, 0.15);
-  border: 1px solid rgba(50, 167, 240, 0.4);
-  color: #32A7F0;
+  background-color: rgba(107, 148, 214, 0.15);
+  border: 1px solid rgba(107, 148, 214, 0.4);
+  color: #6B94D6;
 }
 
 .badge-magenta {
-  background-color: rgba(214, 36, 184, 0.15);
-  border: 1px solid rgba(214, 36, 184, 0.4);
-  color: #D624B8;
+  background-color: rgba(225, 29, 72, 0.15); /* Using Rose Red */
+  border: 1px solid rgba(225, 29, 72, 0.4);
+  color: #e11d48;
 }
 
 .badge-coral {
-  background-color: rgba(227, 110, 89, 0.15);
-  border: 1px solid rgba(227, 110, 89, 0.4);
-  color: #E36E59;
+  background-color: rgba(251, 113, 133, 0.15); /* Using Coral Pink */
+  border: 1px solid rgba(251, 113, 133, 0.4);
+  color: #fb7185;
 }
 
 .badge-indigo {
-  background-color: rgba(75, 50, 240, 0.2);
-  border: 1px solid rgba(75, 50, 240, 0.4);
-  color: #4CF5EB;
+  background-color: rgba(192, 132, 252, 0.15); /* Using Lavender */
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  color: #c084fc;
 }
 
 /* Luxury Glassmorphism Utilities */

@@ -80,27 +80,27 @@ export default function FaceScanner({ onAgeEstimated }: { onAgeEstimated: (age: 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
-      <div className="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mb-4">
-        <Camera className="w-8 h-8 text-primary-500" />
+    <div className="flex flex-col items-center justify-center p-6 bg-surface-elevated border border-border rounded-2xl text-center">
+      <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4">
+        <Camera className="w-8 h-8 text-primary" />
       </div>
       
-      <h3 className="text-xl font-bold text-white mb-2">Age Verification</h3>
-      <p className="text-gray-400 text-sm mb-6 max-w-[250px]">
+      <h3 className="text-xl font-bold text-foreground mb-2">Age Verification</h3>
+      <p className="text-muted text-sm mb-6 max-w-[250px]">
         To keep this community safe, we use on-device AI to verify you are 18 or older. No photos are uploaded.
       </p>
 
       {error && (
-        <div className="flex items-start gap-2 bg-red-500/20 p-3 rounded-lg text-red-400 text-sm mb-4 w-full text-left">
+        <div className="flex items-start gap-2 bg-error/20 p-3 rounded-lg text-red-400 text-sm mb-4 w-full text-left">
           <ShieldAlert className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="relative w-full max-w-[240px] aspect-[3/4] bg-black rounded-xl overflow-hidden mb-4 border-2 border-white/10">
+      <div className="relative w-full max-w-[240px] aspect-[3/4] bg-black rounded-xl overflow-hidden mb-4 border-2 border-border">
         {!isScanning && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-gray-500 text-sm px-4">Camera off</p>
+            <p className="text-muted text-sm px-4">Camera off</p>
           </div>
         )}
         <video 
@@ -113,7 +113,7 @@ export default function FaceScanner({ onAgeEstimated }: { onAgeEstimated: (age: 
         />
         
         {isScanning && (
-          <div className="absolute inset-0 border-[3px] border-primary-500 rounded-xl animate-pulse pointer-events-none" />
+          <div className="absolute inset-0 border-[3px] border-primary rounded-xl animate-pulse pointer-events-none" />
         )}
       </div>
 
@@ -123,8 +123,8 @@ export default function FaceScanner({ onAgeEstimated }: { onAgeEstimated: (age: 
           disabled={!isModelLoaded}
           className={`w-full py-3 rounded-xl font-semibold transition-all ${
             isModelLoaded 
-              ? 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/20' 
-              : 'bg-white/10 text-gray-500 cursor-not-allowed'
+              ? 'bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/20' 
+              : 'bg-surface-elevated text-white/60 cursor-not-allowed'
           }`}
         >
           {isModelLoaded ? 'Start Verification' : 'Loading Security Models...'}

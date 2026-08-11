@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
+import Image from "next/image";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessageCircle, Search, Lock, HeartPulse, Heart, Users, Check, X, Clock } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { useToast } from "@/components/ui/ToastProvider";
+import { motion } from "framer-motion";
 
 function ChatListContent() {
   const router = useRouter();
@@ -37,12 +39,23 @@ function ChatListContent() {
   };
 
   const renderList = (list: typeof matches, isLikes: boolean) => {
+    // Empty State matching the sleek look of the image
     if (list.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-          {isLikes ? <HeartPulse size={48} className="text-white/10 mb-2" /> : <MessageCircle size={48} className="text-white/10 mb-2" />}
-          <p>{isLikes ? "No likes yet." : "No matches yet."}</p>
-          <p className="text-xs">Start swiping to find someone!</p>
+        <div className="flex flex-col items-center justify-center pt-28 pb-10 text-center">
+          <div className="mb-4">
+            {isLikes ? (
+              <HeartPulse size={48} style={{ color: 'var(--color-text-muted)', opacity: 0.4 }} strokeWidth={1.5} />
+            ) : (
+              <MessageCircle size={48} style={{ color: 'var(--color-text-muted)', opacity: 0.4 }} strokeWidth={1.5} />
+            )}
+          </div>
+          <h3 className="text-base font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>
+            {isLikes ? "No likes yet." : "No matches yet."}
+          </h3>
+          <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+            Start swiping to find someone!
+          </p>
         </div>
       );
     }
@@ -66,23 +79,27 @@ function ChatListContent() {
                   toast("Match with them first to chat!", "success");
                 }
               }}
-              className={`flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-2xl transition-all ${isBlurred ? 'filter blur-md opacity-70 pointer-events-none' : 'cursor-pointer hover:bg-white/10'}`}
+              className={`flex items-center gap-4 p-3 border rounded-2xl transition-all ${isBlurred ? 'filter blur-md opacity-70 pointer-events-none' : 'cursor-pointer hover:opacity-80'}`}
+              style={{ 
+                backgroundColor: 'var(--color-surface-elevated)',
+                borderColor: 'var(--color-border)'
+              }}
             >
               {/* Avatar */}
               <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0">
-                <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                {!isBlurred && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-dark-bg rounded-full"></div>}
+                <Image src={item.img} alt={item.name} fill sizes="56px" className="object-cover" />
+                {!isBlurred && <div className="absolute bottom-0 right-0 w-3 h-3 border-2 rounded-full" style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-surface-elevated)' }}></div>}
               </div>
               
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-white font-bold truncate">{item.name}</h3>
-                  {!isBlurred && <span className="text-xs text-primary-400 font-medium">{isLikes ? "Liked You!" : "New Match!"}</span>}
+                  <h3 className="font-bold truncate" style={{ color: 'var(--color-foreground)' }}>{item.name}</h3>
+                  {!isBlurred && <span className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>{isLikes ? "Liked You!" : "New Match!"}</span>}
                 </div>
                 {!isBlurred && (
                   <div className="flex items-center gap-2">
-                     {item.campus && <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-gray-300">🎓 {item.campus}</span>}
+                     {item.campus && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-secondary)' }}>🎓 {item.campus}</span>}
                      <KarmaBadge score={item.karma} showText={false} />
                   </div>
                 )}
@@ -93,16 +110,16 @@ function ChatListContent() {
 
         {/* Paywall Overlay */}
         {list.length > 5 && !isUnlockedToday && (
-          <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-dark-bg via-dark-bg/90 to-transparent flex flex-col items-center justify-end pb-8 z-10 pointer-events-auto">
-            <div className="bg-black/60 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center max-w-[280px]">
-              <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 mb-3">
+          <div className="absolute bottom-0 left-0 w-full h-48 flex flex-col items-center justify-end pb-8 z-10 pointer-events-auto" style={{ background: 'linear-gradient(to top, var(--color-background) 20%, transparent)' }}>
+            <div className="backdrop-blur-xl p-5 rounded-3xl border shadow-2xl flex flex-col items-center text-center max-w-[280px]" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
                 <Lock size={24} />
               </div>
-              <h3 className="text-white font-bold mb-1">See All {isLikes ? "Likes" : "Matches"}</h3>
-              <p className="text-xs text-gray-400 mb-4">You can only see 5 profiles for free per day. Unlock the rest now!</p>
+              <h3 className="font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>See All {isLikes ? "Likes" : "Matches"}</h3>
+              <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>You can only see 5 profiles for free per day. Unlock the rest now!</p>
               <button 
                 onClick={handleUnlock}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary-600 to-pink-500 text-white font-bold text-sm shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
+                className="btn-signature-gradient w-full py-3 rounded-xl font-bold text-sm shadow-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
               >
                 Unlock All Today (50 Coins)
               </button>
@@ -122,26 +139,28 @@ function ChatListContent() {
         {/* Incoming Requests */}
         {incomingReqs.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Friend Requests ({incomingReqs.length})</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider px-1" style={{ color: 'var(--color-text-muted)' }}>Friend Requests ({incomingReqs.length})</h3>
             {incomingReqs.map(req => (
-              <div key={req.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl">
+              <div key={req.id} className="flex items-center gap-3 p-3 border rounded-2xl" style={{ backgroundColor: 'var(--color-surface-elevated)', borderColor: 'var(--color-border)' }}>
                 <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
                   <img src={req.img} alt={req.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-white font-bold text-sm truncate">{req.name}</h4>
-                  <p className="text-xs text-gray-400">Wants to be friends</p>
+                  <h4 className="font-bold text-sm truncate" style={{ color: 'var(--color-foreground)' }}>{req.name}</h4>
+                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Wants to be friends</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button 
                     onClick={() => useUserStore.getState().acceptFriendRequest(req.id)}
-                    className="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center hover:bg-green-500/30 transition-colors"
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                    style={{ backgroundColor: 'var(--color-success)', color: '#fff', opacity: 0.9 }}
                   >
                     <Check size={18} />
                   </button>
                   <button 
                     onClick={() => useUserStore.getState().declineFriendRequest(req.id)}
-                    className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                    style={{ backgroundColor: 'var(--color-error)', color: '#fff', opacity: 0.9 }}
                   >
                     <X size={18} />
                   </button>
@@ -154,19 +173,20 @@ function ChatListContent() {
         {/* Outgoing Requests */}
         {outgoingReqs.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Sent Requests ({outgoingReqs.length})</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider px-1" style={{ color: 'var(--color-text-muted)' }}>Sent Requests ({outgoingReqs.length})</h3>
             {outgoingReqs.map(req => (
-              <div key={req.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl opacity-70">
+              <div key={req.id} className="flex items-center gap-3 p-3 border rounded-2xl opacity-70" style={{ backgroundColor: 'var(--color-surface-elevated)', borderColor: 'var(--color-border)' }}>
                 <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
                   <img src={req.img} alt={req.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-white font-bold text-sm truncate">{req.name}</h4>
-                  <p className="text-[11px] text-orange-400 flex items-center gap-1"><Clock size={10} /> Pending Approval</p>
+                  <h4 className="font-bold text-sm truncate" style={{ color: 'var(--color-foreground)' }}>{req.name}</h4>
+                  <p className="text-[11px] flex items-center gap-1" style={{ color: 'var(--color-warning)' }}><Clock size={10} /> Pending Approval</p>
                 </div>
                 <button 
                   onClick={() => router.push(`/chat/${req.id}`)}
-                  className="px-3 py-1.5 text-xs bg-white/10 text-white rounded-full font-medium"
+                  className="px-3 py-1.5 text-xs rounded-full font-medium"
+                  style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-foreground)' }}
                 >
                   View Chat
                 </button>
@@ -177,28 +197,30 @@ function ChatListContent() {
 
         {/* Friends List */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">My Friends ({friends.length})</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider px-1" style={{ color: 'var(--color-text-muted)' }}>My Friends ({friends.length})</h3>
           {friends.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 text-sm">
-              <Users size={32} className="mx-auto mb-2 opacity-50" />
-              You haven't added any friends yet.
+            <div className="flex flex-col items-center justify-center pt-10 pb-10 text-center">
+              <Users size={48} style={{ color: 'var(--color-text-muted)', opacity: 0.4 }} strokeWidth={1.5} className="mb-4" />
+              <h3 className="text-base font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>No friends yet.</h3>
+              <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>Send friend requests to connect!</p>
             </div>
           ) : (
             friends.map(friend => (
               <div 
                 key={friend.id}
                 onClick={() => router.push(`/chat/${friend.id}`)}
-                className="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-all"
+                className="flex items-center gap-4 p-3 border rounded-2xl cursor-pointer hover:opacity-80 transition-all"
+                style={{ backgroundColor: 'var(--color-surface-elevated)', borderColor: 'var(--color-border)' }}
               >
                 <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 relative">
                   <img src={friend.img} alt={friend.name} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-dark-bg rounded-full"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-2 rounded-full" style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-surface-elevated)' }}></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-white font-bold truncate">{friend.name}</h4>
-                  <p className="text-xs text-primary-400 font-medium">Friend</p>
+                  <h4 className="font-bold truncate" style={{ color: 'var(--color-foreground)' }}>{friend.name}</h4>
+                  <p className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>Friend</p>
                 </div>
-                <MessageCircle size={18} className="text-gray-400" />
+                <MessageCircle size={18} style={{ color: 'var(--color-text-muted)' }} />
               </div>
             ))
           )}
@@ -207,48 +229,76 @@ function ChatListContent() {
     );
   };
 
+  const tabs = [
+    { id: "matches", label: "My Matches", count: matches.length },
+    { id: "likes", label: "Who Liked Me", count: likes.length },
+    { id: "friends", label: "Friends", count: friends.length + friendRequests.filter(r => r.status === 'incoming').length },
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-dark-bg pb-20">
+    <div className="flex flex-col h-screen pb-20 font-sans" style={{ backgroundColor: 'var(--color-background)' }}>
       
       {/* Header */}
-      <div className="p-4 pt-8 pb-0 glass border-b border-glass-border">
-        <h1 className="text-2xl font-bold text-white mb-4">Connections</h1>
+      <div className="px-5 pt-12 pb-0 glass border-b" style={{ borderColor: 'var(--color-glass-border)' }}>
+        <h1 className="text-2xl font-black mb-5 tracking-tight" style={{ color: 'var(--color-foreground)' }}>Connections</h1>
         
         {/* Search Bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} size={18} />
           <input 
             type="text" 
             placeholder="Search..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-primary-500 text-sm text-gray-200"
+            className="w-full border rounded-2xl pl-11 pr-4 py-3 outline-none transition shadow-sm text-sm"
+            style={{ 
+              backgroundColor: 'var(--color-surface)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-foreground)'
+            }}
           />
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 overflow-x-auto no-scrollbar">
-          <button 
-            onClick={() => setActiveTab("matches")}
-            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "matches" ? "border-primary-500 text-primary-500" : "border-transparent text-gray-400"}`}
-          >
-            My Matches <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{matches.length}</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab("likes")}
-            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "likes" ? "border-pink-500 text-pink-500" : "border-transparent text-gray-400"}`}
-          >
-            Who Liked Me <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{likes.length}</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab("friends")}
-            className={`pb-3 px-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "friends" ? "border-blue-500 text-blue-500" : "border-transparent text-gray-400"}`}
-          >
-            Friends <span className="ml-1 bg-white/10 text-white px-2 py-0.5 rounded-full text-[10px]">{friends.length + friendRequests.filter(r => r.status === 'incoming').length}</span>
-          </button>
+        {/* Tabs - Sleek Design like image_ad2eaf.png */}
+        <div className="flex w-full">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className="relative flex-1 py-3.5 flex justify-center items-center gap-2 transition hover:opacity-80"
+                style={{ 
+                  color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  fontWeight: isActive ? '800' : '700',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {tab.label}
+                <span 
+                  className="text-[10px] px-2 py-0.5 rounded-full font-black"
+                  style={{ 
+                    backgroundColor: isActive ? 'var(--color-primary-soft)' : 'var(--color-surface-elevated)',
+                    color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                  }}
+                >
+                  {tab.count}
+                </span>
+                
+                {/* Active Tab Underline Animation */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
+                    style={{ backgroundColor: 'var(--color-primary)' }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* List Container */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
          {activeTab === "matches" && renderList(matches, false)}
          {activeTab === "likes" && renderList(likes, true)}
          {activeTab === "friends" && renderFriendsTab()}
@@ -260,7 +310,11 @@ function ChatListContent() {
 
 export default function ChatListPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center text-white">Loading Connections...</div>}>
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)' }} />
+      </div>
+    }>
       <ChatListContent />
     </Suspense>
   );

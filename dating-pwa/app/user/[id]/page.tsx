@@ -32,7 +32,7 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default function UserProfilePage() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-        <h1 className="text-white font-bold text-xl mb-4">Profile Not Found</h1>
+        <h1 className="text-foreground font-bold text-xl mb-4">Profile Not Found</h1>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
     );
@@ -51,31 +51,31 @@ export default function UserProfilePage() {
       <div className="relative h-[60vh] w-full bg-[#1e1e1e]">
         <button 
           onClick={() => router.back()}
-          className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white"
+          className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-foreground"
         >
           <ArrowLeft size={20} />
         </button>
         {profile.photo_url ? (
           <img src={profile.photo_url} alt={profile.name} className="w-full h-full object-cover" />
         ) : (
-          <User size={64} className="text-white/20 absolute inset-0 m-auto" />
+          <User size={64} className="text-foreground/20 absolute inset-0 m-auto" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         <div className="absolute bottom-6 left-6 right-6">
-          <h1 className="text-4xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
             {profile.name}
             {profile.studentVerificationStatus === 'verified' && (
               <CheckCircle2 size={24} className="text-blue-500" />
             )}
           </h1>
-          <div className="flex items-center gap-4 mt-3 text-white/80">
+          <div className="flex items-center gap-4 mt-3 text-foreground/80">
             {profile.location && (
-              <span className="flex items-center gap-1 text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+              <span className="flex items-center gap-1 text-sm bg-surface-elevated px-3 py-1 rounded-full backdrop-blur-md">
                 <MapPin size={14} /> {profile.location}
               </span>
             )}
             {profile.campus && (
-              <span className="flex items-center gap-1 text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+              <span className="flex items-center gap-1 text-sm bg-surface-elevated px-3 py-1 rounded-full backdrop-blur-md">
                 <GraduationCap size={14} /> {profile.campus}
               </span>
             )}
@@ -86,22 +86,22 @@ export default function UserProfilePage() {
       <div className="p-6 space-y-8 flex-1">
         {profile.bio && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white/50 uppercase tracking-wider">About Me</h3>
-            <p className="text-white/90 leading-relaxed text-lg">{profile.bio}</p>
+            <h3 className="text-sm font-bold text-foreground/50 uppercase tracking-wider">About Me</h3>
+            <p className="text-foreground/90 leading-relaxed text-lg">{profile.bio}</p>
           </div>
         )}
 
         {(profile.hobbies?.length > 0 || profile.interests?.length > 0) && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white/50 uppercase tracking-wider">Interests</h3>
+            <h3 className="text-sm font-bold text-foreground/50 uppercase tracking-wider">Interests</h3>
             <div className="flex flex-wrap gap-2">
               {profile.hobbies?.map((hobby: string, i: number) => (
-                <span key={i} className="bg-primary-500/20 text-primary-300 border border-primary-500/30 px-4 py-1.5 rounded-full text-sm font-medium">
+                <span key={i} className="bg-primary/20 text-primary-300 border border-primary/30 px-4 py-1.5 rounded-full text-sm font-medium">
                   {hobby}
                 </span>
               ))}
               {profile.interests?.map((interest: string, i: number) => (
-                <span key={i} className="bg-white/10 text-white/90 border border-white/10 px-4 py-1.5 rounded-full text-sm font-medium">
+                <span key={i} className="bg-surface-elevated text-foreground/90 border border-border px-4 py-1.5 rounded-full text-sm font-medium">
                   {interest}
                 </span>
               ))}

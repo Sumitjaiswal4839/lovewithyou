@@ -9,9 +9,9 @@ interface ThemeProviderState {
   setTheme: (theme: Theme) => void;
 }
 
-const ThemeProviderContext = ((globalThis as any).__ThemeContext as React.Context<ThemeProviderState | undefined>) || createContext<ThemeProviderState | undefined>(undefined);
+const ThemeProviderContext = ((globalThis as unknown as Record<string, unknown>).__ThemeContext as React.Context<ThemeProviderState | undefined>) || createContext<ThemeProviderState | undefined>(undefined);
 if (process.env.NODE_ENV !== "production") {
-  (globalThis as any).__ThemeContext = ThemeProviderContext;
+  (globalThis as unknown as Record<string, unknown>).__ThemeContext = ThemeProviderContext;
 }
 
 export function ThemeProvider({
@@ -27,6 +27,7 @@ export function ThemeProvider({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const savedTheme = (localStorage.getItem(storageKey) as Theme) || defaultTheme;
     setTheme(savedTheme);

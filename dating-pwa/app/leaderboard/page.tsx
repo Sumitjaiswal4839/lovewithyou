@@ -77,36 +77,36 @@ export default function LeaderboardPage() {
   const remaining = leaders.slice(3);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#07050e] text-white">
-      <div className="p-4 pt-6 bg-black/60 backdrop-blur-xl border-b border-white/10 sticky top-0 z-10">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <div className="p-4 pt-6 bg-surface-elevated backdrop-blur-xl border-b border-border sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white">
+            <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-elevated text-foreground">
               <ArrowLeft size={24} />
             </button>
-            <h2 className="text-2xl font-black text-white flex items-center gap-2">
-              Leaderboard <Trophy size={20} className="text-amber-400 animate-pulse" />
+            <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
+              Leaderboard <Trophy size={20} className="text-warning animate-pulse" />
             </h2>
           </div>
           <button 
             onClick={() => toast("Invite link copied to clipboard!", "success")}
-            className="flex items-center gap-1.5 text-xs bg-amber-500/20 text-amber-300 font-bold px-3 py-1.5 rounded-full border border-amber-500/30"
+            className="flex items-center gap-1.5 text-xs bg-warning/20 text-amber-300 font-bold px-3 py-1.5 rounded-full border border-amber-500/30"
           >
             <Share2 size={14} /> Refer &amp; Earn
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-white/5 p-1 rounded-full border border-white/10">
+        <div className="flex bg-surface-elevated p-1 rounded-full border border-border">
           <button 
             onClick={() => setActiveTab("city")}
-            className={`flex-1 py-2 rounded-full text-xs font-black transition ${activeTab === "city" ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-2 rounded-full text-xs font-black transition ${activeTab === "city" ? 'bg-gradient-to-r from-primary to-pink-600 text-white shadow-lg' : 'text-white/60 hover:text-white'}`}
           >
             Top Connectors (City)
           </button>
           <button 
             onClick={() => setActiveTab("campus")}
-            className={`flex-1 py-2 rounded-full text-xs font-black transition ${activeTab === "campus" ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-2 rounded-full text-xs font-black transition ${activeTab === "campus" ? 'bg-gradient-to-r from-primary to-pink-600 text-white shadow-lg' : 'text-white/60 hover:text-white'}`}
           >
             My Campus Vibe Kings
           </button>
@@ -115,8 +115,8 @@ export default function LeaderboardPage() {
 
       <div className="p-4 space-y-3 pb-24">
         {isLoading ? (
-          <div className="py-20 text-center text-gray-400 text-xs flex items-center justify-center gap-2">
-            <RefreshCw size={16} className="animate-spin text-rose-400" /> Fetching live Supabase connector rankings...
+          <div className="py-20 text-center text-muted text-xs flex items-center justify-center gap-2">
+            <RefreshCw size={16} className="animate-spin text-primary" /> Fetching live Supabase connector rankings...
           </div>
         ) : (
           <>
@@ -131,8 +131,8 @@ export default function LeaderboardPage() {
                       2
                     </div>
                   </div>
-                  <div className="mt-3 font-bold text-white text-xs truncate max-w-[80px] text-center">{top3[1]?.name}</div>
-                  <div className="text-[10px] text-amber-400 font-black">{top3[1]?.karma} Vibe</div>
+                  <div className="mt-3 font-bold text-foreground text-xs truncate max-w-[80px] text-center">{top3[1]?.name}</div>
+                  <div className="text-[10px] text-warning font-black">{top3[1]?.karma} Vibe</div>
                 </div>
 
                 {/* 1st Place */}
@@ -143,7 +143,7 @@ export default function LeaderboardPage() {
                       👑 1
                     </div>
                   </div>
-                  <div className="mt-5 font-black text-white text-sm -translate-y-2 truncate max-w-[90px] text-center">{top3[0]?.name}</div>
+                  <div className="mt-5 font-black text-foreground text-sm -translate-y-2 truncate max-w-[90px] text-center">{top3[0]?.name}</div>
                   <div className="text-xs text-amber-300 font-black -translate-y-2">{top3[0]?.karma} Vibe</div>
                 </div>
 
@@ -151,29 +151,29 @@ export default function LeaderboardPage() {
                 <div className="flex flex-col items-center">
                   <div className="relative">
                     <img src={top3[2]?.img} className="w-16 h-16 rounded-full object-cover border-4 border-amber-700 shadow-md" />
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-amber-700 text-white text-xs font-black flex items-center justify-center">
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-amber-700 text-foreground text-xs font-black flex items-center justify-center">
                       3
                     </div>
                   </div>
-                  <div className="mt-3 font-bold text-white text-xs truncate max-w-[80px] text-center">{top3[2]?.name}</div>
-                  <div className="text-[10px] text-amber-400 font-black">{top3[2]?.karma} Vibe</div>
+                  <div className="mt-3 font-bold text-foreground text-xs truncate max-w-[80px] text-center">{top3[2]?.name}</div>
+                  <div className="text-[10px] text-warning font-black">{top3[2]?.karma} Vibe</div>
                 </div>
               </div>
             )}
 
             {/* Remaining List */}
             {remaining.map((user) => (
-              <div key={user.rank} className="flex items-center gap-3 bg-white/[0.03] border border-white/10 p-3.5 rounded-3xl hover:border-rose-500/40 transition">
-                <div className="w-7 font-black text-gray-400 text-xs text-center">#{user.rank}</div>
-                <img src={user.img} className="w-11 h-11 rounded-2xl object-cover border border-white/10 shrink-0" />
+              <div key={user.rank} className="flex items-center gap-3 bg-white/[0.03] border border-border p-3.5 rounded-3xl hover:border-primary/40 transition">
+                <div className="w-7 font-black text-muted text-xs text-center">#{user.rank}</div>
+                <img src={user.img} className="w-11 h-11 rounded-2xl object-cover border border-border shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-white text-xs truncate flex items-center gap-1.5">
+                  <h4 className="font-bold text-foreground text-xs truncate flex items-center gap-1.5">
                     {user.name} <span className="text-[10px] text-amber-300 font-normal">{user.badge}</span>
                   </h4>
-                  <p className="text-[10px] text-gray-400 flex items-center gap-1 truncate"><MapPin size={10} /> {user.campus}</p>
+                  <p className="text-[10px] text-muted flex items-center gap-1 truncate"><MapPin size={10} /> {user.campus}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-xs font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
+                  <span className="text-xs font-black text-amber-300 bg-warning/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
                     {user.karma} Vibe
                   </span>
                 </div>

@@ -15,8 +15,8 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white p-4">
-      <h2 className="text-2xl font-bold text-red-500 mb-4">Oops! Something went wrong.</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-foreground p-4">
+      <h2 className="text-2xl font-bold text-error mb-4">Oops! Something went wrong.</h2>
       <p className="text-zinc-400 mb-8 text-center max-w-md">
         A technical error occurred. Our team has been notified.
       </p>

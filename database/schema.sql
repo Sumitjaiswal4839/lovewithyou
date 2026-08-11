@@ -307,3 +307,5 @@ CREATE TRIGGER trigger_clean_ephemeral
     AFTER INSERT ON public.messages
     FOR EACH ROW EXECUTE FUNCTION clean_expired_ephemeral_messages();
 
+
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS match_preferences JSONB DEFAULT '{}'::jsonb;

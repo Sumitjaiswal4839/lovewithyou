@@ -37,6 +37,7 @@ type Profile struct {
 	StudentVerificationStatus string              `json:"studentVerificationStatus,omitempty"`
 	Latitude                  float64             `json:"latitude,omitempty"`
 	Longitude                 float64             `json:"longitude,omitempty"`
+	MatchPreferences          map[string]interface{} `json:"match_preferences,omitempty"`
 }
 
 // GetProfile fetches a profile from the 'profiles' table in Supabase

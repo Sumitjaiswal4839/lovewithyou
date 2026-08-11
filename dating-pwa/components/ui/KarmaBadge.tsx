@@ -10,7 +10,7 @@ interface KarmaBadgeProps {
 
 export function KarmaBadge({ score, className, showText = true }: KarmaBadgeProps) {
   const getKarmaDetails = (s: number) => {
-    if (s < 50) return { label: "Low Trust", color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/20", Icon: Flag };
+    if (s < 50) return { label: "Low Trust", color: "text-error", bg: "bg-error/10", border: "border-red-500/20", Icon: Flag };
     if (s < 90) return { label: "Needs Work", color: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/20", Icon: AlertTriangle };
     if (s <= 120) return { label: "Safe", color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20", Icon: ShieldCheck };
     if (s <= 150) return { label: "Trusted", color: "text-green-500", bg: "bg-green-500/10", border: "border-green-500/20", Icon: Star };

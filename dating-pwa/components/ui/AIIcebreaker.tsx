@@ -28,14 +28,14 @@ export function AIIcebreaker({ matchName, matchHobbies, onGenerate }: AIIcebreak
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 mt-8 space-y-4 bg-gradient-to-br from-primary-500/10 to-purple-500/10 border border-primary-500/20 rounded-3xl backdrop-blur-md text-center max-w-sm mx-auto">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary-500 to-purple-500 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.4)]">
-        <Sparkles size={28} className="text-white" />
+    <div className="flex flex-col items-center justify-center p-6 mt-8 space-y-4 bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20 rounded-3xl backdrop-blur-md text-center max-w-sm mx-auto">
+      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.4)]">
+        <Sparkles size={28} className="text-foreground" />
       </div>
       
       <div>
-        <h3 className="text-white font-bold text-lg mb-1">Stuck on what to say?</h3>
-        <p className="text-gray-400 text-sm leading-relaxed">
+        <h3 className="text-foreground font-bold text-lg mb-1">Stuck on what to say?</h3>
+        <p className="text-muted text-sm leading-relaxed">
           Let Gemini AI analyze your hobbies and {matchName}'s profile to craft the perfect opening message.
         </p>
       </div>
@@ -48,11 +48,11 @@ export function AIIcebreaker({ matchName, matchHobbies, onGenerate }: AIIcebreak
         {isGenerating ? (
           <>
             <Loader2 size={18} className="animate-spin" />
-            <span className="text-primary-600">Generating Magic...</span>
+            <span className="text-primary-hover">Generating Magic...</span>
           </>
         ) : (
           <>
-            <Sparkles size={18} className="text-primary-500" />
+            <Sparkles size={18} className="text-primary" />
             <span>Generate Icebreaker</span>
           </>
         )}

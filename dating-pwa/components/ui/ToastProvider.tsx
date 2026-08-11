@@ -33,7 +33,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const getIcon = (type: ToastType) => {
     switch (type) {
       case "success": return <CheckCircle className="text-green-500" size={20} />;
-      case "error": return <AlertCircle className="text-red-500" size={20} />;
+      case "error": return <AlertCircle className="text-error" size={20} />;
       case "message": return <MessageCircle className="text-violet-500" size={20} />;
       default: return <AlertCircle className="text-blue-500" size={20} />;
     }
@@ -42,7 +42,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const getBgClass = (type: ToastType) => {
     switch (type) {
       case "success": return "bg-green-500/10 border-green-500/20";
-      case "error": return "bg-red-500/10 border-red-500/20";
+      case "error": return "bg-error/10 border-red-500/20";
       case "message": return "bg-violet-500/10 border-violet-500/20";
       default: return "bg-blue-500/10 border-blue-500/20";
     }
@@ -62,10 +62,10 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
             className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-lg transform transition-all duration-300 animate-in slide-in-from-top-5 fade-in ${getBgClass(t.type)}`}
           >
             {getIcon(t.type)}
-            <p className="text-sm font-medium text-white">{t.message}</p>
+            <p className="text-sm font-medium text-foreground">{t.message}</p>
             <button 
               onClick={() => setToasts((prev) => prev.filter(item => item.id !== t.id))}
-              className="ml-4 text-gray-400 hover:text-white"
+              className="ml-4 text-muted hover:text-foreground"
               aria-label="Close notification"
             >
               <X size={16} />

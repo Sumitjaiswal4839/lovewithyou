@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Protect /admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const adminSession = request.cookies.get("admin_session")?.value;
-    const adminSecret = process.env.ADMIN_SECRET_KEY;
+    const jwtSecret = process.env.JWT_SECRET;
 
-    // Secure server-side check
-    if (!adminSession || adminSession !== adminSecret) {
-      // Redirect unauthorized users back to the home page
+    if (!adminSession || !jwtSecret) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    try {
+      // Verify JWT securely
+      const secret = new TextEncoder().encode(jwtSecret);
+      await jwtVerify(adminSession, secret);
+      return NextResponse.next();
+    } catch (error) {
+      // Token invalid or expired
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

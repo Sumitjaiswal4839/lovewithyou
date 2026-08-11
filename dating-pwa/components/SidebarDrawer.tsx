@@ -1,3 +1,4 @@
+// components/SidebarDrawer.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -70,7 +71,8 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
       }
       setIsSearching(true);
       try {
-        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
+        const isProd = process.env.NODE_ENV === "production";
+        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
         const token = useUserStore.getState().authToken;
         const res = await fetch(`${BACKEND_URL}/users/search?q=${encodeURIComponent(searchQuery)}`, {
           headers: {
@@ -119,38 +121,59 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 z-[60] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
           />
 
-          {/* Drawer Panel using clean Screenshot Layout structure */}
+          {/* Drawer Panel - Using Theme Variables */}
           <motion.div
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-0 left-0 h-full w-[84%] max-w-[340px] bg-white z-[70] shadow-2xl flex flex-col overflow-hidden text-slate-800 font-sans"
+            style={{ 
+              backgroundColor: 'var(--color-surface)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-foreground)'
+            }}
+            className="fixed top-0 left-0 h-full w-[84%] max-w-[340px] border-r drop-shadow-sm z-[70] shadow-2xl flex flex-col overflow-hidden font-sans"
           >
-            {/* Header Banner (Dark Cosmic Purple Layout from Screenshot) */}
-            <div className="relative bg-gradient-to-br from-[#1b082d] via-[#2d0e4a] to-[#120422] p-5 pt-7 text-white overflow-hidden shrink-0">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pink-500/20 via-purple-500/10 to-transparent pointer-events-none" />
-
-              <button onClick={onClose} className="absolute top-4 right-4 text-white/60 hover:text-white transition p-1">
+            {/* Header Banner */}
+            <div 
+              className="relative p-5 pt-7 text-inherit overflow-hidden shrink-0 shadow-sm border-b"
+              style={{ 
+                backgroundColor: 'var(--color-surface-elevated)',
+                borderColor: 'var(--color-divider)'
+              }}
+            >
+              <button onClick={onClose} className="absolute top-4 right-4 text-inherit hover:opacity-70 drop-shadow-sm transition p-1">
                 <X size={20} />
               </button>
 
               <div className="flex items-center gap-4 relative z-10">
                 {/* Profile Photo */}
                 <div onClick={() => navigateTo("/profile/edit")} className="relative cursor-pointer group shrink-0">
-                  <div className="w-16 h-16 rounded-full border-2 border-white/30 overflow-hidden bg-white/10 shadow-md">
+                  <div 
+                    className="w-16 h-16 rounded-full border-2 overflow-hidden shadow-md"
+                    style={{ 
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)'
+                    }}
+                  >
                     {profile.photo_url || (profile.photos && profile.photos[0]) ? (
                       <img src={profile.photo_url || profile.photos?.[0]} alt={profile.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-rose-400 to-purple-600 text-white font-bold text-xl">
+                      <div className="w-full h-full flex items-center justify-center btn-signature-gradient font-bold text-xl">
                         👤
                       </div>
                     )}
                   </div>
-                  <div className="absolute bottom-0 right-0 w-5 h-5 bg-rose-500 border-2 border-[#1b082d] rounded-full flex items-center justify-center text-[10px] text-white">
+                  <div 
+                    className="absolute bottom-0 right-0 w-5 h-5 border-2 rounded-full flex items-center justify-center text-[10px] text-white"
+                    style={{ 
+                      backgroundColor: 'var(--color-primary)',
+                      borderColor: 'var(--color-surface)'
+                    }}
+                  >
                     ✎
                   </div>
                 </div>
@@ -158,9 +181,13 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 {/* Profile Info & Voucher */}
                 <div className="space-y-1.5 flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-black text-base text-white truncate">{profile.name || "User"}</h3>
-                    <span className="text-xs font-bold text-gray-300">({profile.age || 22})</span>
-                    <button onClick={() => navigateTo("/settings")} className="text-white/70 hover:text-white transition">
+                    <h3 className="font-black text-base truncate drop-shadow-sm" style={{ color: 'var(--color-foreground)' }}>
+                      {profile.name || "User"}
+                    </h3>
+                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
+                      ({profile.age || 22})
+                    </span>
+                    <button onClick={() => navigateTo("/settings")} className="hover:opacity-70 drop-shadow-md transition" style={{ color: 'var(--color-text-muted)' }}>
                       <SettingsIcon size={16} />
                     </button>
                   </div>
@@ -168,14 +195,14 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => setShowCoinHistory(true)}
-                      className="flex items-center gap-1 text-xs font-bold bg-pink-500/20 text-pink-300 hover:bg-pink-500/30 px-2.5 py-0.5 rounded-full border border-pink-500/30 transition cursor-pointer"
+                      className="flex items-center gap-1 text-xs font-bold badge-gold px-2.5 py-0.5 rounded-full hover:opacity-80 transition cursor-pointer"
                     >
                       🪙 {coins || 0} Coins
                     </button>
 
                     <button 
                       onClick={() => navigateTo("/premium")}
-                      className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-md shadow-rose-500/30 active:scale-95 transition"
+                      className="btn-signature-gradient text-[11px] font-extrabold px-3 py-1 rounded-full shadow-md active:scale-95 transition"
                     >
                       Buy Coins
                     </button>
@@ -184,46 +211,52 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
               </div>
             </div>
 
-            {/* Main Navigation List (Clean White Layout with Real LoveWithYou App Features) */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
+            {/* Main Navigation List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ backgroundColor: 'var(--color-background)' }}>
               
               {/* Live Search Bar */}
-              <div className="p-3 bg-slate-50 border-b border-slate-100">
+              <div className="p-3 border-b" style={{ borderColor: 'var(--color-divider)' }}>
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search singles by name..."
-                    className="w-full bg-white border border-slate-200 rounded-2xl py-2 pl-9 pr-4 text-xs text-slate-800 focus:outline-none focus:border-rose-500 transition shadow-sm"
+                    className="w-full border rounded-2xl py-2 pl-9 pr-4 text-xs focus:outline-none transition shadow-sm"
+                    style={{ 
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-foreground)'
+                    }}
                   />
                   {isSearching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)' }} />
                   )}
                 </div>
 
                 {/* Search Results Dropdown */}
                 {searchResults.length > 0 && searchQuery.length >= 2 && (
-                  <div className="mt-2 bg-white border border-slate-200 rounded-2xl max-h-48 overflow-y-auto shadow-xl">
+                  <div className="mt-2 border rounded-2xl max-h-48 overflow-y-auto shadow-xl" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                     {searchResults.map(user => (
                       <button
                         key={user.id}
                         onClick={() => handleUserClick(user)}
-                        className="w-full flex items-center gap-3 p-2.5 hover:bg-slate-50 transition border-b border-slate-100 last:border-0 text-left"
+                        className="w-full flex items-center gap-3 p-2.5 transition border-b last:border-0 text-left hover:opacity-80"
+                        style={{ borderColor: 'var(--color-divider)' }}
                       >
-                        <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ backgroundColor: 'var(--color-surface-elevated)' }}>
                           {user.photo_url ? (
                             <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
                           ) : (
-                            <User size={14} className="text-slate-400 m-auto h-full" />
+                            <User size={14} className="m-auto h-full" style={{ color: 'var(--color-text-muted)' }} />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-slate-800 text-xs font-bold truncate">{user.name}</h4>
-                          <p className="text-slate-400 text-[10px] truncate">{user.campus || user.location || "Nearby"}</p>
+                          <h4 className="text-xs font-bold truncate" style={{ color: 'var(--color-foreground)' }}>{user.name}</h4>
+                          <p className="text-[10px] truncate" style={{ color: 'var(--color-text-muted)' }}>{user.campus || user.location || "Nearby"}</p>
                         </div>
-                        <ChevronRight size={14} className="text-slate-300" />
+                        <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
                       </button>
                     ))}
                   </div>
@@ -233,34 +266,34 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
               {/* Real App Core Navigation Features */}
               <div className="py-1">
                 {/* My Matches */}
-                <button onClick={() => navigateTo('/chat?tab=matches')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
+                <button onClick={() => navigateTo('/chat?tab=matches')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <MessageCircle size={20} className="text-blue-500" />
-                    <span className="text-sm font-extrabold text-slate-800">My Matches</span>
+                    <MessageCircle size={20} style={{ color: 'var(--color-primary)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>My Matches</span>
                   </div>
-                  <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Chat</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-soft)' }}>Chat</span>
                 </button>
 
                 {/* Who Liked Me */}
-                <button onClick={() => navigateTo('/chat?tab=likes')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
+                <button onClick={() => navigateTo('/chat?tab=likes')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <HeartPulse size={20} className="text-rose-500" />
-                    <span className="text-sm font-extrabold text-slate-800">Who Liked Me</span>
+                    <HeartPulse size={20} style={{ color: 'var(--color-romantic)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Who Liked Me</span>
                   </div>
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                  <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-romantic)' }} />
                 </button>
 
                 {/* Secret Match Arenas Accordion */}
-                <div className="border-y border-slate-100 my-1">
+                <div className="border-y my-1" style={{ borderColor: 'var(--color-divider)' }}>
                   <button 
                     onClick={() => setShowSecretArenas(!showSecretArenas)}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left"
+                    className="w-full flex items-center justify-between px-5 py-4 transition text-left hover:opacity-80"
                   >
                     <div className="flex items-center gap-4">
-                      <Sparkles size={20} className="text-fuchsia-600 animate-pulse" />
-                      <span className="text-sm font-extrabold text-slate-800">Secret Match Arenas 🎭</span>
+                      <Sparkles size={20} className="animate-pulse" style={{ color: 'var(--color-coral)' }} />
+                      <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Secret Match Arenas 🎭</span>
                     </div>
-                    <ChevronRight size={18} className={`text-slate-400 transition-transform ${showSecretArenas ? 'rotate-90' : ''}`} />
+                    <ChevronRight size={18} className={`transition-transform ${showSecretArenas ? 'rotate-90' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
                   </button>
 
                   <AnimatePresence>
@@ -269,40 +302,41 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-slate-50/50"
+                        className="overflow-hidden"
+                        style={{ backgroundColor: 'var(--color-surface-elevated)' }}
                       >
                         {/* 3-Min Blind Date */}
-                        <button onClick={() => navigateTo('/blind-date')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-purple-50/50 transition text-left pl-14">
+                        <button onClick={() => navigateTo('/blind-date')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
                           <div className="flex items-center gap-3">
-                            <Headphones size={16} className="text-purple-600" />
-                            <span className="text-sm font-bold text-purple-950">3-Min Blind Date</span>
+                            <Headphones size={16} style={{ color: 'var(--color-primary)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>3-Min Blind Date</span>
                           </div>
-                          <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">Audio</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-indigo">Audio</span>
                         </button>
 
                         {/* Random Chat */}
-                        <button onClick={() => navigateTo('/random-chat')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-100 transition text-left pl-14">
+                        <button onClick={() => navigateTo('/random-chat')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
                           <div className="flex items-center gap-3">
-                            <Users size={16} className="text-orange-500" />
-                            <span className="text-sm font-bold text-slate-800">Random Chat</span>
+                            <Users size={16} style={{ color: 'var(--color-warning)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Random Chat</span>
                           </div>
-                          <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase">Live</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-gold">Live</span>
                         </button>
 
                         {/* 18+ Anonymous After-Dark */}
-                        <button onClick={() => navigateTo('/after-dark')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-rose-50/50 transition text-left pl-14">
+                        <button onClick={() => navigateTo('/after-dark')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
                           <div className="flex items-center gap-3">
-                            <Flame size={16} className="text-rose-600 animate-pulse" />
-                            <span className="text-sm font-bold text-rose-950">18+ After-Dark</span>
+                            <Flame size={16} className="animate-pulse" style={{ color: 'var(--color-error)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>18+ After-Dark</span>
                           </div>
-                          <span className="text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full uppercase">18+</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-coral">18+</span>
                         </button>
 
                         {/* Midnight Roulette & 2v2 Squads */}
-                        <button onClick={() => navigateTo('/midnight-roulette')} className="w-full flex items-center justify-between px-5 py-3 hover:bg-indigo-50/50 transition text-left pl-14 pb-4">
+                        <button onClick={() => navigateTo('/midnight-roulette')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 pb-4 hover:opacity-80">
                           <div className="flex items-center gap-3">
-                            <Moon size={16} className="text-indigo-600" />
-                            <span className="text-sm font-bold text-indigo-950">Midnight 2v2 Squads</span>
+                            <Moon size={16} style={{ color: 'var(--text-secondary)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Midnight 2v2 Squads</span>
                           </div>
                         </button>
                       </motion.div>
@@ -311,105 +345,98 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 </div>
 
                 {/* Campus Hub */}
-                <button onClick={() => navigateTo('/campus')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-purple-50/50 transition text-left">
+                <button onClick={() => navigateTo('/campus')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <GraduationCap size={20} className="text-purple-600" />
-                    <span className="text-sm font-extrabold text-purple-950">Campus Hub</span>
+                    <GraduationCap size={20} style={{ color: 'var(--color-success)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Campus Hub</span>
                   </div>
-                  <span className="text-[10px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">Students</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-lime">Students</span>
                 </button>
 
                 {/* Leaderboard */}
-                <button onClick={() => navigateTo('/leaderboard')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-amber-50/50 transition text-left">
+                <button onClick={() => navigateTo('/leaderboard')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <Trophy size={20} className="text-amber-500" />
-                    <span className="text-sm font-extrabold text-slate-800">Leaderboard</span>
+                    <Trophy size={20} style={{ color: 'var(--color-primary)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Leaderboard</span>
                   </div>
-                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">Top Connectors</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-magenta">Top Connectors</span>
                 </button>
 
                 {/* Events */}
-                <button onClick={() => navigateTo('/events')} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-violet-50/50 transition text-left">
+                <button onClick={() => navigateTo('/events')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <Calendar size={20} className="text-violet-600" />
-                    <span className="text-sm font-extrabold text-slate-800">Events Calendar</span>
+                    <Calendar size={20} style={{ color: 'var(--text-secondary)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Events Calendar</span>
                   </div>
                 </button>
 
-
-
                 {/* Coin History & Ledger */}
-                <button onClick={() => setShowCoinHistory(true)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left">
+                <button onClick={() => setShowCoinHistory(true)} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
                   <div className="flex items-center gap-4">
-                    <Coins size={20} className="text-amber-500" />
-                    <span className="text-sm font-extrabold text-slate-800">Coin History &amp; Ledger</span>
+                    <Coins size={20} style={{ color: 'var(--color-warning)' }} />
+                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Coin History &amp; Ledger</span>
                   </div>
-                  <span className="text-[10px] font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full uppercase">Transparent</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase badge-gold">Transparent</span>
                 </button>
 
                 {/* Daily Cupid's Slot Machine */}
-                <button onClick={() => navigateTo('/profile')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <Award size={20} className="text-amber-500" />
-                  <span className="text-sm font-extrabold text-slate-800">Daily Cupid&apos;s Slot Machine</span>
+                <button onClick={() => navigateTo('/profile')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
+                  <Award size={20} style={{ color: 'var(--color-warning)' }} />
+                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Daily Cupid&apos;s Slot Machine</span>
                 </button>
 
                 {/* Settings */}
-                <button onClick={() => navigateTo('/settings')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <SettingsIcon size={20} className="text-slate-700" />
-                  <span className="text-sm font-extrabold text-slate-800">App Settings &amp; Security</span>
+                <button onClick={() => navigateTo('/settings')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
+                  <SettingsIcon size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>App Settings &amp; Security</span>
                 </button>
 
                 {/* FAQs */}
-                <button onClick={() => navigateTo('/faq')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <HelpCircle size={20} className="text-slate-700" />
-                  <span className="text-sm font-extrabold text-slate-800">FAQs &amp; Help Center</span>
+                <button onClick={() => navigateTo('/faq')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
+                  <HelpCircle size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>FAQs &amp; Help Center</span>
                 </button>
 
                 {/* Send Feedback */}
-                <button onClick={() => navigateTo('/feedback')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition text-left">
-                  <MessageCircle size={20} className="text-slate-700" />
-                  <span className="text-sm font-extrabold text-slate-800">Send Feedback</span>
+                <button onClick={() => navigateTo('/feedback')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
+                  <MessageCircle size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Send Feedback</span>
                 </button>
 
                 {/* Legal & Safety (Others) */}
-                <div className="border-t border-slate-100 mt-2 py-2">
-                  <h4 className="px-5 py-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">Legal &amp; Safety</h4>
+                <div className="border-t mt-2 py-2" style={{ borderColor: 'var(--color-divider)' }}>
+                  <h4 className="px-5 py-2 text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>Legal &amp; Safety</h4>
                   
-                  <button onClick={() => navigateTo('/terms')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
-                    <span className="text-xs font-bold text-slate-700">Terms of Service</span>
-                    <ChevronRight size={14} className="text-slate-300" />
-                  </button>
-                  
-                  <button onClick={() => navigateTo('/child-safety')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
-                    <span className="text-xs font-bold text-slate-700">Child Safety Policy</span>
-                    <ChevronRight size={14} className="text-slate-300" />
+                  <button onClick={() => navigateTo('/terms')} className="w-full flex items-center justify-between px-5 py-2.5 transition text-left hover:opacity-80">
+                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Terms of Service</span>
+                    <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
                   </button>
 
-                  <button onClick={() => navigateTo('/privacy')} className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-slate-50 transition text-left">
-                    <span className="text-xs font-bold text-slate-700">Privacy Policy</span>
-                    <ChevronRight size={14} className="text-slate-300" />
+                  <button onClick={() => navigateTo('/privacy')} className="w-full flex items-center justify-between px-5 py-2.5 transition text-left hover:opacity-80">
+                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Privacy Policy</span>
+                    <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
                   </button>
 
                   <div className="w-full flex items-center justify-between px-5 py-2.5 text-left">
-                    <span className="text-xs font-bold text-slate-700">Version</span>
-                    <span className="text-xs font-black text-slate-400">5.4.30</span>
+                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Version</span>
+                    <span className="text-xs font-black" style={{ color: 'var(--color-text-muted)' }}>5.4.30</span>
                   </div>
                 </div>
 
                 {/* Sign Out */}
-                <button onClick={() => navigateTo('/setup')} className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-rose-50 transition text-left border-t border-slate-100 mt-2 text-rose-600">
+                <button onClick={() => navigateTo('/setup')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left border-t mt-2" style={{ color: 'var(--color-error)', borderColor: 'var(--color-divider)' }}>
                   <LogOut size={20} />
-                  <span className="text-sm font-black">Sign Out of Account</span>
+                  <span className="text-sm font-extrabold">Sign Out of Account</span>
                 </button>
               </div>
             </div>
 
             {/* Bottom Footer */}
-            <div className="p-3 bg-slate-900 text-white flex items-center justify-between text-xs font-bold shrink-0">
-              <span className="text-rose-400 font-black flex items-center gap-1">
+            <div className="p-3 flex items-center justify-between text-xs font-bold shrink-0" style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-foreground)' }}>
+              <span className="font-black flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
                 <Sparkles size={14} /> LoveWithYou
               </span>
-              <span className="text-[10px] text-gray-400">v5.4.30 VIP</span>
+              <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>v5.4.30 VIP</span>
             </div>
           </motion.div>
 
@@ -419,8 +446,8 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
           {/* User Search Detail Popup */}
           {selectedUser && (
             <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#1e1e1e] w-full max-w-sm rounded-3xl overflow-hidden border border-white/10 relative text-white">
-                <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white">
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-sm rounded-3xl overflow-hidden border relative" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
+                <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:opacity-80">
                   <X size={16} />
                 </button>
                 <div className="h-64 bg-black relative">
@@ -433,7 +460,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <div className="absolute bottom-4 left-4">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                       {selectedUser.name}
-                      {selectedUser.isStudent && <div className="bg-rose-500 text-[10px] px-2 py-0.5 rounded-full font-bold">STUDENT</div>}
+                      {selectedUser.isStudent && <div className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>STUDENT</div>}
                     </h3>
                     <p className="text-white/70 text-sm flex items-center gap-1">
                       <MapPin size={12} /> {selectedUser.location || "Nearby"}
@@ -441,7 +468,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   </div>
                 </div>
                 <div className="p-5 space-y-4">
-                  <button className="w-full py-3 rounded-2xl bg-rose-600 font-extrabold text-xs text-white" onClick={() => { onClose(); router.push(`/user/${selectedUser.id}`); }}>
+                  <button className="w-full py-3 rounded-2xl font-extrabold text-xs text-white btn-signature-gradient" onClick={() => { onClose(); router.push(`/user/${selectedUser.id}`); }}>
                     View Complete Profile
                   </button>
                 </div>
@@ -453,4 +480,3 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
     </AnimatePresence>
   );
 }
-

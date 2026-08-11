@@ -46,12 +46,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               className={cn(
                 "glass flex items-center gap-3 px-4 py-3 rounded-full shadow-lg border",
-                m.type === "coin" ? "border-amber-400/50 bg-amber-500/10 text-amber-600 dark:text-amber-400" :
-                m.type === "error" ? "border-red-400/50 bg-red-500/10 text-red-600 dark:text-red-400" :
-                "border-primary-500/50 bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                m.type === "coin" ? "border-amber-400/50 bg-warning/10 text-amber-600 dark:text-warning" :
+                m.type === "error" ? "border-red-400/50 bg-error/10 text-red-600 dark:text-red-400" :
+                "border-primary/50 bg-primary/10 text-primary-hover dark:text-primary"
               )}
             >
-              {m.type === "coin" && <Coins size={18} className="text-amber-500" />}
+              {m.type === "coin" && <Coins size={18} className="text-warning" />}
               {m.type === "success" && <CheckCircle2 size={18} />}
               {m.type === "error" && <AlertCircle size={18} />}
               <span className="font-medium text-sm">{m.title}</span>

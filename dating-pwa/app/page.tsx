@@ -15,7 +15,8 @@ import { v4 as uuidv4 } from "uuid";
 import { calculateCompatibility } from "@/lib/compatibility";
 import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
 
-const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
+const isProd = process.env.NODE_ENV === "production";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
 
 interface DummyProfile {
   id: string;
@@ -149,7 +150,8 @@ export default function Home() {
   // WebSocket logic for Live Monitoring
   useEffect(() => {
     const authToken = useUserStore.getState().authToken;
-    const baseHttp = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080").replace(/\/+$/, "");
+    const isProd = process.env.NODE_ENV === "production";
+    const baseHttp = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080")).replace(/\/+$/, "");
     const baseWs = baseHttp.replace(/^http/, 'ws');
     const wsUrl = `${baseWs}/ws?token=${authToken}`;
     const ws = new WebSocket(wsUrl);
@@ -168,8 +170,8 @@ export default function Home() {
     // Check for referral reward
     const params = new URLSearchParams(window.location.search);
     if (params.get("ref") && !localStorage.getItem("referral_claimed")) {
-      useUserStore.getState().addCoins(50);
-      uiToast("Welcome! You got +50 Coins from your friend's invite! 🎉", "success");
+      useUserStore.getState().addCoins(250, "welcome_bonus");
+      uiToast("Welcome! You got +250 Coins from your friend's invite! 🎉", "success");
       localStorage.setItem("referral_claimed", "true");
       
       // Clean up URL
@@ -436,7 +438,7 @@ export default function Home() {
   if (!profile.location) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] px-6 text-center space-y-6 bg-background">
-        <div className="w-24 h-24 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-500">
+        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
           <MapPin size={48} />
         </div>
         <div>
@@ -462,18 +464,18 @@ export default function Home() {
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="relative flex flex-col w-full h-[calc(100vh-4rem)] overflow-hidden bg-background transition-colors duration-500">
       
       {/* Top Header & Toggles */}
-      <div className="absolute top-0 w-full z-10 flex flex-col glass border-b border-glass-border">
+      <div className="w-full z-[200] flex flex-col glass border-b border-glass-border shrink-0">
         <MatchPreferencesHeader />
         <div className="flex justify-between items-center p-4">
         <div 
           onClick={requestLocation}
-          className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded-md transition-colors"
+          className="flex items-center gap-2 cursor-pointer hover:bg-surface-elevated p-1 rounded-md transition-colors"
           title="Click to refresh location"
         >
-           <MapPin size={18} className="text-primary-500" />
+           <MapPin size={18} className="text-primary" />
            <span className="text-sm font-medium">{profile?.location || "India"}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -486,7 +488,7 @@ export default function Home() {
           )}
           <button 
             onClick={() => setCampusMode(!campusMode)}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${campusMode ? 'bg-primary-500 text-white' : 'bg-foreground/10 text-foreground/70 hover:bg-foreground/20'}`}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${campusMode ? 'bg-primary text-white' : 'bg-foreground/10 text-white/70 hover:bg-foreground/20'}`}
           >
             {campusMode ? "Campus Only" : "Everyone"}
           </button>
@@ -497,19 +499,21 @@ export default function Home() {
       </div>
       </div>
 
-      {isLoadingProfiles ? (
-        <div className="absolute w-[95%] h-[75%] max-h-[600px] rounded-3xl overflow-hidden border border-white/10 bg-white/5 animate-pulse">
-           <div className="w-full h-full bg-white/5"></div>
-           <div className="absolute bottom-0 w-full p-6 pt-24 bg-gradient-to-t from-black/90 to-transparent">
-             <div className="h-8 bg-white/20 rounded-md w-3/4 mb-4"></div>
-             <div className="h-4 bg-white/20 rounded-md w-1/2"></div>
-           </div>
-        </div>
-      ) : currentProfile ? (() => {
+      {/* Main Card Area */}
+      <div className="flex-1 w-full relative flex items-center justify-center p-4 min-h-0">
+        {isLoadingProfiles ? (
+          <div className="relative w-full h-full max-w-sm max-h-[650px] rounded-3xl overflow-hidden border border-border bg-surface-elevated animate-pulse">
+            <div className="w-full h-full bg-surface-elevated"></div>
+            <div className="absolute bottom-0 w-full p-6 pt-24 bg-gradient-to-t from-black/90 to-transparent">
+              <div className="h-8 bg-surface-elevated rounded-md w-3/4 mb-4"></div>
+              <div className="h-4 bg-surface-elevated rounded-md w-1/2"></div>
+            </div>
+          </div>
+        ) : currentProfile ? (() => {
         return (
           <motion.div
             key={currentProfile.id}
-            style={{ x, rotate, opacity }}
+            style={{ x, rotate, opacity } as any}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.8} // Elastic pull
@@ -529,7 +533,7 @@ export default function Home() {
               }
             }}
             whileDrag={{ scale: 1.05 }}
-            className="absolute w-[95%] h-[75%] max-h-[600px] rounded-3xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing border border-glass-border bg-black"
+            className="relative w-full h-full max-w-sm max-h-[650px] rounded-3xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing border border-glass-border bg-black"
           >
             {currentProfile.video_url ? (
               <video 
@@ -538,37 +542,37 @@ export default function Home() {
                 loop 
                 muted 
                 playsInline
-                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-xl scale-110' : ''}`}
+                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''}`}
               />
             ) : (
               <img 
                 src={currentProfile.img} 
                 alt={currentProfile.name} 
-                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-xl scale-110' : ''} ${appSettings.lowDataMode ? 'blur-[2px] opacity-90' : ''}`}
+                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''} ${appSettings.lowDataMode ? 'blur-[2px] opacity-90' : ''}`}
                 loading={appSettings.lowDataMode ? "lazy" : "eager"}
               />
             )}
             
             {/* Unverified Lock Overlay */}
             {!currentProfile.verified && (
-               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-10 pointer-events-none">
-                  <div className="w-16 h-16 bg-white/10 border border-white/20 rounded-full flex items-center justify-center backdrop-blur-md shadow-2xl mb-3">
-                     <ShieldAlert size={32} className="text-white" />
+               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-10 pointer-events-none">
+                  <div className="w-16 h-16 bg-white/10 border border-white/25 rounded-full flex items-center justify-center backdrop-blur-xl shadow-2xl mb-3">
+                     <ShieldAlert size={32} className="text-white/90" />
                   </div>
-                  <h3 className="text-white font-bold text-lg">Unverified Profile</h3>
-                  <p className="text-white/70 text-xs">Verify your own profile to unblur others.</p>
+                  <h3 className="text-white font-bold text-lg drop-shadow-lg">Unverified Profile</h3>
+                  <p className="text-white/70 text-xs drop-shadow-md">Verify your own profile to unblur others.</p>
                </div>
             )}
             
             {/* AI Chemistry Badge Top Left */}
-            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-primary-500/50 flex items-center gap-1.5 shadow-lg">
-              <Sparkles size={14} className="text-primary-400" />
+            <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg">
+              <Sparkles size={14} className="text-pink-400" />
               <span className="text-white text-xs font-bold">{currentProfile.chemistryScore}% Match</span>
             </div>
             
             {/* Crossed Paths Badge Top Right */}
             {currentProfile.crossedPathsCount > 0 && (
-              <div className="absolute top-4 right-14 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg">
+              <div className="absolute top-4 right-14 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/15 flex items-center gap-1.5 shadow-lg">
                 <MapPin size={12} className="text-white/80" />
                 <span className="text-white/90 text-[10px] font-bold">Crossed Paths {currentProfile.crossedPathsCount}x</span>
               </div>
@@ -577,15 +581,15 @@ export default function Home() {
             {/* Report/Menu Button Top Right */}
             <button 
               onClick={(e) => { e.stopPropagation(); setShowReportModal(true); }}
-              className="absolute top-4 right-4 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-colors z-20 border border-white/10 shadow-lg"
+              className="absolute top-4 right-4 w-8 h-8 bg-black/40 backdrop-blur-xl rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-colors z-20 border border-white/15 shadow-lg"
             >
               <MoreVertical size={16} />
             </button>
             
-            <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col justify-end p-6 pt-24">
+            <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent flex flex-col justify-end p-6 pt-32">
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-white text-3xl font-bold flex items-center gap-2">
+                  <h2 className="text-white text-3xl font-bold flex items-center gap-2 drop-shadow-lg">
                     {currentProfile.isAnonymous ? "Secret Admirer" : `${currentProfile.name}, ${currentProfile.age}`}
                     {currentProfile.verified && (
                       <span title="Verified Profile"><Sparkles size={20} className="text-blue-400" /></span>
@@ -606,28 +610,28 @@ export default function Home() {
                   
                   {/* Looking For (Intent) Badge */}
                   {currentProfile.intent && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-rose-500/15 backdrop-blur-md rounded-md text-xs font-semibold text-rose-300 border border-rose-500/30 mr-2">
+                    <div className="mt-2 inline-block px-2.5 py-1 bg-pink-500/20 backdrop-blur-md rounded-lg text-xs font-semibold text-pink-300 border border-pink-500/30 mr-2">
                       👀 {currentProfile.intent}
                     </div>
                   )}
 
                   {/* Zodiac Compatibility Badge */}
                   {profile?.zodiacSign && currentProfile.zodiacSign && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-white/10 backdrop-blur-md rounded-md text-xs font-semibold text-white border border-white/20 mr-2">
+                    <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/90 border border-white/15 mr-2">
                       ✨ {currentProfile.zodiacSign} • {getZodiacCompatibility(profile.zodiacSign, currentProfile.zodiacSign)}
                     </div>
                   )}
 
                   {/* Campus Badge on Card */}
                   {currentProfile.campus && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-white/20 backdrop-blur-md rounded-md text-xs font-semibold text-white border border-white/30 mr-2">
+                    <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/90 border border-white/15 mr-2">
                       🎓 {currentProfile.campus}
                     </div>
                   )}
 
                   {/* Location Hidden Badge */}
-                  <div className="mt-2 inline-block px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-md text-xs font-semibold text-white/70 border border-white/10 mr-2">
-                    <MapPin size={10} className="inline mr-1 text-primary-400" />
+                  <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/70 border border-white/15 mr-2">
+                    <MapPin size={10} className="inline mr-1 text-pink-400" />
                     Hidden until Match
                   </div>
 
@@ -637,10 +641,10 @@ export default function Home() {
                       {currentProfile.hobbies.map((hobby: string, idx: number) => {
                         // Calculate compatibility if user has hobbies
                         const isShared = profile?.hobbies?.some(h => h.toLowerCase() === hobby.toLowerCase());
-                        return (
+                          return (
                           <div 
                             key={idx} 
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-md ${isShared ? 'bg-primary-500/20 text-primary-300 border-primary-500/30' : 'bg-white/10 text-white/80 border-white/20'}`}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-md ${isShared ? 'bg-pink-500/25 text-pink-300 border-pink-400/30' : 'bg-black/30 text-white/80 border-white/15'}`}
                           >
                             {hobby} {isShared && "✨"}
                           </div>
@@ -651,8 +655,8 @@ export default function Home() {
 
                   {/* Voice Prompt Player */}
                   {currentProfile.voice_prompt_url && (
-                    <div className="mt-4 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/20 shadow-lg" onClick={(e) => e.stopPropagation()}>
-                      <p className="text-[10px] uppercase tracking-wider text-primary-400 font-bold mb-2">Voice Icebreaker</p>
+                    <div className="mt-4 bg-black/30 backdrop-blur-xl p-3 rounded-xl border border-white/15 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[10px] uppercase tracking-wider text-pink-400 font-bold mb-2">Voice Icebreaker</p>
                       <audio controls src={currentProfile.voice_prompt_url} className="w-full h-8" />
                     </div>
                   )}
@@ -666,26 +670,27 @@ export default function Home() {
           </motion.div>
         );
       })() : !isLoadingProfiles && (
-        <div className="absolute flex flex-col items-center justify-center text-gray-500">
-           <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-             <Heart size={32} className="text-white/20" />
+        <div className="absolute flex flex-col items-center justify-center text-muted">
+           <div className="w-16 h-16 rounded-full bg-foreground/5 border border-foreground/10 flex items-center justify-center mb-4">
+             <Heart size={32} className="text-foreground/20" />
            </div>
            <p>No more profiles near you.</p>
         </div>
       )}
+      </div>
 
-      {/* Swipe Actions Buttons */}
-      <div className="absolute bottom-8 flex items-center gap-4 sm:gap-6 z-10">
+      {/* Action Buttons (Swipe/Superlike/Rewind) */}
+      <div className="w-full flex justify-center items-center gap-6 z-50 p-4 shrink-0 mb-2">
         <button 
           onClick={handleRewind}
           disabled={!lastSwipedProfile}
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform ${!lastSwipedProfile ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-white text-yellow-500 hover:scale-110'}`}
+          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform ${!lastSwipedProfile ? 'bg-gray-800 text-muted cursor-not-allowed' : 'bg-white text-yellow-500 hover:scale-110'}`}
         >
           <RotateCcw size={24} strokeWidth={3} />
         </button>
         <button 
           onClick={() => handleSwipe("left")}
-          className="w-16 h-16 rounded-full bg-white text-red-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+          className="w-16 h-16 rounded-full bg-white text-error flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
         >
           <X size={32} strokeWidth={3} />
         </button>
@@ -700,7 +705,7 @@ export default function Home() {
           className="w-12 h-12 rounded-full bg-white text-blue-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform relative group"
         >
           <Sparkles size={24} strokeWidth={3} fill="currentColor" />
-          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs text-white border border-white/20 whitespace-nowrap">
+          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xl px-3 py-1 rounded-full text-xs text-white border border-white/20 whitespace-nowrap">
             Super Like (-10)
           </div>
         </button>
@@ -708,7 +713,7 @@ export default function Home() {
 
       {/* Offline Toast Overlay */}
       {isOffline && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold animate-in slide-in-from-top-4">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-error text-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold animate-in slide-in-from-top-4">
           <WifiOff size={16} /> No Internet - Showing Cached Profiles
         </div>
       )}
@@ -730,16 +735,16 @@ export default function Home() {
             
             <div className="flex justify-center items-center gap-2 py-4 bg-foreground/5 rounded-2xl border border-foreground/10">
               <Coins size={24} className="text-yellow-500" />
-              <span className="text-2xl font-bold text-foreground">+10 Coins</span>
+              <span className="text-2xl font-bold text-foreground">+20 Coins</span>
             </div>
             
             <button 
               onClick={() => {
                 setShowDailyStreak(false);
-                useUserStore.getState().addCoins(10);
-                uiToast("Claimed 10 Coins!", "success");
+                useUserStore.getState().addCoins(20, "daily_reward");
+                uiToast("Claimed 20 Coins!", "success");
               }} 
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-lg hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(249,115,22,0.4)]"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 text-foreground font-bold text-lg hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(249,115,22,0.4)]"
             >
               Claim Reward
             </button>
@@ -750,14 +755,14 @@ export default function Home() {
       {/* Report Modal */}
       {showReportModal && currentProfile && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-end justify-center p-4 backdrop-blur-sm sm:items-center">
-          <div className="bg-dark-bg border border-glass-border w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-8">
+          <div className="bg-background border border-glass-border w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-8">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-red-500 flex items-center gap-2"><ShieldAlert size={20}/> Report User</h3>
-              <button onClick={() => setShowReportModal(false)} className="p-2 bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20} /></button>
+              <h3 className="text-xl font-bold text-error flex items-center gap-2"><ShieldAlert size={20}/> Report User</h3>
+              <button onClick={() => setShowReportModal(false)} className="p-2 bg-surface-elevated rounded-full text-muted hover:text-foreground"><X size={20} /></button>
             </div>
             
-            <p className="text-sm text-gray-300 mb-4">
-              Why are you reporting <span className="font-bold text-white">{currentProfile.name}</span>? This will hide their profile from you permanently.
+            <p className="text-sm text-secondary mb-4">
+              Why are you reporting <span className="font-bold text-foreground">{currentProfile.name}</span>? This will hide their profile from you permanently.
             </p>
 
             <div className="space-y-2 mb-6">
@@ -765,7 +770,7 @@ export default function Home() {
                 <button 
                   key={reason}
                   onClick={() => handleReport(reason)}
-                  className="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 transition-colors text-white font-medium"
+                  className="w-full text-left p-4 rounded-2xl bg-surface-elevated hover:bg-error/10 border border-border hover:border-red-500/30 transition-colors text-foreground font-medium"
                 >
                   {reason}
                 </button>
@@ -774,7 +779,7 @@ export default function Home() {
             
             <button 
               onClick={() => setShowReportModal(false)}
-              className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold transition"
+              className="w-full py-4 rounded-2xl bg-surface-elevated hover:bg-surface-elevated text-foreground font-bold transition"
             >
               Cancel
             </button>
@@ -784,18 +789,18 @@ export default function Home() {
       {/* Match Celebration Modal */}
       {showMatchModal && matchedProfile && (
         <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white mb-6 shadow-[0_0_40px_rgba(244,63,94,0.6)] animate-bounce">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-primary-hover flex items-center justify-center text-white mb-6 shadow-[0_0_40px_rgba(244,63,94,0.6)] animate-bounce">
             <Heart size={48} fill="currentColor" />
           </div>
 
-          <span className="text-xs font-black uppercase tracking-widest text-rose-400 bg-rose-500/20 px-3 py-1 rounded-full border border-rose-500/30 mb-2">
+          <span className="text-xs font-black uppercase tracking-widest text-primary bg-primary/20 px-3 py-1 rounded-full border border-primary/30 mb-2">
             IT&apos;S A MATCH! 🎉
           </span>
 
-          <h2 className="text-3xl font-black text-white mb-2">
+          <h2 className="text-3xl font-black text-foreground mb-2">
             You &amp; {matchedProfile.name} Liked Each Other!
           </h2>
-          <p className="text-xs text-gray-400 max-w-xs mb-8">
+          <p className="text-xs text-muted max-w-xs mb-8">
             Spark a connection right now! Send a message or try a flirt game.
           </p>
 
@@ -803,9 +808,9 @@ export default function Home() {
             <img
               src={profile?.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80"}
               alt="My Avatar"
-              className="w-20 h-20 rounded-full object-cover border-4 border-rose-500 shadow-lg"
+              className="w-20 h-20 rounded-full object-cover border-4 border-primary shadow-lg"
             />
-            <div className="text-rose-500 text-2xl font-black">💖</div>
+            <div className="text-primary text-2xl font-black">💖</div>
             <img
               src={matchedProfile.img || matchedProfile.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&q=80"}
               alt="Match Avatar"
@@ -819,14 +824,14 @@ export default function Home() {
                 setShowMatchModal(false);
                 router.push(`/chat/${matchedProfile.id}`);
               }}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 text-white font-black text-sm shadow-lg shadow-rose-500/40 active:scale-95 transition"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-pink-600 to-purple-600 text-white font-black text-sm shadow-lg shadow-primary/40 active:scale-95 transition"
             >
               💬 Send a Message Now
             </button>
 
             <button
               onClick={() => setShowMatchModal(false)}
-              className="w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs transition"
+              className="w-full py-3.5 rounded-2xl bg-surface-elevated hover:bg-surface-elevated text-secondary font-bold text-xs transition"
             >
               Keep Swiping
             </button>

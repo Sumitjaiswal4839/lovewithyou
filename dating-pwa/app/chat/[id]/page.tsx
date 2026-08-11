@@ -64,7 +64,8 @@ export default function ChatRoomPage() {
 
     // 1. Generate consistent Room ID for private routing
     const roomId = [deviceId, matchId].sort().join("_");
-    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://lovewithyou.onrender.com";
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
     const authToken = useUserStore.getState().authToken;
     const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${roomId}&device_id=${deviceId}&token=${authToken}`;
 
@@ -216,11 +217,11 @@ export default function ChatRoomPage() {
   const matchImg = partnerProfile?.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80";
 
   return (
-    <div className="flex flex-col h-screen bg-dark-bg">
+    <div className="flex flex-col h-screen bg-background">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/60 backdrop-blur-md sticky top-0 z-20 shadow-md">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-surface-elevated backdrop-blur-md sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+          <button onClick={() => router.back()} className="p-2 -ml-2 bg-surface-elevated hover:bg-surface-elevated rounded-full transition-colors text-foreground">
             <ArrowLeft size={20} />
           </button>
           
@@ -230,28 +231,28 @@ export default function ChatRoomPage() {
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-black shadow-[0_0_5px_rgba(34,197,94,0.8)]"></div>
             </div>
             <div>
-              <h2 className="text-white font-bold text-sm leading-tight">{matchName}</h2>
+              <h2 className="text-foreground font-bold text-sm leading-tight">{matchName}</h2>
               <p className="text-green-400 text-[10px] font-medium">Online</p>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 text-gray-400">
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors"><Phone size={18} /></button>
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors"><Video size={18} /></button>
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors"><MoreVertical size={18} /></button>
+        <div className="flex items-center gap-2 text-muted">
+          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Phone size={18} /></button>
+          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Video size={18} /></button>
+          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><MoreVertical size={18} /></button>
         </div>
       </div>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-4">
         <div className="text-center my-4">
-          <span className="bg-white/5 text-gray-400 text-xs px-3 py-1 rounded-full">You matched today</span>
+          <span className="bg-surface-elevated text-muted text-xs px-3 py-1 rounded-full">You matched today</span>
         </div>
         
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 opacity-50">
-             <p className="text-gray-400 text-sm">Say hi to {matchName}! 👋</p>
+             <p className="text-muted text-sm">Say hi to {matchName}! 👋</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -272,8 +273,8 @@ export default function ChatRoomPage() {
                 
                 <div className={`max-w-[75%] rounded-2xl shadow-sm overflow-hidden ${
                   isMe 
-                    ? 'bg-gradient-to-br from-primary-600 to-primary-500 text-white rounded-br-sm' 
-                    : 'bg-white/10 text-gray-200 rounded-bl-sm border border-white/5'
+                    ? 'bg-gradient-to-br from-primary-600 to-primary text-white rounded-br-sm' 
+                    : 'bg-surface-elevated text-white rounded-bl-sm border border-border'
                 } ${isImage || isDisappearing ? 'p-1' : 'px-4 py-2.5'}`}>
                   
                   {isImage && (
@@ -284,17 +285,17 @@ export default function ChatRoomPage() {
 
                   {isDisappearing && (
                     <div className="w-full max-w-[200px] aspect-[3/4] relative">
-                       <div className="w-full h-full bg-black/50 flex flex-col items-center justify-center cursor-pointer hover:bg-black/40 transition-colors">
-                         <Lock size={32} className="text-primary-400 mb-2" />
-                         <span className="text-xs font-bold uppercase tracking-wider text-white">Tap to View</span>
+                       <div className="w-full h-full bg-black/50 flex flex-col items-center justify-center cursor-pointer hover:bg-surface-elevated transition-colors">
+                         <Lock size={32} className="text-primary mb-2" />
+                         <span className="text-xs font-bold uppercase tracking-wider text-foreground">Tap to View</span>
                        </div>
                     </div>
                   )}
 
                   {isAudio && (
                     <div className="flex items-center gap-3 min-w-[150px]">
-                       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                         <Mic size={14} className="text-white" />
+                       <div className="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+                         <Mic size={14} className="text-foreground" />
                        </div>
                        <audio src={msg.content.replace("[AUDIO]", "")} controls className="h-8 max-w-[150px] opacity-90 invert grayscale hue-rotate-180" />
                     </div>
@@ -304,7 +305,7 @@ export default function ChatRoomPage() {
                     <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
                   )}
                   
-                  <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-gray-500'} ${(isImage || isDisappearing) ? 'pr-2 pb-1' : ''}`}>
+                  <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-muted'} ${(isImage || isDisappearing) ? 'pr-2 pb-1' : ''}`}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -318,7 +319,7 @@ export default function ChatRoomPage() {
             <div className="w-8 flex-shrink-0 mr-2 flex flex-col justify-end">
                <img src={matchImg} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
             </div>
-            <div className="bg-white/10 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 items-center">
+            <div className="bg-surface-elevated rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 items-center">
               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
@@ -329,7 +330,7 @@ export default function ChatRoomPage() {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-dark-bg border-t border-glass-border pb-safe">
+      <div className="p-3 bg-background border-t border-glass-border pb-safe">
         
         {(() => {
           const outgoingRequest = friendRequests.find(r => r.id === matchId && r.status === "outgoing");
@@ -337,20 +338,20 @@ export default function ChatRoomPage() {
           
           if (outgoingRequest) {
             return (
-              <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="text-center py-4 bg-surface-elevated rounded-2xl border border-border">
                 <Lock size={20} className="text-orange-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-300 font-medium">Waiting for {matchName} to accept your friend request.</p>
+                <p className="text-sm text-secondary font-medium">Waiting for {matchName} to accept your friend request.</p>
               </div>
             );
           }
           
           if (incomingRequest) {
             return (
-              <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/10">
-                <p className="text-sm text-gray-300 font-medium mb-3">{matchName} wants to be friends!</p>
+              <div className="text-center py-4 bg-surface-elevated rounded-2xl border border-border">
+                <p className="text-sm text-secondary font-medium mb-3">{matchName} wants to be friends!</p>
                 <button 
                   onClick={() => acceptFriendRequest(matchId)}
-                  className="px-6 py-2 bg-green-500 text-white rounded-full font-bold shadow-lg"
+                  className="px-6 py-2 bg-green-500 text-foreground rounded-full font-bold shadow-lg"
                 >
                   Accept to Chat
                 </button>
@@ -388,29 +389,29 @@ export default function ChatRoomPage() {
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-600/30 to-teal-600/30 border border-emerald-500/40 hover:border-emerald-400 text-[11px] font-bold text-emerald-300 shadow-md transition-all shrink-0 active:scale-95"
                 >
-                  <Gamepad2 size={14} className="text-emerald-400" /> Compatibility Quiz 🎲
+                  <Gamepad2 size={14} className="text-success" /> Compatibility Quiz 🎲
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFlirtOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-purple-600 border border-rose-400 font-extrabold text-[11px] text-white shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all shrink-0 animate-pulse active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-purple-600 border border-primary font-extrabold text-[11px] text-foreground shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all shrink-0 animate-pulse active:scale-95"
                 >
                   🎡 3D Flirt Suite (Bottle, 2 Truths, Whisper)
                 </button>
               </div>
 
-              <form onSubmit={sendMessage} className="flex items-end gap-2 bg-white/5 border border-white/10 rounded-3xl p-1.5 pl-4 pr-1.5 focus-within:border-primary-500 transition-colors">
+              <form onSubmit={sendMessage} className="flex items-end gap-2 bg-surface-elevated border border-border rounded-3xl p-1.5 pl-4 pr-1.5 focus-within:border-primary transition-colors">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder={`Message ${matchName}...`}
-                  className="flex-1 bg-transparent border-none text-white outline-none py-3 text-sm placeholder:text-gray-500"
+                  className="flex-1 bg-transparent border-none text-foreground outline-none py-3 text-sm placeholder:text-muted"
                 />
                 <button 
                   type="button" 
                   onClick={sendMockImage}
-                  className="p-3 bg-white/10 hover:bg-white/20 text-gray-300 rounded-full transition-colors flex-shrink-0"
+                  className="p-3 bg-surface-elevated hover:bg-surface-elevated text-secondary rounded-full transition-colors flex-shrink-0"
                   title="Send Image (Mock)"
                 >
                   <ImageIcon size={18} />
@@ -420,8 +421,8 @@ export default function ChatRoomPage() {
                   disabled={!newMessage.trim()}
                   className={`p-3 rounded-full flex-shrink-0 transition-all ${
                     newMessage.trim() 
-                      ? 'bg-primary-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-100 hover:scale-105' 
-                      : 'bg-white/10 text-gray-500 scale-95'
+                      ? 'bg-primary text-white shadow-[0_0_15px_rgba(236,72,153,0.4)] scale-100 hover:scale-105' 
+                      : 'bg-surface-elevated text-white/60 scale-95'
                   }`}
                 >
                   <Send size={18} className={newMessage.trim() ? 'ml-0.5' : ''} />

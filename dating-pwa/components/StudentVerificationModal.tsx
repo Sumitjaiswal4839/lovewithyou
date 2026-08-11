@@ -52,11 +52,11 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
            <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
              <GraduationCap size={24} />
            </div>
-           <button onClick={onClose} className="text-gray-400 hover:text-white p-1"><X size={20} /></button>
+           <button onClick={onClose} className="text-muted hover:text-foreground p-1"><X size={20} /></button>
         </div>
         
-        <h3 className="text-xl font-bold text-white mb-2 text-left">Student Verification</h3>
-        <p className="text-sm text-gray-400 mb-6 text-left">
+        <h3 className="text-xl font-bold text-foreground mb-2 text-left">Student Verification</h3>
+        <p className="text-sm text-muted mb-6 text-left">
           Upload your valid College/University ID card to unlock exclusive student perks like <strong className="text-yellow-400">Double Coins</strong>, <strong className="text-pink-400">Half-Price Boosts</strong>, and Campus Communities.
         </p>
 
@@ -75,7 +75,7 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
         ) : (
           <>
             {/* Upload Area */}
-            <div className="w-full h-40 bg-white/5 border-2 border-dashed border-white/20 rounded-2xl mb-6 relative overflow-hidden flex flex-col items-center justify-center hover:bg-white/10 transition group cursor-pointer">
+            <div className="w-full h-40 bg-surface-elevated border-2 border-dashed border-white/20 rounded-2xl mb-6 relative overflow-hidden flex flex-col items-center justify-center hover:bg-surface-elevated transition group cursor-pointer">
               <input 
                 type="file" 
                 accept="image/*" 
@@ -86,8 +86,8 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
                 <img src={preview} alt="ID Preview" className="w-full h-full object-cover" />
               ) : (
                 <>
-                  <Camera size={32} className="text-gray-500 mb-2 group-hover:text-indigo-400 transition" />
-                  <p className="text-gray-400 text-sm font-medium">Tap to scan or upload ID</p>
+                  <Camera size={32} className="text-muted mb-2 group-hover:text-indigo-400 transition" />
+                  <p className="text-muted text-sm font-medium">Tap to scan or upload ID</p>
                 </>
               )}
             </div>
@@ -95,7 +95,7 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
             <button 
               onClick={handleUpload}
               disabled={!preview || isUploading}
-              className="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-white/10 disabled:text-gray-500 text-white font-bold transition shadow-[0_0_15px_rgba(99,102,241,0.4)] flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:bg-surface-elevated disabled:text-muted text-foreground font-bold transition shadow-[0_0_15px_rgba(99,102,241,0.4)] flex items-center justify-center gap-2"
             >
               {isUploading ? "Uploading..." : <><Upload size={18} /> Submit for Review</>}
             </button>

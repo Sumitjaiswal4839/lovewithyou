@@ -37,6 +37,11 @@ export interface UserProfile {
   studentVerificationStatus?: 'none' | 'pending' | 'verified' | 'rejected';
   latitude?: number;
   longitude?: number;
+  match_preferences?: {
+    gender?: string;
+    selectedState?: string | null;
+    selectedCity?: string | null;
+  };
 }
 
 export interface Match {
@@ -116,7 +121,8 @@ interface UserState {
   lastSearchDate: string | null;
   setDeviceId: (id: string) => void;
   setProfile: (profile: UserProfile) => void;
-  addCoins: (amount: number, description?: string) => Promise<void>;
+  addCoins: (amount: number, reason: string) => Promise<void>;
+  addCoinsLocal: (amount: number) => void;
   spendCoins: (amount: number, description?: string) => Promise<void>;
   loadCoinHistory: () => Promise<void>;
   claimCashback: () => number;
@@ -141,7 +147,8 @@ interface UserState {
   logout: () => void;
 }
 
-const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
+const isProd = process.env.NODE_ENV === "production";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -261,6 +268,11 @@ export const useUserStore = create<UserState>()(
             if (res.ok) {
               const data = await res.json()
               set({ profile: data })
+              if (data.match_preferences) {
+                set((state) => ({ 
+                  matchPreferences: { ...state.matchPreferences, ...data.match_preferences } 
+                }))
+              }
             }
           } catch (e) {
             console.error("Failed to fetch profile", e)
@@ -312,39 +324,48 @@ export const useUserStore = create<UserState>()(
           console.error("Error fetching coin history:", e);
         }
       },
-      addCoins: async (amount, description = "Earned Coins") => {
-        const state = useUserStore.getState();
+      addCoins: async (amount, reason) => {
+        const state = get();
+        const previousCoins = state.coins;
+        const previousCashback = state.cashbackVault;
+        
+        // Ensure student logic is applied properly
         const isVerifiedStudent = state.profile?.isStudent || state.profile?.studentVerificationStatus === 'verified';
         const finalAmount = isVerifiedStudent ? amount * 2 : amount;
-        // 10% Cashback Bonus on coin addition
         const cashbackEarned = Math.max(1, Math.floor(finalAmount * 0.1));
 
-        const prevCoins = state.coins;
-        const prevCashback = state.cashbackVault;
-
+        // 1. Optimistic Update (Turant UI update karo taaki lag na ho)
         set({ 
-          coins: state.coins + finalAmount,
-          cashbackVault: state.cashbackVault + cashbackEarned
+          coins: previousCoins + finalAmount,
+          cashbackVault: previousCashback + cashbackEarned
         });
 
         try {
-          if (state.deviceId) {
-            const res = await fetch(`${BACKEND_URL}/coins/earn`, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.authToken}`,
-                'X-Request-ID': uuidv4()
-              },
-              body: JSON.stringify({ device_id: state.deviceId, amount: finalAmount, description }),
-            });
-            if (!res.ok) throw new Error('Server update failed');
-            state.loadCoinHistory();
+          const isProd = process.env.NODE_ENV === "production";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+          const response = await fetch(`${BACKEND_URL}/coins/earn`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.authToken}`,
+              'X-Request-ID': crypto.randomUUID() 
+            },
+            // 🔴 AMOUNT NAHI BHEJNA HAI, SIRF REASON BHEJNA HAI 🔴
+            body: JSON.stringify({ reason: reason }), 
+          });
+
+          if (!response.ok) {
+            throw new Error('Server rejected the coin request');
           }
-        } catch (e) {
-          console.error("Failed to add coins to backend", e);
-          set({ coins: prevCoins, cashbackVault: prevCashback });
+          state.loadCoinHistory();
+        } catch (error) {
+          // 2. Rollback: Agar API fail hui, toh fake balance wapas purana wala set kar do
+          console.error("Coin update failed, rolling back:", error);
+          set({ coins: previousCoins, cashbackVault: previousCashback });
         }
+      },
+      addCoinsLocal: (amount) => {
+        set((state) => ({ coins: state.coins + amount }));
       },
       spendCoins: async (amount, description = "Spent Coins") => {
         const state = useUserStore.getState();
@@ -486,7 +507,7 @@ export const useUserStore = create<UserState>()(
       incrementSearchCount: () => {
         const state = get();
         const today = new Date().toISOString().split('T')[0];
-        let newCount = state.lastSearchDate !== today ? 1 : state.dailySearchCount + 1;
+        const newCount = state.lastSearchDate !== today ? 1 : state.dailySearchCount + 1;
         if (newCount > 5) {
            state.spendCoins(1);
         }

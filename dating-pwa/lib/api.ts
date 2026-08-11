@@ -8,7 +8,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { useUserStore } from "@/store/useUserStore";
 
-const rawUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "https://lovewithyou.onrender.com";
+const isProd = process.env.NODE_ENV === 'production';
+const rawUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080");
 const cleanBaseUrl = rawUrl.replace(/\/+$/, ""); // Fix trailing slash bug
 export const API_BASE_URL = `${cleanBaseUrl}/api/v1`;
 

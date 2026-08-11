@@ -10,7 +10,7 @@ import { Lock, AlertTriangle, CheckCircle2, Plus, X as XIcon, Image as ImageIcon
 import dynamic from "next/dynamic";
 const FaceScanner = dynamic(() => import("@/components/FaceScanner"), { 
   ssr: false, 
-  loading: () => <div className="h-48 rounded-2xl bg-white/5 animate-pulse flex items-center justify-center text-gray-400 text-sm">Loading Face Scanner...</div> 
+  loading: () => <div className="h-48 rounded-2xl bg-surface-elevated animate-pulse flex items-center justify-center text-muted text-sm">Loading Face Scanner...</div> 
 });
 import { useToast } from "@/components/ui/ToastProvider";
 import Link from "next/link";
@@ -23,6 +23,7 @@ export default function SetupPage() {
   useDeviceAuth();
   const setProfile = useUserStore((state) => state.setProfile);
   const addCoins = useUserStore((state) => state.addCoins);
+  const addCoinsLocal = useUserStore((state) => state.addCoinsLocal);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -180,8 +181,8 @@ export default function SetupPage() {
         isAnonymous: false
       });
 
-      addCoins(20);
-      toast("Profile Verified! +20 Coins Awarded 💰", "success");
+      addCoins(200, "profile_setup");
+      toast("Profile Verified! +200 Coins Awarded 💰", "success");
       router.push("/");
     } catch (err) {
       console.error("Photo upload failed:", err);
@@ -192,11 +193,11 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 bg-dark-bg">
-      <Card className="w-full max-w-md space-y-6 !p-6 border-primary-500/20">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 bg-background">
+      <Card className="w-full max-w-md space-y-6 !p-6 border-primary/20">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Mandatory Verification</h1>
-          <p className="text-gray-400 text-xs">
+          <p className="text-muted text-xs">
             We enforce strict identity verification to ensure a safe environment.
           </p>
         </div>
@@ -222,7 +223,7 @@ export default function SetupPage() {
                 mode: "Date",
                 isAnonymous: false
               });
-              addCoins(500);
+              addCoinsLocal(500);
               toast("Dev Mode: Setup Skipped!", "success");
               router.push("/");
             }}
@@ -239,13 +240,13 @@ export default function SetupPage() {
           ) : (
             <div className="flex flex-col items-center justify-center p-6 bg-green-500/10 border border-green-500/20 rounded-2xl text-center">
               <CheckCircle2 className="w-12 h-12 text-green-500 mb-2" />
-              <h3 className="text-lg font-bold text-white">Age Verified: {aiVerifiedAge}</h3>
-              <p className="text-gray-400 text-xs">AI successfully confirmed you are 18+</p>
+              <h3 className="text-lg font-bold text-foreground">Age Verified: {aiVerifiedAge}</h3>
+              <p className="text-muted text-xs">AI successfully confirmed you are 18+</p>
             </div>
           )}
           
           {ageError && (
-            <div className="flex items-start gap-2 bg-red-500/20 p-3 rounded-lg text-red-400 text-sm mt-2 w-full text-left">
+            <div className="flex items-start gap-2 bg-error/20 p-3 rounded-lg text-red-400 text-sm mt-2 w-full text-left">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
               <span>{ageError}</span>
             </div>
@@ -254,10 +255,10 @@ export default function SetupPage() {
 
         <div className="space-y-4 pt-4">
           <div>
-            <label className="text-sm font-medium text-gray-300 ml-1">Your Name</label>
+            <label className="text-sm font-medium text-secondary ml-1">Your Name</label>
             <input 
               type="text"
-              className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary-500 transition-colors"
+              className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
               placeholder="e.g. Sumit"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -265,24 +266,24 @@ export default function SetupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-300 ml-1 flex items-center gap-1">
-              Age <Lock size={12} className="text-primary-500" />
+            <label className="text-sm font-medium text-secondary ml-1 flex items-center gap-1">
+              Age <Lock size={12} className="text-primary" />
             </label>
             <input 
               type="text"
               readOnly
-              className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-400 outline-none cursor-not-allowed"
+              className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-muted outline-none cursor-not-allowed"
               placeholder="Verified by AI"
               value={formData.age}
             />
-            <p className="text-[10px] text-primary-400 mt-1 ml-1">Estimated securely via on-device AI.</p>
+            <p className="text-[10px] text-primary mt-1 ml-1">Estimated securely via on-device AI.</p>
           </div>
           
           <div>
-            <label className="text-sm font-medium text-gray-300 ml-1">College/Campus (Optional)</label>
+            <label className="text-sm font-medium text-secondary ml-1">College/Campus (Optional)</label>
             <input 
               type="text"
-              className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-primary-500 transition-colors"
+              className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
               placeholder="e.g. Delhi University"
               value={formData.campus}
               onChange={(e) => setFormData({ ...formData, campus: e.target.value })}
@@ -290,8 +291,8 @@ export default function SetupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-300 ml-1 flex items-center gap-1">
-              Gender <Lock size={12} className="text-primary-500" />
+            <label className="text-sm font-medium text-secondary ml-1 flex items-center gap-1">
+              Gender <Lock size={12} className="text-primary" />
             </label>
             <div className="flex gap-2 mt-1">
               {["Male", "Female", "Other"].map((g) => (
@@ -300,15 +301,15 @@ export default function SetupPage() {
                   onClick={(e) => { e.preventDefault(); setFormData({ ...formData, gender: g }); }}
                   className={`flex-1 py-3 rounded-xl border transition-all ${
                     formData.gender === g 
-                      ? "border-primary-500 bg-primary-500/10 text-primary-500 font-bold" 
-                      : "border-white/10 bg-white/5 text-gray-400 hover:border-gray-500"
+                      ? "border-primary bg-primary/10 text-primary font-bold" 
+                      : "border-border bg-surface-elevated text-white/60 hover:border-gray-500"
                   }`}
                 >
                   {g}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-gray-500 mt-2 text-center flex items-center justify-center gap-1">
+            <p className="text-[10px] text-muted mt-2 text-center flex items-center justify-center gap-1">
                Locked permanently post-verification.
             </p>
           </div>
@@ -316,35 +317,35 @@ export default function SetupPage() {
           {/* 6 Photos Requirement */}
           <div className="pt-2">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-300 ml-1 flex items-center gap-2">
-                <ImageIcon size={16} className="text-primary-500" /> Your Photos
+              <label className="text-sm font-medium text-secondary ml-1 flex items-center gap-2">
+                <ImageIcon size={16} className="text-primary" /> Your Photos
               </label>
-              <span className="text-xs text-primary-400 font-bold">{photos.filter(p => p !== "").length} / 6</span>
+              <span className="text-xs text-primary font-bold">{photos.filter(p => p !== "").length} / 6</span>
             </div>
-            <p className="text-xs text-gray-400 ml-1 mb-3">You must add exactly 6 photos to complete your profile.</p>
+            <p className="text-xs text-muted ml-1 mb-3">You must add exactly 6 photos to complete your profile.</p>
             
             <div className="grid grid-cols-3 gap-2">
               {photos.map((photo, i) => (
                 <div 
                   key={i} 
                   onClick={() => handlePhotoClick(i)}
-                  className={`aspect-[3/4] rounded-xl overflow-hidden relative cursor-pointer transition-all border-2 ${photo ? 'border-transparent' : 'border-dashed border-white/20 bg-white/5 hover:border-primary-500 hover:bg-white/10 flex items-center justify-center'}`}
+                  className={`aspect-[3/4] rounded-xl overflow-hidden relative cursor-pointer transition-all border-2 ${photo ? 'border-transparent' : 'border-dashed border-white/20 bg-surface-elevated hover:border-primary hover:bg-surface-elevated flex items-center justify-center'}`}
                 >
                   {photo ? (
                     <>
                       <img src={photo} alt={`Upload ${i+1}`} className="w-full h-full object-cover" />
                       <button 
                         onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
-                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors"
+                        className="absolute top-1 right-1 bg-surface-elevated text-foreground rounded-full p-1 hover:bg-error transition-colors"
                       >
                         <XIcon size={12} />
                       </button>
                     </>
                   ) : (
-                    <Plus size={24} className="text-white/30" />
+                    <Plus size={24} className="text-foreground/30" />
                   )}
                   {/* Number Badge */}
-                  {!photo && <div className="absolute bottom-1 right-1 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center text-[10px] text-white/50">{i + 1}</div>}
+                  {!photo && <div className="absolute bottom-1 right-1 w-5 h-5 bg-surface-elevated rounded-full flex items-center justify-center text-[10px] text-foreground/50">{i + 1}</div>}
                 </div>
               ))}
             </div>
@@ -361,11 +362,11 @@ export default function SetupPage() {
         </div>
         
         {/* Safety & Respect Pledge Banner */}
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-pink-500/10 border border-rose-500/30 flex items-start gap-3 my-3">
-          <CheckCircle2 className="text-rose-400 shrink-0 mt-0.5" size={20} />
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/30 flex items-start gap-3 my-3">
+          <CheckCircle2 className="text-primary shrink-0 mt-0.5" size={20} />
           <div>
-            <h4 className="text-xs font-bold text-white">🔒 Safety &amp; Respect Pledge</h4>
-            <p className="text-[10px] text-gray-300 mt-0.5">
+            <h4 className="text-xs font-bold text-foreground">🔒 Safety &amp; Respect Pledge</h4>
+            <p className="text-[10px] text-secondary mt-0.5">
               By entering LoveWithYou, you pledge to treat all users with dignity. No harassment, screenshotting private media, or fake profiles allowed.
             </p>
           </div>
@@ -376,12 +377,12 @@ export default function SetupPage() {
            <label className="flex items-start gap-3 cursor-pointer">
              <input 
                type="checkbox" 
-               className="mt-1 w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500 bg-dark-bg"
+               className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary bg-background"
                checked={termsAgreed}
                onChange={(e) => setTermsAgreed(e.target.checked)}
              />
-             <span className="text-xs text-gray-400 leading-tight">
-               I agree to the <Link href="/terms" target="_blank" className="text-primary-500 hover:underline">Terms &amp; Conditions</Link> &amp; <Link href="/privacy" target="_blank" className="text-primary-500 hover:underline">Privacy Policy</Link>. My verified gender is bound to my photo capture.
+             <span className="text-xs text-muted leading-tight">
+               I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline">Terms &amp; Conditions</Link> &amp; <Link href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>. My verified gender is bound to my photo capture.
              </span>
            </label>
         </div>

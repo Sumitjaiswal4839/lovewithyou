@@ -84,13 +84,13 @@ export default function ScreenshotShield({ children }: { children: ReactNode }) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/60 flex flex-col items-center justify-center p-6 text-center pointer-events-none backdrop-blur-md"
+            className="fixed inset-0 z-[9999] bg-surface-elevated flex flex-col items-center justify-center p-6 text-center pointer-events-none backdrop-blur-md"
           >
-            <div className="bg-red-500/20 p-6 rounded-full mb-6">
-              <ShieldAlert className="w-16 h-16 text-red-500" />
+            <div className="bg-error/20 p-6 rounded-full mb-6">
+              <ShieldAlert className="w-16 h-16 text-error" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Privacy Protected</h2>
-            <p className="text-gray-300 max-w-sm">
+            <h2 className="text-3xl font-bold text-foreground mb-2">Privacy Protected</h2>
+            <p className="text-secondary max-w-sm">
               For the safety and privacy of our users, taking screenshots or recording the screen is strictly prohibited.
             </p>
           </motion.div>

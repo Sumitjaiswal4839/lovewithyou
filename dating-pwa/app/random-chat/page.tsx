@@ -362,32 +362,32 @@ export default function RandomChatPage() {
   // 1. PRE-CHAT VERIFICATION & TARGET GENDER SELECTION MODAL
   if (showPreChatModal) {
     return (
-      <div className="fixed inset-0 z-[200] bg-[#07050e] flex items-center justify-center p-4 text-white font-sans overflow-y-auto">
-        <div className="bg-white/[0.03] border border-white/10 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg">
+      <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto">
+        <div className="bg-white/[0.03] border border-border w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-border pb-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-pink-600 flex items-center justify-center text-white shadow-lg">
               <User size={24} />
             </div>
             <div>
               <h2 className="text-lg font-black tracking-tight">Identity &amp; Target Setup</h2>
-              <p className="text-xs text-gray-400 font-medium">Verify your profile &amp; choose who to chat with</p>
+              <p className="text-xs text-muted font-medium">Verify your profile &amp; choose who to chat with</p>
             </div>
           </div>
 
-          <div className="bg-black/60 border border-white/10 rounded-2xl p-4 space-y-1.5">
-            <span className="text-[10px] font-black uppercase text-gray-400">Your Current Identity</span>
+          <div className="bg-surface-elevated border border-border rounded-2xl p-4 space-y-1.5">
+            <span className="text-[10px] font-black uppercase text-muted">Your Current Identity</span>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-black text-white flex items-center gap-2">
+              <span className="text-sm font-black text-foreground flex items-center gap-2">
                 👤 {profile?.gender || "Male"} • Age {profile?.age || 22}
               </span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+              <span className="text-[10px] bg-success/20 text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                 Verified User ✅
               </span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-wider text-rose-300 block">
+            <label className="text-xs font-black uppercase tracking-wider text-primary block">
               Who would you like to chat with?
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -395,8 +395,8 @@ export default function RandomChatPage() {
                 onClick={() => setTargetGenderPreference("Female")}
                 className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
                   targetGenderPreference === "Female"
-                    ? "bg-rose-500/20 border-rose-500 text-rose-300 shadow-md shadow-rose-500/20"
-                    : "bg-black/40 border-white/10 text-gray-400 hover:text-white"
+                    ? "bg-primary/20 border-primary text-primary shadow-md shadow-primary/20"
+                    : "bg-surface-elevated border-border text-white/60 hover:text-white"
                 }`}
               >
                 Female ♀️
@@ -406,7 +406,7 @@ export default function RandomChatPage() {
                 className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
                   targetGenderPreference === "Male"
                     ? "bg-blue-500/20 border-blue-500 text-blue-300 shadow-md shadow-blue-500/20"
-                    : "bg-black/40 border-white/10 text-gray-400 hover:text-white"
+                    : "bg-surface-elevated border-border text-muted hover:text-foreground"
                 }`}
               >
                 Male ♂️
@@ -416,14 +416,14 @@ export default function RandomChatPage() {
                 className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
                   targetGenderPreference === "Anyone"
                     ? "bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/20"
-                    : "bg-black/40 border-white/10 text-gray-400 hover:text-white"
+                    : "bg-surface-elevated border-border text-muted hover:text-foreground"
                 }`}
               >
                 Anyone 🚻
               </button>
             </div>
             {targetGenderPreference === "Female" && (
-              <p className="text-[11px] text-rose-400 font-medium italic mt-1">
+              <p className="text-[11px] text-primary font-medium italic mt-1">
                 🔒 Strict Safety Rule: You will ONLY be matched with verified Female profiles.
               </p>
             )}
@@ -434,7 +434,7 @@ export default function RandomChatPage() {
               setShowPreChatModal(false);
               setShowWarningModal(true);
             }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 hover:from-rose-600 hover:to-purple-500 text-white font-black text-sm shadow-lg shadow-rose-500/25 active:scale-95 transition"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-pink-600 to-purple-600 hover:from-rose-600 hover:to-purple-500 text-white font-black text-sm shadow-lg shadow-primary/25 active:scale-95 transition"
           >
             CONTINUE TO SAFETY WARNING →
           </button>
@@ -446,36 +446,36 @@ export default function RandomChatPage() {
   // 2. WARNING & SAFETY AGREEMENT MODAL
   if (showWarningModal) {
     return (
-      <div className="fixed inset-0 z-[200] bg-[#07050e] flex items-center justify-center p-4 text-white font-sans overflow-y-auto">
-        <div className="bg-white/[0.03] border border-white/10 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-            <ShieldAlert size={28} className="text-amber-400 animate-pulse" />
+      <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto">
+        <div className="bg-white/[0.03] border border-border w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="flex items-center gap-3 border-b border-border pb-3">
+            <ShieldAlert size={28} className="text-warning animate-pulse" />
             <div>
-              <h2 className="text-lg font-black text-white tracking-tight">Community Safety &amp; Rules</h2>
-              <p className="text-xs text-gray-400">Strict zero-tolerance policy active</p>
+              <h2 className="text-lg font-black text-foreground tracking-tight">Community Safety &amp; Rules</h2>
+              <p className="text-xs text-muted">Strict zero-tolerance policy active</p>
             </div>
           </div>
 
-          <div className="bg-rose-950/30 border border-rose-500/40 rounded-2xl p-4 space-y-2">
-            <h4 className="text-xs font-black text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
-              <AlertTriangle size={14} className="text-rose-400" /> Prohibited Actions &amp; Auto-Ban
+          <div className="bg-rose-950/30 border border-primary/40 rounded-2xl p-4 space-y-2">
+            <h4 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <AlertTriangle size={14} className="text-primary" /> Prohibited Actions &amp; Auto-Ban
             </h4>
-            <p className="text-xs text-gray-300 leading-relaxed">
-              Any abusive language, harassment, nudity, or offensive behavior will cause an <span className="text-rose-400 font-bold">Instant Automatic Hardware Device Ban</span> without warnings!
+            <p className="text-xs text-secondary leading-relaxed">
+              Any abusive language, harassment, nudity, or offensive behavior will cause an <span className="text-primary font-bold">Instant Automatic Hardware Device Ban</span> without warnings!
             </p>
           </div>
 
-          <div className="space-y-2 text-xs text-gray-300">
+          <div className="space-y-2 text-xs text-secondary">
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+              <CheckCircle2 size={16} className="text-success shrink-0" />
               <span>Anti-Screenshot &amp; Screen Record Shield active</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+              <CheckCircle2 size={16} className="text-success shrink-0" />
               <span>Zero Location Log sharing (Complete Anonymous privacy)</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-amber-400 shrink-0" />
+              <CheckCircle2 size={16} className="text-warning shrink-0" />
               <span className="font-bold text-amber-300">1 Coin Limit: Connect with up to 20 {targetGenderPreference} partners!</span>
             </div>
           </div>
@@ -483,7 +483,7 @@ export default function RandomChatPage() {
           <div className="pt-2 space-y-2">
             <button
               onClick={handleAgreeAndEnter}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-500/30 active:scale-95 transition"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/30 active:scale-95 transition"
             >
               AGREE &amp; ENTER RANDOM CHAT 🔥
             </button>
@@ -492,7 +492,7 @@ export default function RandomChatPage() {
                 setShowWarningModal(false);
                 setShowPreChatModal(true);
               }}
-              className="w-full py-2 text-xs text-gray-400 hover:text-white font-bold"
+              className="w-full py-2 text-xs text-muted hover:text-foreground font-bold"
             >
               ← Back to Preferences
             </button>
@@ -504,11 +504,11 @@ export default function RandomChatPage() {
 
   if (isSearching) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#07050e] text-center px-4">
-        <div className="w-20 h-20 rounded-full border-4 border-rose-500/20 border-t-rose-500 animate-spin mb-6"></div>
-        <h2 className="text-xl font-black text-white mb-1">Searching Random Chat Pool...</h2>
-        <p className="text-xs text-gray-400">Filtering for <span className="text-rose-300 font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span> matches nearby</p>
-        <button onClick={() => setShowPreChatModal(true)} className="mt-8 px-6 py-2.5 bg-white/10 rounded-2xl text-white font-bold text-xs hover:bg-white/20 transition">
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-center px-4">
+        <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-rose-500 animate-spin mb-6"></div>
+        <h2 className="text-xl font-black text-foreground mb-1">Searching Random Chat Pool...</h2>
+        <p className="text-xs text-muted">Filtering for <span className="text-primary font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span> matches nearby</p>
+        <button onClick={() => setShowPreChatModal(true)} className="mt-8 px-6 py-2.5 bg-surface-elevated rounded-2xl text-foreground font-bold text-xs hover:bg-surface-elevated transition">
           Cancel Search
         </button>
       </div>
@@ -516,7 +516,7 @@ export default function RandomChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#07050e] text-white">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       <MatchPreferencesHeader />
       <RandomChatHeader 
         partner={partner} 
@@ -530,9 +530,9 @@ export default function RandomChatPage() {
       />
 
       {/* Connection Counter Banner */}
-      <div className="bg-black/60 border-b border-white/10 px-4 py-1.5 flex items-center justify-between text-[11px]">
-        <span className="text-gray-400 font-medium">
-          Filter: <span className="text-rose-300 font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span>
+      <div className="bg-surface-elevated border-b border-border px-4 py-1.5 flex items-center justify-between text-[11px]">
+        <span className="text-muted font-medium">
+          Filter: <span className="text-primary font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span>
         </span>
         <span className="text-amber-300 font-bold">Connections Left: {connectionsLeft}/20 🪙</span>
       </div>
@@ -540,7 +540,7 @@ export default function RandomChatPage() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="text-center my-2">
-          <span className="bg-white/5 border border-white/10 text-gray-400 text-xs px-3 py-1 rounded-full">
+          <span className="bg-surface-elevated border border-border text-muted text-xs px-3 py-1 rounded-full">
             Anonymous Chat Connected • Zero Logs Active 🛡️
           </span>
         </div>
@@ -557,8 +557,8 @@ export default function RandomChatPage() {
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-2xl shadow-sm overflow-hidden ${
                 isMe 
-                  ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-br-sm' 
-                  : 'bg-white/10 text-gray-200 rounded-bl-sm border border-white/10'
+                  ? 'bg-gradient-to-br from-primary to-pink-600 text-white rounded-br-sm' 
+                  : 'bg-surface-elevated text-white rounded-bl-sm border border-border'
               } ${isImage || isDisappearing ? 'p-1' : 'px-4 py-2.5'}`}>
                 
                 {isSticker && (
@@ -576,9 +576,9 @@ export default function RandomChatPage() {
                          onClick={() => revealDisappearingMessage(msg.id)}
                          className="w-full h-full bg-black/70 flex flex-col items-center justify-center cursor-pointer rounded-xl p-3 text-center"
                        >
-                         <Lock size={28} className="text-rose-400 mb-2 animate-pulse" />
-                         <span className="text-xs font-black text-white uppercase">Tap to View Snap</span>
-                         <span className="text-[10px] text-gray-400 mt-1">Self-destructs in 10s 👻</span>
+                         <Lock size={28} className="text-primary mb-2 animate-pulse" />
+                         <span className="text-xs font-black text-foreground uppercase">Tap to View Snap</span>
+                         <span className="text-[10px] text-muted mt-1">Self-destructs in 10s 👻</span>
                        </div>
                     )}
                   </div>
@@ -586,16 +586,16 @@ export default function RandomChatPage() {
 
                 {isPoll && msg.pollData && (
                   <div className="space-y-2 p-1 min-w-[200px]">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-rose-300">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-primary">
                       <BarChart2 size={16} /> Quick Icebreaker Poll
                     </div>
-                    <p className="text-xs font-bold text-white">{msg.pollData.question}</p>
+                    <p className="text-xs font-bold text-foreground">{msg.pollData.question}</p>
 
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <button
                         onClick={() => handlePollVote(msg.id, "yes")}
                         className={`py-1.5 rounded-xl text-xs font-black border transition ${
-                          msg.pollData.myVote === "yes" ? "bg-emerald-500 text-white border-emerald-400" : "bg-black/40 border-white/20 text-gray-300"
+                          msg.pollData.myVote === "yes" ? "bg-success text-foreground border-emerald-400" : "bg-surface-elevated border-white/20 text-secondary"
                         }`}
                       >
                         YES ({msg.pollData.yesVotes})
@@ -603,7 +603,7 @@ export default function RandomChatPage() {
                       <button
                         onClick={() => handlePollVote(msg.id, "no")}
                         className={`py-1.5 rounded-xl text-xs font-black border transition ${
-                          msg.pollData.myVote === "no" ? "bg-rose-500 text-white border-rose-400" : "bg-black/40 border-white/20 text-gray-300"
+                          msg.pollData.myVote === "no" ? "bg-primary text-white border-primary" : "bg-surface-elevated border-white/20 text-white/80"
                         }`}
                       >
                         NO ({msg.pollData.noVotes})
@@ -614,8 +614,8 @@ export default function RandomChatPage() {
 
                 {isAudio && (
                   <div className="flex items-center gap-3 min-w-[150px]">
-                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                       <Mic size={14} className="text-white" />
+                     <div className="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+                       <Mic size={14} className="text-foreground" />
                      </div>
                      <audio src={msg.text.replace("[AUDIO]", "")} controls className="h-8 max-w-[150px] opacity-90 invert grayscale hue-rotate-180" />
                   </div>
@@ -625,7 +625,7 @@ export default function RandomChatPage() {
                   <p className="text-[15px] leading-relaxed break-words">{msg.text}</p>
                 )}
                 
-                <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-rose-200' : 'text-gray-400'}`}>
+                <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-rose-200' : 'text-muted'}`}>
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -637,15 +637,15 @@ export default function RandomChatPage() {
 
       {/* MINI ICEBREAKER PROMPTS HORIZONTAL CHIP BAR */}
       {isConnected && (
-        <div className="bg-[#07050e]/95 border-t border-white/10 px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
-          <span className="text-[10px] font-black uppercase text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-xl flex items-center gap-1 shrink-0">
+        <div className="bg-background/95 border-t border-border px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+          <span className="text-[10px] font-black uppercase text-amber-300 bg-warning/10 border border-amber-500/20 px-2 py-1 rounded-xl flex items-center gap-1 shrink-0">
             <Lightbulb size={12} /> Icebreakers
           </span>
           {ICEBREAKER_PROMPTS.map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => sendIcebreakerPrompt(prompt)}
-              className="text-xs font-bold text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl px-3 py-1 whitespace-nowrap transition shrink-0 active:scale-95"
+              className="text-xs font-bold text-secondary hover:text-foreground bg-surface-elevated hover:bg-surface-elevated border border-border rounded-2xl px-3 py-1 whitespace-nowrap transition shrink-0 active:scale-95"
             >
               {prompt}
             </button>
@@ -660,7 +660,7 @@ export default function RandomChatPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="p-3 bg-black/90 border-t border-white/10 flex items-center justify-around text-2xl z-20"
+            className="p-3 bg-black/90 border-t border-border flex items-center justify-around text-2xl z-20"
           >
             {["💖", "🔥", "😂", "🤯", "🌹", "💋", "✨", "👀"].map(emoji => (
               <button key={emoji} onClick={() => sendStickerReaction(emoji)} className="hover:scale-125 transition transform">
@@ -672,18 +672,18 @@ export default function RandomChatPage() {
       </AnimatePresence>
 
       {/* Input Controls */}
-      <div className="p-3 bg-[#07050e] border-t border-white/10 pb-safe">
+      <div className="p-3 bg-background border-t border-border pb-safe">
         {!isConnected ? (
           <div className="grid grid-cols-2 gap-2">
             <button 
               onClick={nextChat}
-              className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-rose-500/25 active:scale-95 transition"
+              className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-primary to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-primary/25 active:scale-95 transition"
             >
               <RefreshCw size={18} /> Skip Person ({connectionsLeft} left)
             </button>
             <button 
               onClick={() => setShowSpinWheelModal(true)}
-              className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-purple-600/25 active:scale-95 transition"
+              className="flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground rounded-2xl font-black text-xs shadow-lg shadow-purple-600/25 active:scale-95 transition"
             >
               <Dices size={18} /> Spin-to-Connect 🎰
             </button>
@@ -693,7 +693,7 @@ export default function RandomChatPage() {
             <button 
               onClick={nextChat}
               title="Skip to Next Person"
-              className="p-3 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-colors shrink-0"
+              className="p-3 bg-surface-elevated text-foreground rounded-2xl hover:bg-surface-elevated transition-colors shrink-0"
             >
               <SkipForward size={18} />
             </button>
@@ -701,24 +701,24 @@ export default function RandomChatPage() {
             <button 
               onClick={() => setShowSpinWheelModal(true)}
               title="Spin-to-Connect Gamified Wheel"
-              className="p-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl hover:opacity-90 transition-colors shrink-0 shadow-md shadow-purple-600/20"
+              className="p-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground rounded-2xl hover:opacity-90 transition-colors shrink-0 shadow-md shadow-purple-600/20"
             >
               <Dices size={18} />
             </button>
 
-            <form onSubmit={handleSendMessage} className="flex-1 flex items-end gap-1 bg-white/5 border border-white/10 rounded-3xl p-1.5 focus-within:border-rose-500 transition-colors relative">
+            <form onSubmit={handleSendMessage} className="flex-1 flex items-end gap-1 bg-surface-elevated border border-border rounded-3xl p-1.5 focus-within:border-primary transition-colors relative">
               <AnimatePresence>
                 {showAttachmentMenu && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full left-0 mb-3 bg-[#07050e] border border-white/10 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-52 z-30"
+                    className="absolute bottom-full left-0 mb-3 bg-background border border-border rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-52 z-30"
                   >
                     <button 
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-xl text-white text-xs font-bold"
+                      className="flex items-center gap-3 p-2.5 hover:bg-surface-elevated rounded-xl text-foreground text-xs font-bold"
                     >
                       <ImageIcon size={16} className="text-blue-400" /> Send Photo
                     </button>
@@ -726,7 +726,7 @@ export default function RandomChatPage() {
                     <button 
                       type="button"
                       onClick={() => disappearingFileInputRef.current?.click()}
-                      className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-xl text-white text-xs font-bold"
+                      className="flex items-center gap-3 p-2.5 hover:bg-surface-elevated rounded-xl text-foreground text-xs font-bold"
                     >
                       <EyeOff size={16} className="text-purple-400" /> 10s Disappearing Snap 👻
                     </button>
@@ -734,9 +734,9 @@ export default function RandomChatPage() {
                     <button 
                       type="button"
                       onClick={() => createQuickPoll("Do you like music & late-night chats? 🎵")}
-                      className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-xl text-white text-xs font-bold"
+                      className="flex items-center gap-3 p-2.5 hover:bg-surface-elevated rounded-xl text-foreground text-xs font-bold"
                     >
-                      <BarChart2 size={16} className="text-emerald-400" /> Create Quick Poll 📊
+                      <BarChart2 size={16} className="text-success" /> Create Quick Poll 📊
                     </button>
 
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, false)} />
@@ -748,10 +748,10 @@ export default function RandomChatPage() {
               {isRecording ? (
                 <div className="flex-1 flex items-center justify-between pl-4 py-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></div>
-                    <span className="text-xs text-rose-400 font-bold">Recording Voice Note...</span>
+                    <div className="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
+                    <span className="text-xs text-primary font-bold">Recording Voice Note...</span>
                   </div>
-                  <button type="button" onClick={stopRecording} className="p-2 bg-rose-500 text-white rounded-full mr-1">
+                  <button type="button" onClick={stopRecording} className="p-2 bg-primary text-white rounded-full mr-1">
                     <StopCircle size={16} />
                   </button>
                 </div>
@@ -759,7 +759,7 @@ export default function RandomChatPage() {
                 <>
                   <button 
                     type="button" 
-                    className="p-2.5 text-gray-400 hover:text-white transition"
+                    className="p-2.5 text-muted hover:text-foreground transition"
                     onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
                   >
                     <Plus size={18} />
@@ -767,7 +767,7 @@ export default function RandomChatPage() {
 
                   <button 
                     type="button" 
-                    className="p-2.5 text-amber-400 hover:text-amber-300 transition"
+                    className="p-2.5 text-warning hover:text-amber-300 transition"
                     onClick={() => setShowStickerTray(!showStickerTray)}
                   >
                     <Smile size={18} />
@@ -778,13 +778,13 @@ export default function RandomChatPage() {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-transparent border-none text-white outline-none py-2 text-xs placeholder:text-gray-500"
+                    className="flex-1 bg-transparent border-none text-foreground outline-none py-2 text-xs placeholder:text-muted"
                   />
 
                   {inputText.trim() ? (
                     <button 
                       type="submit" 
-                      className="p-2.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md"
+                      className="p-2.5 rounded-full bg-gradient-to-r from-primary to-pink-600 text-white shadow-md"
                     >
                       <Send size={16} />
                     </button>
@@ -792,7 +792,7 @@ export default function RandomChatPage() {
                     <button 
                       type="button" 
                       onClick={startRecording}
-                      className="p-2.5 text-gray-400 hover:text-white transition"
+                      className="p-2.5 text-muted hover:text-foreground transition"
                     >
                       <Mic size={18} />
                     </button>
@@ -813,25 +813,25 @@ export default function RandomChatPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="bg-[#07050e] border border-white/10 w-full max-w-md rounded-3xl p-6 shadow-2xl relative space-y-4 max-h-[80vh] flex flex-col">
+            <div className="bg-background border border-border w-full max-w-md rounded-3xl p-6 shadow-2xl relative space-y-4 max-h-[80vh] flex flex-col">
               <button 
                 onClick={() => setShowHistoryModal(false)}
-                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white"
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-foreground"
               >
                 <XIcon size={16} />
               </button>
 
-              <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+              <div className="flex items-center gap-3 border-b border-border pb-3">
                 <History size={24} className="text-purple-400" />
                 <div>
-                  <h3 className="text-lg font-black text-white">Matching History Vault</h3>
-                  <p className="text-xs text-gray-400">Tap any past partner to view their real profile &amp; Like them</p>
+                  <h3 className="text-lg font-black text-foreground">Matching History Vault</h3>
+                  <p className="text-xs text-muted">Tap any past partner to view their real profile &amp; Like them</p>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                 {matchingHistory.length === 0 ? (
-                  <div className="text-center py-10 text-gray-400 text-xs">
+                  <div className="text-center py-10 text-muted text-xs">
                     No past partners matched in this session yet. Start chatting to build your vault!
                   </div>
                 ) : (
@@ -839,25 +839,25 @@ export default function RandomChatPage() {
                     <div
                       key={`${item.id}-${idx}`}
                       onClick={() => setSelectedHistoryPartner(item)}
-                      className="bg-white/[0.03] border border-white/10 hover:border-purple-500/40 rounded-2xl p-3 flex items-center justify-between cursor-pointer transition"
+                      className="bg-white/[0.03] border border-border hover:border-purple-500/40 rounded-2xl p-3 flex items-center justify-between cursor-pointer transition"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-full overflow-hidden border border-white/20 shrink-0">
                           <img src={item.photos[0]} alt={item.originalName} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                          <h4 className="text-xs font-black text-foreground flex items-center gap-1.5">
                             {item.isLiked ? item.originalName : item.hiddenName}
-                            {item.isLiked && <span className="text-[10px] text-rose-400">❤️ Liked</span>}
+                            {item.isLiked && <span className="text-[10px] text-primary">❤️ Liked</span>}
                           </h4>
-                          <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <p className="text-[10px] text-muted flex items-center gap-1">
                             <span>{item.gender} • {item.location}</span>
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <span className="text-[10px] text-muted flex items-center gap-1">
                           <Clock size={10} /> {item.matchedTime}
                         </span>
                         <span className="text-[10px] text-purple-300 font-bold block mt-0.5">View Profile →</span>
@@ -880,10 +880,10 @@ export default function RandomChatPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[220] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="bg-[#07050e] border border-white/10 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative p-5 space-y-4">
+            <div className="bg-background border border-border w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative p-5 space-y-4">
               <button 
                 onClick={() => setSelectedHistoryPartner(null)}
-                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white"
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-foreground"
               >
                 <XIcon size={16} />
               </button>
@@ -892,10 +892,10 @@ export default function RandomChatPage() {
                 <span className="text-[10px] font-black uppercase text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30 mb-1 inline-block">
                   📜 Vault History Card
                 </span>
-                <h3 className="text-lg font-black text-white">
+                <h3 className="text-lg font-black text-foreground">
                   {selectedHistoryPartner.isLiked ? selectedHistoryPartner.originalName : selectedHistoryPartner.hiddenName}
                 </h3>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted">
                   {selectedHistoryPartner.isLiked ? "Profile Unlocked ✅" : "Like to unlock full profile name & photos"}
                 </p>
               </div>
@@ -910,8 +910,8 @@ export default function RandomChatPage() {
                     />
                     {!selectedHistoryPartner.isLiked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20">
-                         <Lock size={32} className="text-white/50 mb-2" />
-                         <span className="text-white/80 font-bold text-xs uppercase tracking-wider">Locked</span>
+                         <Lock size={32} className="text-foreground/50 mb-2" />
+                         <span className="text-foreground/80 font-bold text-xs uppercase tracking-wider">Locked</span>
                       </div>
                     )}
                   </div>
@@ -923,16 +923,16 @@ export default function RandomChatPage() {
                 {!selectedHistoryPartner.isLiked ? (
                   <button 
                     onClick={() => handleLikePartner(selectedHistoryPartner)}
-                    className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-rose-500/25 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-gradient-to-r from-primary to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
                   >
                     <Heart size={16} /> Unlock Profile with 1 Coin 🪙
                   </button>
                 ) : (
-                  <div className="w-full py-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-center font-black text-xs rounded-2xl">
+                  <div className="w-full py-3 bg-success/20 border border-emerald-500/40 text-emerald-300 text-center font-black text-xs rounded-2xl">
                     ❤️ Liked &amp; Unlocked Profile
                   </div>
                 )}
-                <p className="text-[10px] text-gray-500 text-center font-medium">
+                <p className="text-[10px] text-muted text-center font-medium">
                   🔒 Note: Add Friend is disabled in Vault History mode.
                 </p>
               </div>
@@ -950,10 +950,10 @@ export default function RandomChatPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="bg-[#07050e] border border-white/10 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative space-y-5">
+            <div className="bg-background border border-border w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative space-y-5">
               <button 
                 onClick={() => setShowSpinWheelModal(false)}
-                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white"
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-foreground"
               >
                 <XIcon size={16} />
               </button>
@@ -962,14 +962,14 @@ export default function RandomChatPage() {
                 <span className="text-[10px] font-black uppercase text-purple-300 bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30">
                   🎰 Gamified Partner Roulette
                 </span>
-                <h3 className="text-lg font-black text-white tracking-tight">Spin-to-Connect Wheel</h3>
-                <p className="text-xs text-gray-400">Spin the wheel to decide the vibe of your next partner!</p>
+                <h3 className="text-lg font-black text-foreground tracking-tight">Spin-to-Connect Wheel</h3>
+                <p className="text-xs text-muted">Spin the wheel to decide the vibe of your next partner!</p>
               </div>
 
               <div className="w-44 h-44 rounded-full border-4 border-purple-500/40 mx-auto flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-purple-950/40 via-black to-pink-950/40 shadow-[0_0_30px_rgba(147,51,234,0.3)]">
                 <div className={`text-center p-3 ${isSpinningWheel ? "animate-spin" : ""}`}>
                   <Dices size={40} className="text-purple-400 mx-auto mb-2" />
-                  <span className="text-xs font-black text-white block">
+                  <span className="text-xs font-black text-foreground block">
                     {landedVibe ? landedVibe : isSpinningWheel ? "Spinning Wheel..." : "Ready to Spin!"}
                   </span>
                 </div>
@@ -978,7 +978,7 @@ export default function RandomChatPage() {
               <button
                 onClick={handleSpinToConnect}
                 disabled={isSpinningWheel}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-600/30 active:scale-95 transition"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-500 hover:to-primary text-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-600/30 active:scale-95 transition"
               >
                 {isSpinningWheel ? "🎰 Spinning Vibe Wheel..." : "SPIN WHEEL & MATCH 🔥"}
               </button>
@@ -996,19 +996,19 @@ export default function RandomChatPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
           >
-            <div className="bg-[#07050e] border border-white/10 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative p-5 space-y-4">
+            <div className="bg-background border border-border w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative p-5 space-y-4">
               <button 
                 onClick={() => setShowProfileModal(false)}
-                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white"
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-foreground"
               >
                 <XIcon size={16} />
               </button>
               
               <div className="text-center">
-                <h3 className="text-lg font-black text-white">
+                <h3 className="text-lg font-black text-foreground">
                   {partner.isLiked ? partner.originalName : partner.hiddenName}
                 </h3>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted">
                   {partner.isLiked ? "Profile Unlocked ✅" : "Like to unlock full profile name & photos"}
                 </p>
               </div>
@@ -1023,8 +1023,8 @@ export default function RandomChatPage() {
                     />
                     {!partner.isLiked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20">
-                         <Lock size={32} className="text-white/50 mb-2" />
-                         <span className="text-white/80 font-bold text-xs uppercase tracking-wider">Locked</span>
+                         <Lock size={32} className="text-foreground/50 mb-2" />
+                         <span className="text-foreground/80 font-bold text-xs uppercase tracking-wider">Locked</span>
                       </div>
                     )}
                   </div>
@@ -1034,7 +1034,7 @@ export default function RandomChatPage() {
               {!partner.isLiked && (
                 <button 
                   onClick={() => handleLikePartner(partner)}
-                  className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-rose-500/25"
+                  className="w-full py-3 bg-gradient-to-r from-primary to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-primary/25"
                 >
                   Unlock Profile with 1 Coin 🪙
                 </button>

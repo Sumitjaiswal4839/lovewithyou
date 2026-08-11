@@ -104,6 +104,12 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/push/broadcast", auth.AuthMiddleware(BroadcastPushNotification)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/redis/pubsub/publish", auth.AuthMiddleware(RedisPubSubClusterBroadcast)).Methods(http.MethodPost, http.MethodOptions)
 
+	// Admin API (Sub-Admin Management)
+	r.HandleFunc("/api/v1/admin/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/v1/admin/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/admin/subadmins/{id}", DeleteSubAdmin).Methods(http.MethodDelete, http.MethodOptions)
+	r.HandleFunc("/api/v1/admin/verify", VerifySubAdmin).Methods(http.MethodPost, http.MethodOptions)
+
 	return r
 }
 
@@ -255,28 +261,51 @@ func ClaimDailyReward(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status": "success", "message": "Claimed 10 coins"}`))
 }
 
+// 1. Server-side allowed rewards ki strict dictionary banai (Whitelist)
+var AllowedRewards = map[string]int{
+    "welcome_bonus":   250, // mtlb agr koi new account banata hai toh mile
+    "daily_reward":    20, //mtlb ek calender hoo orr wha ke daily 20 coin hoo per day ke orr niche claim kaa option orr      //ek din mein ek hii baar uss se jydaaa nhi okey 
+    "watch_ad":        20,  //watch karne par itne hi mile jydaa aa nhi 
+    "profile_setup":   200, //profile complete karne pe orr half karne pe 100
+    "secret_crush":    20,  //yeh toh campus wala option hai okey 
+}
+
 func EarnCoins(w http.ResponseWriter, r *http.Request) {
-	var req CoinRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("Internal error: %v", err)
-		http.Error(w, "internal server error", http.StatusBadRequest)
-		return
-	}
+    // Context se verified Device ID nikalo
+    deviceID := r.Context().Value(auth.DeviceIDKey).(string)
 
-	desc := req.Description
-	if desc == "" {
-		desc = "Earned Coins"
-	}
+    // 2. Client se ab 'Amount' nahi, sirf 'Reason' maango
+    var req struct {
+        Reason string `json:"reason"`
+    }
 
-	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid payload", http.StatusBadRequest)
+        return
+    }
 
-	_, err := db.UpdateCoinsAtomic(deviceID, req.Amount, desc)
-	if err != nil {
-		log.Printf("Internal error: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"status": "success"})
+    // 🔴 3. SECURITY FIX: Client reason ko map se verify karo
+    rewardAmount, isValid := AllowedRewards[req.Reason]
+    if !isValid {
+        http.Error(w, "Unauthorized or unknown reward reason", http.StatusForbidden)
+        return
+    }
+
+    // 4. Ab safely verified rewardAmount DB mein bhejo
+    description := "Earned via: " + req.Reason
+    _, err := db.UpdateCoinsAtomic(deviceID, rewardAmount, description)
+    
+    if err != nil {
+        http.Error(w, "Failed to update coins", http.StatusInternalServerError)
+        return
+    }
+
+    // Success response
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "success": true,
+        "coins_added": rewardAmount,
+    })
 }
 
 func SpendCoins(w http.ResponseWriter, r *http.Request) {

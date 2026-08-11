@@ -7,7 +7,8 @@ import L from "leaflet";
 import { useUserStore } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
 
-const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080")?.replace(/\/+$/, "");
+const isProd = process.env.NODE_ENV === "production";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
 
 // Custom icon for clusters
 const createClusterIcon = (count: number) => {
@@ -81,7 +82,7 @@ export default function MapComponent() {
     }
   }, []);
 
-  if (!userLocation) return <div className="h-full w-full bg-[#1e1e1e] flex items-center justify-center text-white">Loading Map...</div>;
+  if (!userLocation) return <div className="h-full w-full bg-[#1e1e1e] flex items-center justify-center text-foreground">Loading Map...</div>;
 
   return (
     <MapContainer 

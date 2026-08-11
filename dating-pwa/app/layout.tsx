@@ -43,7 +43,7 @@ export default function RootLayout({
         )}
       </head>
       <body
-        className="antialiased font-sans min-h-screen bg-black sm:bg-[#111] selection:bg-primary-500/30 transition-colors duration-300"
+        className="antialiased font-sans min-h-screen bg-[#f4f4f5] dark:bg-[#121212] sm:bg-[#e4e4e7] sm:dark:bg-[#0a0a0a] selection:bg-primary/30 transition-colors duration-300"
       >
         <ThemeProvider defaultTheme="dark" storageKey="dating-ui-theme">
           <ToastProvider>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import * as nsfwjs from "nsfwjs";
-import { AlertTriangle, EyeOff, Eye } from "lucide-react";
+import { EyeOff, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Cache the model globally so we don't load it multiple times per image
@@ -79,7 +79,7 @@ export default function SecureImage({
       />
 
       {isAnalyzing && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-elevated backdrop-blur-sm">
           <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
         </div>
       )}
@@ -88,23 +88,23 @@ export default function SecureImage({
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 p-4 text-center cursor-pointer"
+          className="absolute inset-0 flex flex-col items-center justify-center bg-surface-elevated p-4 text-center cursor-pointer"
           onClick={() => setIsBlurred(false)}
         >
-          <div className="bg-white/10 p-3 rounded-full mb-3 backdrop-blur-md">
-            <EyeOff className="w-8 h-8 text-white" />
+          <div className="bg-surface-elevated p-3 rounded-full mb-3 backdrop-blur-md">
+            <EyeOff className="w-8 h-8 text-foreground" />
           </div>
-          <span className="text-white font-semibold text-sm">Sensitive Content</span>
-          <span className="text-white/60 text-xs mt-1">Tap to reveal</span>
+          <span className="text-foreground font-semibold text-sm">Sensitive Content</span>
+          <span className="text-foreground/60 text-xs mt-1">Tap to reveal</span>
         </motion.div>
       )}
 
       {isNsfw && !isBlurred && (
         <button 
           onClick={() => setIsBlurred(true)}
-          className="absolute top-2 right-2 bg-black/60 backdrop-blur-md p-2 rounded-full z-10"
+          className="absolute top-2 right-2 bg-surface-elevated backdrop-blur-md p-2 rounded-full z-10"
         >
-          <Eye className="w-4 h-4 text-white" />
+          <Eye className="w-4 h-4 text-foreground" />
         </button>
       )}
     </div>

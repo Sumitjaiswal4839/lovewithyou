@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { SlidersHorizontal, ChevronDown, MapPin, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/components/ui/ToastProvider";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -156,11 +157,11 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled }: {
   return (
     <div className="relative w-full" ref={ref}>
       <div 
-        className={`w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none flex justify-between items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus-within:border-rose-500'}`}
+        className={`w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs font-bold text-foreground outline-none flex justify-between items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus-within:border-primary'}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
-        <span className={value ? "text-slate-800" : "text-slate-400"}>{value || placeholder}</span>
-        <ChevronDown size={14} className="text-slate-400" />
+        <span className={value ? "text-foreground" : "text-muted"}>{value || placeholder}</span>
+        <ChevronDown size={14} className="text-muted" />
       </div>
 
       <AnimatePresence>
@@ -170,14 +171,14 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled }: {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[100] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 flex flex-col overflow-hidden"
+            className="absolute z-[100] w-full mt-1 bg-surface-elevated border border-border rounded-xl shadow-xl max-h-48 flex flex-col overflow-hidden"
           >
-            <div className="sticky top-0 bg-slate-50 border-b border-slate-100 px-3 py-2 flex items-center gap-2 z-10">
-              <Search size={14} className="text-slate-400" />
+            <div className="sticky top-0 bg-surface border-b border-border px-3 py-2 flex items-center gap-2 z-10">
+              <Search size={14} className="text-muted" />
               <input 
                 type="text" 
                 placeholder="Search..." 
-                className="w-full text-xs font-bold outline-none bg-transparent"
+                className="w-full text-xs font-bold outline-none bg-transparent text-foreground"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 onClick={e => e.stopPropagation()}
@@ -186,7 +187,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled }: {
             </div>
             <div className="overflow-y-auto no-scrollbar relative z-0">
               <div 
-                className="px-3 py-2 text-xs text-slate-500 hover:bg-rose-50 cursor-pointer border-b border-slate-50"
+                className="px-3 py-2 text-xs text-muted hover:bg-surface cursor-pointer border-b border-border"
                 onClick={() => { onChange(""); setIsOpen(false); setSearchTerm(""); }}
               >
                 Any / Reset
@@ -194,14 +195,14 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled }: {
               {filtered.map(opt => (
                 <div 
                   key={opt} 
-                  className={`px-3 py-2 text-xs font-bold cursor-pointer hover:bg-rose-50 ${value === opt ? 'bg-rose-100 text-rose-600' : 'text-slate-700'}`}
+                  className={`px-3 py-2 text-xs font-bold cursor-pointer hover:bg-surface ${value === opt ? 'bg-primary-soft text-primary' : 'text-foreground'}`}
                   onClick={() => { onChange(opt); setIsOpen(false); setSearchTerm(""); }}
                 >
                   {opt}
                 </div>
               ))}
               {filtered.length === 0 && (
-                <div className="px-3 py-2 text-xs text-slate-400 text-center italic">No results found</div>
+                <div className="px-3 py-2 text-xs text-muted text-center italic">No results found</div>
               )}
             </div>
           </motion.div>
@@ -215,48 +216,79 @@ export default function MatchPreferencesHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const matchPreferences = useUserStore((state) => state.matchPreferences);
   const updateMatchPreferences = useUserStore((state) => state.updateMatchPreferences);
+  const profile = useUserStore((state) => state.profile);
+  const setProfile = useUserStore((state) => state.setProfile);
+  const { toast } = useToast();
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(false);
+    
+    if (profile) {
+      await setProfile({
+        ...profile,
+        match_preferences: {
+          gender: matchPreferences.gender,
+          selectedState: matchPreferences.selectedState,
+          selectedCity: matchPreferences.selectedCity,
+        }
+      });
+      toast("Match filters saved!", "success");
+    } else {
+      toast("Saved locally!", "success");
+    }
+  };
 
   const currentDistricts = matchPreferences.selectedState && DISTRICTS_DATA[matchPreferences.selectedState];
 
   return (
-    <div className="bg-white border-b border-slate-100 z-30 shadow-sm relative w-full">
-      <button 
+    <div className="bg-surface border-b border-border z-[100] shadow-sm relative w-full">
+      <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface transition cursor-pointer"
       >
         <div className="flex items-center gap-2">
-          <SlidersHorizontal size={16} className="text-rose-500" />
-          <span className="text-xs font-black text-slate-800 uppercase tracking-tight">Match Filters</span>
+          <SlidersHorizontal size={16} className="text-primary" />
+          <span className="text-xs font-black text-foreground uppercase tracking-tight">Match Filters</span>
           
           {/* Active Filter Indicators */}
           <div className="flex items-center gap-1 ml-2">
-            <span className="text-[9px] font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md">
+            <span className="text-[9px] font-bold bg-primary-soft text-primary px-1.5 py-0.5 rounded-md">
               {matchPreferences.gender}
             </span>
             {(matchPreferences.selectedState || matchPreferences.selectedCity) && (
-              <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+              <span className="text-[9px] font-bold bg-success/20 text-success px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                 <MapPin size={8} />
                 {matchPreferences.selectedCity || matchPreferences.selectedState}
               </span>
             )}
           </div>
         </div>
-        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            className="text-xs font-bold text-white bg-gradient-to-r from-primary to-primary-hover px-3 py-1 rounded-full shadow hover:scale-105 transition-transform"
+          >
+            SAVE
+          </button>
+          <ChevronDown size={14} className={`text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </div>
+      </div>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-slate-50 border-t border-slate-100 absolute w-full top-full shadow-lg rounded-b-2xl"
+            initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+            animate={{ height: "auto", opacity: 1, transitionEnd: { overflow: "visible" } }}
+            exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+            transition={{ duration: 0.2 }}
+            className="bg-surface border-t border-border absolute w-full top-full shadow-lg rounded-b-2xl"
           >
             <div className="p-4 space-y-4 text-sm">
               
               {/* Gender Selection */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Target Gender</label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider block">Target Gender</label>
                 <div className="grid grid-cols-3 gap-2">
                   {["Everyone", "Male", "Female"].map((g) => (
                     <button
@@ -264,8 +296,8 @@ export default function MatchPreferencesHeader() {
                       onClick={() => updateMatchPreferences({ gender: g as any })}
                       className={`py-2 rounded-xl text-xs font-bold transition-all ${
                         matchPreferences.gender === g 
-                          ? "bg-rose-500 text-white shadow-md shadow-rose-500/20 ring-1 ring-rose-500" 
-                          : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                          ? "bg-primary text-white shadow-md shadow-primary/20 ring-1 ring-primary" 
+                          : "bg-surface-elevated text-foreground border border-border hover:bg-surface/80"
                       }`}
                     >
                       {g}
@@ -276,7 +308,7 @@ export default function MatchPreferencesHeader() {
 
               {/* Location Selection */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Strict Location Filter</label>
+                <label className="text-[10px] font-black text-muted uppercase tracking-wider block">Strict Location Filter</label>
                 <div className="grid grid-cols-2 gap-2 relative z-50">
                   <SearchableSelect 
                     options={INDIAN_STATES}
@@ -296,7 +328,7 @@ export default function MatchPreferencesHeader() {
                     <input
                       type="text"
                       placeholder="City / District..."
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-rose-500"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs font-bold text-foreground outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       value={matchPreferences.selectedCity || ""}
                       onChange={(e) => updateMatchPreferences({ selectedCity: e.target.value || null })}
                       disabled={!matchPreferences.selectedState}
@@ -304,7 +336,7 @@ export default function MatchPreferencesHeader() {
                   )}
                 </div>
                 {!matchPreferences.selectedState && (
-                  <p className="text-[9px] text-slate-400 font-bold ml-1">Select a state first to filter by city.</p>
+                  <p className="text-[9px] text-muted font-bold ml-1">Select a state first to filter by city.</p>
                 )}
               </div>
 

@@ -74,22 +74,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Sub-Admin Management State
-  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([
-    {
-      id: "sub-1",
-      username: "moderator_rahul",
-      roleTitle: "Senior Content Moderator",
-      accessArea: "moderation",
-      createdAt: "2026-07-20",
-    },
-    {
-      id: "sub-2",
-      username: "finance_priya",
-      roleTitle: "Revenue & Ads Manager",
-      accessArea: "finance",
-      createdAt: "2026-07-22",
-    },
-  ]);
+  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
 
   // Form states for creating sub-admin
   const [newSubUsername, setNewSubUsername] = useState("");
@@ -110,21 +95,23 @@ export default function AdminDashboard() {
     ecpmAverage: 0.00,
   });
 
-  // Load persistent sub-admins if saved locally
+  // Load Sub-Admins from Live Go Backend
   useEffect(() => {
-    const savedSubs = localStorage.getItem("lwy_sub_admins");
-    if (savedSubs) {
-      try {
-        setSubAdmins(JSON.parse(savedSubs));
-      } catch (e) {
-        console.error(e);
-      }
+    if (isAuthenticated) {
+      fetchSubAdmins();
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  const saveSubAdminsToStorage = (updatedSubs: SubAdmin[]) => {
-    setSubAdmins(updatedSubs);
-    localStorage.setItem("lwy_sub_admins", JSON.stringify(updatedSubs));
+  const fetchSubAdmins = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/v1/admin/subadmins");
+      if (res.ok) {
+        const data = await res.json();
+        setSubAdmins(data || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch sub-admins", e);
+    }
   };
 
   // Handle Admin Login
@@ -257,35 +244,53 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleCreateSubAdmin = (e: React.FormEvent) => {
+  const handleCreateSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSubUsername || !newSubPassword || !newSubTitle) {
       toast("Please fill out all fields for the new Sub-Admin!", "error");
       return;
     }
 
-    const newSub: SubAdmin = {
-      id: `sub-${Date.now()}`,
-      username: newSubUsername.toLowerCase().trim(),
-      roleTitle: newSubTitle.trim(),
-      accessArea: newSubAccess,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const res = await fetch("http://localhost:8080/api/v1/admin/subadmins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: newSubUsername.toLowerCase().trim(),
+          password: newSubPassword,
+          role_title: newSubTitle.trim(),
+          access_area: newSubAccess,
+        }),
+      });
 
-    const updated = [...subAdmins, newSub];
-    saveSubAdminsToStorage(updated);
+      if (!res.ok) {
+        toast("Failed to create Sub-Admin in database.", "error");
+        return;
+      }
 
-    setNewSubUsername("");
-    setNewSubPassword("");
-    setNewSubTitle("");
-    toast(`🎉 Sub-Admin '${newSub.username}' created successfully!`, "success");
+      await fetchSubAdmins();
+      setNewSubUsername("");
+      setNewSubPassword("");
+      setNewSubTitle("");
+      toast(`🎉 Sub-Admin created successfully!`, "success");
+    } catch (err) {
+      toast("Connection error to backend.", "error");
+    }
   };
 
-  const handleDeleteSubAdmin = (id: string) => {
+  const handleDeleteSubAdmin = async (id: string) => {
     if (!confirm("Delete this Sub-Admin profile?")) return;
-    const updated = subAdmins.filter((s) => s.id !== id);
-    saveSubAdminsToStorage(updated);
-    toast("Sub-Admin removed.", "info");
+    try {
+      const res = await fetch(`http://localhost:8080/api/v1/admin/subadmins/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        await fetchSubAdmins();
+        toast("Sub-Admin removed securely.", "info");
+      }
+    } catch (err) {
+      toast("Error deleting Sub-Admin.", "error");
+    }
   };
 
   const handleSendBroadcast = (e: React.FormEvent) => {
@@ -328,25 +333,25 @@ export default function AdminDashboard() {
   // Render Password Gatekeeper
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#080512] px-4 relative overflow-hidden">
-        <div className="bg-black/80 border border-white/10 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl w-full max-w-md text-center shadow-2xl relative z-10 my-auto">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-purple-500/20 border border-red-500/30 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/10">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 relative overflow-hidden">
+        <div className="bg-black/80 border border-border backdrop-blur-2xl p-6 sm:p-10 rounded-3xl w-full max-w-md text-center shadow-2xl relative z-10 my-auto">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-red-500/20 via-pink-500/20 to-purple-500/20 border border-red-500/30 text-error rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/10">
             <Lock size={32} className="animate-pulse" />
           </div>
 
-          <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 mb-2">
+          <span className="text-[10px] bg-error/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full font-black uppercase tracking-widest inline-flex items-center gap-1.5 mb-2">
             <Shield size={12} /> Master Command Portal
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mb-2">
             LoveWithYou Admin
           </h1>
-          <p className="text-xs text-gray-400 mb-6">
+          <p className="text-xs text-muted mb-6">
             Enter master key or sub-admin credentials to unlock system control.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
-              <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                 Username (Sub-Admin Optional)
               </label>
               <input
@@ -355,12 +360,12 @@ export default function AdminDashboard() {
                 onChange={(e) => setUsernameInput(e.target.value)}
                 placeholder="Enter master username"
                 autoComplete="new-password"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-red-500 text-white text-xs font-medium"
+                className="w-full bg-surface-elevated border border-border rounded-2xl px-4 py-3 outline-none focus:border-red-500 text-foreground text-xs font-medium"
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                 Admin Security Password
               </label>
               <input
@@ -368,22 +373,22 @@ export default function AdminDashboard() {
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="Enter master password (e.g. ***REMOVED***)"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-red-500 text-white text-xs font-medium"
+                className="w-full bg-surface-elevated border border-border rounded-2xl px-4 py-3 outline-none focus:border-red-500 text-foreground text-xs font-medium"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 hover:opacity-95 text-white font-black text-xs rounded-2xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 hover:opacity-95 text-foreground font-black text-xs rounded-2xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2"
             >
               <Unlock size={16} /> Unlock Command Console
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-white/5 text-center">
+          <div className="mt-6 pt-4 border-t border-border text-center">
             <button
               onClick={() => router.push("/")}
-              className="text-xs text-gray-500 hover:text-white transition font-medium"
+              className="text-xs text-muted hover:text-foreground transition font-medium"
             >
               ← Return to LoveWithYou PWA App
             </button>
@@ -406,24 +411,24 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#080512] text-white flex flex-col md:flex-row w-full">
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row w-full">
       {/* ========================================================================= */}
       {/* MOBILE RESPONSIVE TOP BAR */}
       {/* ========================================================================= */}
-      <header className="md:hidden bg-black/90 border-b border-white/10 p-4 sticky top-0 z-40 flex items-center justify-between">
+      <header className="md:hidden bg-black/90 border-b border-border p-4 sticky top-0 z-40 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-white font-black">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-foreground font-black">
             <Shield size={18} />
           </div>
           <div>
-            <h2 className="font-black text-sm text-white">LoveWithYou Admin</h2>
+            <h2 className="font-black text-sm text-foreground">LoveWithYou Admin</h2>
             <p className="text-[10px] text-red-400 font-bold">{currentAdminName}</p>
           </div>
         </div>
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-xl bg-white/10 text-white"
+          className="p-2 rounded-xl bg-surface-elevated text-foreground"
         >
           {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -435,17 +440,17 @@ export default function AdminDashboard() {
       <aside
         className={`${
           mobileMenuOpen ? "flex" : "hidden md:flex"
-        } flex-col justify-between w-full md:w-64 bg-black/80 border-b md:border-b-0 md:border-r border-white/10 p-5 shrink-0 z-30`}
+        } flex-col justify-between w-full md:w-64 bg-black/80 border-b md:border-b-0 md:border-r border-border p-5 shrink-0 z-30`}
       >
         <div className="space-y-6">
           {/* Logo Brand Header */}
           <div className="hidden md:flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-white font-black shadow-lg shadow-red-500/20">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-foreground font-black shadow-lg shadow-red-500/20">
                 <Shield size={22} />
               </div>
               <div>
-                <h2 className="font-black text-base tracking-tight text-white">LoveWithYou</h2>
+                <h2 className="font-black text-base tracking-tight text-foreground">LoveWithYou</h2>
                 <span className="text-[10px] text-red-400 font-extrabold flex items-center gap-1">
                   <Sparkles size={10} /> Control Console
                 </span>
@@ -454,13 +459,13 @@ export default function AdminDashboard() {
           </div>
 
           {/* Admin User Badge */}
-          <div className="p-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-black text-xs shrink-0">
+          <div className="p-3 bg-surface-elevated border border-border rounded-2xl flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-error/20 text-red-400 flex items-center justify-center font-black text-xs shrink-0">
               {adminRole === "master" ? "👑" : "🛡️"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-black text-white truncate">{currentAdminName}</p>
-              <p className="text-[10px] text-gray-400 capitalize">{adminRole} Role</p>
+              <p className="text-xs font-black text-foreground truncate">{currentAdminName}</p>
+              <p className="text-[10px] text-muted capitalize">{adminRole} Role</p>
             </div>
           </div>
 
@@ -478,15 +483,15 @@ export default function AdminDashboard() {
                   }}
                   className={`w-full px-4 py-3 rounded-2xl font-bold text-xs flex items-center justify-between transition-all ${
                     isActive
-                      ? "bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-md shadow-red-600/20"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-red-600 to-pink-600 text-foreground shadow-md shadow-red-600/20"
+                      : "text-muted hover:text-foreground hover:bg-surface-elevated"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon size={18} /> {item.label}
                   </div>
                   {item.badge !== undefined && (
-                    <span className="bg-white/10 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                    <span className="bg-surface-elevated text-foreground text-[10px] px-2 py-0.5 rounded-full font-black">
                       {item.badge}
                     </span>
                   )}
@@ -497,10 +502,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="pt-6 border-t border-white/10 space-y-2 mt-6 md:mt-0">
+        <div className="pt-6 border-t border-border space-y-2 mt-6 md:mt-0">
           <button
             onClick={() => router.push("/")}
-            className="w-full py-2.5 px-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-gray-300 transition flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-3 bg-surface-elevated hover:bg-surface-elevated rounded-xl text-xs font-bold text-secondary transition flex items-center justify-center gap-2"
           >
             Exit to Public App
           </button>
@@ -519,9 +524,9 @@ export default function AdminDashboard() {
       {/* ========================================================================= */}
       <main className="flex-1 p-4 sm:p-8 overflow-y-auto max-w-full">
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-border">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
               {activeTab === "overview" && "📊 Platform Overview & Financials"}
               {activeTab === "users" && "👥 User Management & Filtering"}
               {activeTab === "coin_sales" && "🪙 User Coin Purchases & Transaction Audit Ledger"}
@@ -532,7 +537,7 @@ export default function AdminDashboard() {
               {activeTab === "broadcast" && "📢 Global Push Broadcast Alert Engine"}
               {activeTab === "deleted_accounts" && "🗑️ Deleted Account Requests & Full Data"}
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               Live data connection synced with Supabase Cloud &amp; Render Backend Services.
             </p>
           </div>
@@ -540,7 +545,7 @@ export default function AdminDashboard() {
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center gap-2 transition active:scale-95 shrink-0 self-start sm:self-auto"
+            className="px-4 py-2 bg-surface-elevated hover:bg-surface-elevated border border-border rounded-2xl text-xs font-bold text-foreground flex items-center gap-2 transition active:scale-95 shrink-0 self-start sm:self-auto"
           >
             <RefreshCw size={14} className={isLoading ? "animate-spin text-red-400" : ""} />
             {isLoading ? "Refreshing..." : "Refresh Live Data"}
@@ -552,32 +557,32 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             {/* Top Stat Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 shadow-lg min-w-0">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5 shadow-lg min-w-0">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span className="truncate">Total Users</span>
                   <Users size={18} className="text-blue-400 shrink-0" />
                 </div>
-                <div className="text-3xl font-black text-white">{users.length}</div>
-                <p className="text-[11px] text-emerald-400 font-semibold mt-1 truncate">
+                <div className="text-3xl font-black text-foreground">{users.length}</div>
+                <p className="text-[11px] text-success font-semibold mt-1 truncate">
                   ↑ +14.2% active this week
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 shadow-lg min-w-0">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5 shadow-lg min-w-0">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span className="truncate">Today&apos;s Ad Earnings</span>
-                  <DollarSign size={18} className="text-emerald-400 shrink-0" />
+                  <DollarSign size={18} className="text-success shrink-0" />
                 </div>
-                <div className="text-3xl font-black text-emerald-400">
+                <div className="text-3xl font-black text-success">
                   ${adEarnings.todayAdRevenue.toFixed(2)}
                 </div>
-                <p className="text-[11px] text-gray-400 font-semibold mt-1 truncate">
+                <p className="text-[11px] text-muted font-semibold mt-1 truncate">
                   From {adEarnings.adImpressionsToday.toLocaleString()} Impressions
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 shadow-lg min-w-0">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5 shadow-lg min-w-0">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span className="truncate">Verified Profiles</span>
                   <CheckCircle size={18} className="text-indigo-400 shrink-0" />
                 </div>
@@ -589,15 +594,15 @@ export default function AdminDashboard() {
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5 shadow-lg min-w-0">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5 shadow-lg min-w-0">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span className="truncate">Banned Accounts</span>
-                  <ShieldOff size={18} className="text-rose-400 shrink-0" />
+                  <ShieldOff size={18} className="text-primary shrink-0" />
                 </div>
-                <div className="text-3xl font-black text-rose-400">
+                <div className="text-3xl font-black text-primary">
                   {users.filter((u) => u.is_banned).length}
                 </div>
-                <p className="text-[11px] text-rose-300 font-semibold mt-1 truncate">
+                <p className="text-[11px] text-primary font-semibold mt-1 truncate">
                   Device Fingerprint Blacklist
                 </p>
               </div>
@@ -607,45 +612,45 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-gradient-to-br from-emerald-950/30 via-black to-purple-950/20 border border-emerald-500/30 rounded-3xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-black text-base text-white flex items-center gap-2">
-                    <TrendingUp size={20} className="text-emerald-400" /> Monthly Monetization Summary
+                  <h3 className="font-black text-base text-foreground flex items-center gap-2">
+                    <TrendingUp size={20} className="text-success" /> Monthly Monetization Summary
                   </h3>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-black">
+                  <span className="text-[10px] bg-success/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-black">
                     PROFITABLE
                   </span>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs py-2 border-b border-white/5">
-                    <span className="text-gray-400 font-medium">Monthly Ad Revenue (AdMob / Unity)</span>
-                    <span className="font-black text-emerald-400">${adEarnings.monthlyAdRevenue.toFixed(2)}</span>
+                  <div className="flex justify-between items-center text-xs py-2 border-b border-border">
+                    <span className="text-muted font-medium">Monthly Ad Revenue (AdMob / Unity)</span>
+                    <span className="font-black text-success">${adEarnings.monthlyAdRevenue.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs py-2 border-b border-white/5">
-                    <span className="text-gray-400 font-medium">In-App Coin Package Purchases</span>
-                    <span className="font-black text-amber-400">${adEarnings.coinSalesToday.toFixed(2)}</span>
+                  <div className="flex justify-between items-center text-xs py-2 border-b border-border">
+                    <span className="text-muted font-medium">In-App Coin Package Purchases</span>
+                    <span className="font-black text-warning">${adEarnings.coinSalesToday.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs py-2">
-                    <span className="text-gray-400 font-medium">Average eCPM Rate</span>
-                    <span className="font-black text-white">${adEarnings.ecpmAverage.toFixed(2)}</span>
+                    <span className="text-muted font-medium">Average eCPM Rate</span>
+                    <span className="font-black text-foreground">${adEarnings.ecpmAverage.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
-                <h3 className="font-black text-base text-white flex items-center gap-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-4">
+                <h3 className="font-black text-base text-foreground flex items-center gap-2">
                   <Tv size={20} className="text-purple-400" /> Active System Status
                 </h3>
 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs p-3 bg-black/50 rounded-2xl border border-white/5">
-                    <span className="text-gray-300 font-medium">Go REST Server (Render)</span>
-                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <div className="flex justify-between items-center text-xs p-3 bg-black/50 rounded-2xl border border-border">
+                    <span className="text-secondary font-medium">Go REST Server (Render)</span>
+                    <span className="text-success font-bold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Online (100%)
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs p-3 bg-black/50 rounded-2xl border border-white/5">
-                    <span className="text-gray-300 font-medium">Supabase Database &amp; RLS</span>
-                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <div className="flex justify-between items-center text-xs p-3 bg-black/50 rounded-2xl border border-border">
+                    <span className="text-secondary font-medium">Supabase Database &amp; RLS</span>
+                    <span className="text-success font-bold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Connected
                     </span>
                   </div>
@@ -659,15 +664,15 @@ export default function AdminDashboard() {
         {activeTab === "users" && (
           <div className="space-y-6">
             {/* Filter Bar */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div className="bg-surface-elevated border border-border rounded-3xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
               <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={16} />
                 <input
                   type="text"
                   placeholder="Search user by name or device ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 text-xs text-white"
+                  className="w-full bg-surface-elevated border border-border rounded-2xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 text-xs text-foreground"
                 />
               </div>
 
@@ -675,7 +680,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter("all")}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition ${
-                    userFilter === "all" ? "bg-red-600 text-white" : "bg-white/5 text-gray-400 hover:text-white"
+                    userFilter === "all" ? "bg-red-600 text-foreground" : "bg-surface-elevated text-muted hover:text-foreground"
                   }`}
                 >
                   All ({users.length})
@@ -683,7 +688,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter("active")}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
-                    userFilter === "active" ? "bg-emerald-600 text-white" : "bg-white/5 text-emerald-400 hover:bg-emerald-500/10"
+                    userFilter === "active" ? "bg-emerald-600 text-foreground" : "bg-surface-elevated text-success hover:bg-success/10"
                   }`}
                 >
                   <UserCheck size={14} /> Active
@@ -691,7 +696,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter("inactive")}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
-                    userFilter === "inactive" ? "bg-amber-600 text-white" : "bg-white/5 text-amber-400 hover:bg-amber-500/10"
+                    userFilter === "inactive" ? "bg-amber-600 text-foreground" : "bg-surface-elevated text-warning hover:bg-warning/10"
                   }`}
                 >
                   <UserX size={14} /> Inactive
@@ -699,7 +704,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => setUserFilter("banned")}
                   className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
-                    userFilter === "banned" ? "bg-rose-600 text-white" : "bg-white/5 text-rose-400 hover:bg-rose-500/10"
+                    userFilter === "banned" ? "bg-primary-hover text-white" : "bg-surface-elevated text-primary hover:bg-primary/10"
                   }`}
                 >
                   <ShieldOff size={14} /> Banned
@@ -708,10 +713,10 @@ export default function AdminDashboard() {
             </div>
 
             {/* Users Data Table */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
+            <div className="bg-surface-elevated border border-border rounded-3xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left text-xs whitespace-nowrap">
-                  <thead className="bg-black/60 text-gray-400 uppercase text-[10px] font-black border-b border-white/10">
+                  <thead className="bg-surface-elevated text-muted uppercase text-[10px] font-black border-b border-border">
                     <tr>
                       <th className="p-4">User Profile</th>
                       <th className="p-4">Device Fingerprint ID</th>
@@ -721,49 +726,49 @@ export default function AdminDashboard() {
                       <th className="p-4 text-right">Moderation Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-divider">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-500 font-medium">
+                        <td colSpan={6} className="py-8 text-center text-muted font-medium">
                           No users matched your search/filter criteria.
                         </td>
                       </tr>
                     ) : (
                       filteredUsers.map((u, idx) => (
-                        <tr key={u.device_id || idx} className="hover:bg-white/5 transition-colors">
+                        <tr key={u.device_id || idx} className="hover:bg-surface-elevated transition-colors">
                           <td className="p-4 flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-2xl bg-gray-800 overflow-hidden border border-white/10 shrink-0">
+                            <div className="w-9 h-9 rounded-2xl bg-gray-800 overflow-hidden border border-border shrink-0">
                               {u.photo_url ? (
                                 <img src={u.photo_url} alt="Profile" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center font-black text-gray-400">
+                                <div className="w-full h-full flex items-center justify-center font-black text-muted">
                                   {u.name?.[0]}
                                 </div>
                               )}
                             </div>
                             <div>
-                              <div className="font-bold text-white flex items-center gap-1.5">
+                              <div className="font-bold text-foreground flex items-center gap-1.5">
                                 {u.name || "Unknown Single"}
                                 {u.verified && <CheckCircle size={14} className="text-blue-400" />}
                               </div>
-                              <div className="text-[11px] text-gray-400">
+                              <div className="text-[11px] text-muted">
                                 {u.gender || "?"}, {u.age || "?"} yrs • {u.campus || "No Campus"}
                               </div>
                             </div>
                           </td>
 
-                          <td className="p-4 font-mono text-gray-400 text-[11px]">
+                          <td className="p-4 font-mono text-muted text-[11px]">
                             {u.device_id ? `${u.device_id.substring(0, 14)}...` : "N/A"}
                           </td>
 
                           <td className="p-4">
-                            <span className="text-emerald-400 font-extrabold">{u.karma || 100} Karma</span>
-                            <span className="text-amber-400 font-extrabold block text-[10px]">
+                            <span className="text-success font-extrabold">{u.karma || 100} Karma</span>
+                            <span className="text-warning font-extrabold block text-[10px]">
                               🪙 {u.coins || 25} Coins
                             </span>
                           </td>
 
-                          <td className="p-4 text-gray-300 font-medium">
+                          <td className="p-4 text-secondary font-medium">
                             {u.last_active 
                               ? (() => {
                                   const diffMins = Math.floor((Date.now() - new Date(u.last_active).getTime()) / 60000);
@@ -777,11 +782,11 @@ export default function AdminDashboard() {
 
                           <td className="p-4">
                             {u.is_banned ? (
-                              <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                              <span className="bg-primary/20 text-primary border border-primary/30 px-2.5 py-1 rounded-full font-black text-[10px]">
                                 BANNED
                               </span>
                             ) : (
-                              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                              <span className="bg-success/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
                                 ACTIVE
                               </span>
                             )}
@@ -792,8 +797,8 @@ export default function AdminDashboard() {
                               onClick={() => handleBanUser(u.device_id)}
                               className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition ${
                                 u.is_banned
-                                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                  : "bg-rose-600 hover:bg-rose-500 text-white"
+                                  ? "bg-emerald-600 hover:bg-success text-white"
+                                  : "bg-primary-hover hover:bg-primary text-white"
                               }`}
                             >
                               {u.is_banned ? "Unban User" : "Ban Device"}
@@ -815,18 +820,18 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-emerald-950/40 via-black to-purple-950/40 border border-emerald-500/30 rounded-3xl p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full font-black uppercase tracking-wider">
+                  <span className="text-[10px] bg-success/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full font-black uppercase tracking-wider">
                     Revenue Dashboard
                   </span>
-                  <h2 className="text-xl font-black text-white mt-2">AdMob &amp; In-App Monetization</h2>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <h2 className="text-xl font-black text-foreground mt-2">AdMob &amp; In-App Monetization</h2>
+                  <p className="text-xs text-muted mt-1">
                     Real-time ad network impression payouts and virtual coin sales analytics.
                   </p>
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <span className="text-xs text-gray-400 block font-medium">Estimated Monthly Payout</span>
-                  <span className="text-3xl font-black text-emerald-400">
+                  <span className="text-xs text-muted block font-medium">Estimated Monthly Payout</span>
+                  <span className="text-3xl font-black text-success">
                     ${(adEarnings.monthlyAdRevenue + adEarnings.coinSalesToday * 30).toFixed(2)}
                   </span>
                 </div>
@@ -834,20 +839,20 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
-                <div className="text-xs font-bold text-gray-400 mb-1">Banner &amp; Video Ads</div>
-                <div className="text-2xl font-black text-white">${adEarnings.todayAdRevenue.toFixed(2)}</div>
-                <p className="text-[10px] text-gray-400 mt-1">eCPM: ${adEarnings.ecpmAverage}</p>
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5">
+                <div className="text-xs font-bold text-muted mb-1">Banner &amp; Video Ads</div>
+                <div className="text-2xl font-black text-foreground">${adEarnings.todayAdRevenue.toFixed(2)}</div>
+                <p className="text-[10px] text-muted mt-1">eCPM: ${adEarnings.ecpmAverage}</p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
-                <div className="text-xs font-bold text-gray-400 mb-1">Coin Pack Purchases</div>
-                <div className="text-2xl font-black text-amber-400">${adEarnings.coinSalesToday.toFixed(2)}</div>
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5">
+                <div className="text-xs font-bold text-muted mb-1">Coin Pack Purchases</div>
+                <div className="text-2xl font-black text-warning">${adEarnings.coinSalesToday.toFixed(2)}</div>
                 <p className="text-[10px] text-amber-300/80 mt-1">Direct user micro-transactions</p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
-                <div className="text-xs font-bold text-gray-400 mb-1">Ad Impressions Delivered</div>
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5">
+                <div className="text-xs font-bold text-muted mb-1">Ad Impressions Delivered</div>
                 <div className="text-2xl font-black text-indigo-400">
                   {adEarnings.adImpressionsToday.toLocaleString()}
                 </div>
@@ -863,11 +868,11 @@ export default function AdminDashboard() {
             {/* Top Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-amber-950/40 via-black to-purple-950/40 border border-amber-500/30 rounded-3xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span>Total Purchases / Earned</span>
-                  <Coins size={20} className="text-amber-400" />
+                  <Coins size={20} className="text-warning" />
                 </div>
-                <div className="text-3xl font-black text-amber-400">
+                <div className="text-3xl font-black text-warning">
                   +{coinTransactions.filter(t => t.amount > 0 || t.transaction_type === 'EARNED').reduce((a, b) => a + (b.amount || 0), 0)} 🪙
                 </div>
                 <p className="text-[11px] text-amber-300/80 font-semibold mt-1">
@@ -875,25 +880,25 @@ export default function AdminDashboard() {
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-rose-950/40 via-black to-indigo-950/40 border border-rose-500/30 rounded-3xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+              <div className="bg-gradient-to-br from-rose-950/40 via-black to-indigo-950/40 border border-primary/30 rounded-3xl p-5 shadow-lg">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span>Total Coins Spent</span>
-                  <Sparkles size={20} className="text-rose-400" />
+                  <Sparkles size={20} className="text-primary" />
                 </div>
-                <div className="text-3xl font-black text-rose-400">
+                <div className="text-3xl font-black text-primary">
                   {coinTransactions.filter(t => t.amount < 0 || t.transaction_type === 'SPENT').reduce((a, b) => a + Math.abs(b.amount || 0), 0)} 🪙
                 </div>
-                <p className="text-[11px] text-rose-300/80 font-semibold mt-1">
+                <p className="text-[11px] text-primary/80 font-semibold mt-1">
                   Across random chats, 3-min audio &amp; boosts
                 </p>
               </div>
 
               <div className="bg-gradient-to-br from-emerald-950/40 via-black to-blue-950/40 border border-emerald-500/30 rounded-3xl p-5 shadow-lg">
-                <div className="flex items-center justify-between text-gray-400 text-xs font-bold mb-2">
+                <div className="flex items-center justify-between text-muted text-xs font-bold mb-2">
                   <span>Total Recorded Ledger Entries</span>
-                  <TrendingUp size={20} className="text-emerald-400" />
+                  <TrendingUp size={20} className="text-success" />
                 </div>
-                <div className="text-3xl font-black text-emerald-400">
+                <div className="text-3xl font-black text-success">
                   {coinTransactions.length}
                 </div>
                 <p className="text-[11px] text-emerald-300/80 font-semibold mt-1">
@@ -903,22 +908,22 @@ export default function AdminDashboard() {
             </div>
 
             {/* Real Data Table */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="bg-surface-elevated border border-border rounded-3xl overflow-hidden shadow-xl">
+              <div className="p-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <h3 className="font-black text-base text-white flex items-center gap-2">
-                    <Coins size={18} className="text-amber-400" /> Real User Coin Sales &amp; Usage Ledger
+                  <h3 className="font-black text-base text-foreground flex items-center gap-2">
+                    <Coins size={18} className="text-warning" /> Real User Coin Sales &amp; Usage Ledger
                   </h3>
-                  <p className="text-xs text-gray-400">Live records from `coin_transactions` PostgreSQL table</p>
+                  <p className="text-xs text-muted">Live records from `coin_transactions` PostgreSQL table</p>
                 </div>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-black">
+                <span className="text-[10px] bg-success/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full font-black">
                   LIVE DB SYNCED
                 </span>
               </div>
 
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left text-xs whitespace-nowrap">
-                  <thead className="bg-black/60 text-gray-400 uppercase text-[10px] font-black border-b border-white/10">
+                  <thead className="bg-surface-elevated text-muted uppercase text-[10px] font-black border-b border-border">
                     <tr>
                       <th className="p-4">User Details</th>
                       <th className="p-4">Device Fingerprint ID</th>
@@ -928,10 +933,10 @@ export default function AdminDashboard() {
                       <th className="p-4 text-right">Timestamp</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-divider">
                     {coinTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">
+                        <td colSpan={6} className="py-12 text-center text-muted font-medium">
                           No coin transactions recorded in database yet.
                         </td>
                       </tr>
@@ -940,54 +945,54 @@ export default function AdminDashboard() {
                         const matchedUser = users.find((u) => u.device_id === tx.device_id);
                         const isEarned = tx.amount > 0 || tx.transaction_type === "EARNED";
                         return (
-                          <tr key={tx.id || idx} className="hover:bg-white/5 transition-colors">
+                          <tr key={tx.id || idx} className="hover:bg-surface-elevated transition-colors">
                             <td className="p-4 flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-2xl bg-gray-800 overflow-hidden border border-white/10 shrink-0">
+                              <div className="w-8 h-8 rounded-2xl bg-gray-800 overflow-hidden border border-border shrink-0">
                                 {matchedUser?.photo_url ? (
                                   <img src={matchedUser.photo_url} alt="User" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center font-black text-gray-400 text-xs">
+                                  <div className="w-full h-full flex items-center justify-center font-black text-muted text-xs">
                                     {matchedUser?.name?.[0] || "👤"}
                                   </div>
                                 )}
                               </div>
                               <div>
-                                <div className="font-bold text-white">
+                                <div className="font-bold text-foreground">
                                   {matchedUser?.name || "Single User"}
                                 </div>
-                                <div className="text-[10px] text-gray-400">
+                                <div className="text-[10px] text-muted">
                                   {matchedUser?.campus || matchedUser?.location || "India Hub"}
                                 </div>
                               </div>
                             </td>
 
-                            <td className="p-4 font-mono text-gray-400 text-[11px]">
+                            <td className="p-4 font-mono text-muted text-[11px]">
                               {tx.device_id ? `${tx.device_id.substring(0, 14)}...` : "N/A"}
                             </td>
 
                             <td className="p-4">
                               {isEarned ? (
-                                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                                <span className="bg-success/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
                                   EARNED / PURCHASED
                                 </span>
                               ) : (
-                                <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-full font-black text-[10px]">
+                                <span className="bg-primary/20 text-primary border border-primary/30 px-2.5 py-1 rounded-full font-black text-[10px]">
                                   SPENT
                                 </span>
                               )}
                             </td>
 
                             <td className="p-4 font-black text-sm">
-                              <span className={isEarned ? "text-amber-400" : "text-rose-400"}>
+                              <span className={isEarned ? "text-warning" : "text-primary"}>
                                 {isEarned ? "+" : ""}{tx.amount} 🪙
                               </span>
                             </td>
 
-                            <td className="p-4 font-bold text-gray-200 text-xs">
+                            <td className="p-4 font-bold text-foreground text-xs">
                               {tx.description || (isEarned ? "Coin Package Purchased" : "Feature Unlock")}
                             </td>
 
-                            <td className="p-4 text-right font-medium text-gray-400 text-[11px]">
+                            <td className="p-4 text-right font-medium text-muted text-[11px]">
                               {tx.created_at ? new Date(tx.created_at).toLocaleString() : "Recently"}
                             </td>
                           </tr>
@@ -1005,38 +1010,38 @@ export default function AdminDashboard() {
         {activeTab === "feedbacks" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-white uppercase tracking-wider">
+              <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
                 Submitted User Feedbacks ({feedbacks.length})
               </h3>
             </div>
 
             {feedbacks.length === 0 ? (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center text-gray-500">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-8 text-center text-muted">
                 No user feedbacks submitted yet.
               </div>
             ) : (
               feedbacks.map((fb, idx) => (
                 <div
                   key={fb.id || idx}
-                  className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/20 transition-all"
+                  className="bg-surface-elevated border border-border rounded-3xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/20 transition-all"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-black uppercase">
+                      <span className="text-[10px] bg-success/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-black uppercase">
                         {fb.status || "Received"}
                       </span>
-                      <span className="text-xs text-gray-400 font-mono">
+                      <span className="text-xs text-muted font-mono">
                         Device: {fb.device_id ? fb.device_id.substring(0, 12) : "Anonymous"}
                       </span>
                     </div>
-                    <p className="text-sm text-white font-bold">{fb.message}</p>
-                    <p className="text-[10px] text-gray-500">{fb.created_at || "Recently"}</p>
+                    <p className="text-sm text-foreground font-bold">{fb.message}</p>
+                    <p className="text-[10px] text-muted">{fb.created_at || "Recently"}</p>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => toast("Feedback marked as Reviewed ✅", "success")}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition"
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-success text-foreground rounded-xl font-bold text-xs transition"
                     >
                       Mark Reviewed
                     </button>
@@ -1050,23 +1055,23 @@ export default function AdminDashboard() {
         {/* TAB 5: STUDENT VERIFICATIONS */}
         {activeTab === "verifications" && (
           <div className="space-y-4">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-4">
-              <h3 className="font-black text-sm text-white uppercase tracking-wider">
+            <div className="bg-surface-elevated border border-border rounded-3xl p-5 space-y-4">
+              <h3 className="font-black text-sm text-foreground uppercase tracking-wider">
                 Pending Campus Student Verification Queue ({pendingStudents.length})
               </h3>
 
               {pendingStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 font-medium">
+                <div className="text-center py-8 text-muted font-medium">
                   No pending student ID card submissions!
                 </div>
               ) : (
                 pendingStudents.map((student, idx) => (
                   <div
                     key={student.id || idx}
-                    className="bg-black/60 border border-indigo-500/30 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    className="bg-surface-elevated border border-indigo-500/30 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gray-800 rounded-2xl overflow-hidden border border-white/10 shrink-0">
+                      <div className="w-16 h-16 bg-gray-800 rounded-2xl overflow-hidden border border-border shrink-0">
                         {student.id_url ? (
                           <img
                             src={student.id_url}
@@ -1082,8 +1087,8 @@ export default function AdminDashboard() {
                       </div>
 
                       <div>
-                        <h4 className="font-black text-white text-base">{student.name}</h4>
-                        <p className="text-xs text-gray-400">Campus: {student.campus}</p>
+                        <h4 className="font-black text-foreground text-base">{student.name}</h4>
+                        <p className="text-xs text-muted">Campus: {student.campus}</p>
                       </div>
                     </div>
 
@@ -1097,7 +1102,7 @@ export default function AdminDashboard() {
                           setPendingStudents(pendingStudents.filter((s) => s.id !== student.id));
                           toast(`🎉 Approved Student verification for ${student.name}!`, "success");
                         }}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition"
                       >
                         <FileCheck size={16} /> Approve &amp; Badge
                       </button>
@@ -1111,7 +1116,7 @@ export default function AdminDashboard() {
                           setPendingStudents(pendingStudents.filter((s) => s.id !== student.id));
                           toast("Rejected verification.", "error");
                         }}
-                        className="px-3 py-2 bg-white/10 hover:bg-white/20 text-gray-300 rounded-xl font-bold text-xs transition"
+                        className="px-3 py-2 bg-surface-elevated hover:bg-surface-elevated text-secondary rounded-xl font-bold text-xs transition"
                       >
                         Reject
                       </button>
@@ -1128,14 +1133,14 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             {/* Create Sub Admin Form */}
             {adminRole === "master" ? (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
-                <h3 className="font-black text-base text-white flex items-center gap-2">
+              <div className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-4">
+                <h3 className="font-black text-base text-foreground flex items-center gap-2">
                   <UserPlus size={20} className="text-red-400" /> Create Lower Sub-Admin Profile
                 </h3>
 
                 <form onSubmit={handleCreateSubAdmin} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                       Sub-Admin Username
                     </label>
                     <input
@@ -1143,12 +1148,12 @@ export default function AdminDashboard() {
                       value={newSubUsername}
                       onChange={(e) => setNewSubUsername(e.target.value)}
                       placeholder="e.g. moderator_aman"
-                      className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white"
+                      className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                       Role Title
                     </label>
                     <input
@@ -1156,12 +1161,12 @@ export default function AdminDashboard() {
                       value={newSubTitle}
                       onChange={(e) => setNewSubTitle(e.target.value)}
                       placeholder="e.g. Community Moderator"
-                      className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white"
+                      className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                       Temporary Sub-Admin Password
                     </label>
                     <input
@@ -1169,18 +1174,18 @@ export default function AdminDashboard() {
                       value={newSubPassword}
                       onChange={(e) => setNewSubPassword(e.target.value)}
                       placeholder="Default login: ***REMOVED***"
-                      className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                    <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                       Access Area Scope
                     </label>
                     <select
                       value={newSubAccess}
                       onChange={(e: any) => setNewSubAccess(e.target.value)}
-                      className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white font-bold"
+                      className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground font-bold"
                     >
                       <option value="moderation">Moderation &amp; Banning Only</option>
                       <option value="finance">Finance &amp; Ads Only</option>
@@ -1192,7 +1197,7 @@ export default function AdminDashboard() {
                   <div className="sm:col-span-2 pt-2">
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black text-xs transition shadow-lg shadow-red-600/30"
+                      className="px-6 py-3 bg-red-600 hover:bg-error text-foreground rounded-2xl font-black text-xs transition shadow-lg shadow-red-600/30"
                     >
                       + Register Sub-Admin
                     </button>
@@ -1200,30 +1205,30 @@ export default function AdminDashboard() {
                 </form>
               </div>
             ) : (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-xs font-bold">
+              <div className="p-4 bg-warning/10 border border-amber-500/30 rounded-2xl text-amber-300 text-xs font-bold">
                 ⚠️ Only Master Admin (password ***REMOVED***) can create lower sub-admin profiles!
               </div>
             )}
 
             {/* List of Sub-Admins */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
-              <h3 className="font-black text-base text-white">Active Sub-Admin Team ({subAdmins.length})</h3>
+            <div className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-4">
+              <h3 className="font-black text-base text-foreground">Active Sub-Admin Team ({subAdmins.length})</h3>
 
               <div className="space-y-3">
                 {subAdmins.map((sub) => (
                   <div
                     key={sub.id}
-                    className="p-4 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-between"
+                    className="p-4 bg-surface-elevated border border-border rounded-2xl flex items-center justify-between"
                   >
                     <div>
-                      <h4 className="font-black text-white text-sm">{sub.username}</h4>
-                      <p className="text-xs text-gray-400">{sub.roleTitle} • Scope: {sub.accessArea}</p>
+                      <h4 className="font-black text-foreground text-sm">{sub.username}</h4>
+                      <p className="text-xs text-muted">{sub.roleTitle} • Scope: {sub.accessArea}</p>
                     </div>
 
                     {adminRole === "master" && (
                       <button
                         onClick={() => handleDeleteSubAdmin(sub.id)}
-                        className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-xl transition"
+                        className="p-2 text-primary hover:bg-primary/20 rounded-xl transition"
                         title="Remove Sub-Admin"
                       >
                         <Trash2 size={16} />
@@ -1238,17 +1243,17 @@ export default function AdminDashboard() {
 
         {/* TAB 7: GLOBAL BROADCAST ENGINE */}
         {activeTab === "broadcast" && (
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
-            <h3 className="font-black text-base text-white flex items-center gap-2">
-              <Radio size={20} className="text-red-500 animate-pulse" /> Global PWA Push Alert Engine
+          <div className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-4">
+            <h3 className="font-black text-base text-foreground flex items-center gap-2">
+              <Radio size={20} className="text-error animate-pulse" /> Global PWA Push Alert Engine
             </h3>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               Send a real-time banner alert or notification directly to every active user screen.
             </p>
 
             <form onSubmit={handleSendBroadcast} className="space-y-4">
               <div>
-                <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                   Alert Heading Title
                 </label>
                 <input
@@ -1256,12 +1261,12 @@ export default function AdminDashboard() {
                   value={broadcastTitle}
                   onChange={(e) => setBroadcastTitle(e.target.value)}
                   placeholder="e.g. 🚀 Weekend 2x Coin Bonanza Event Live!"
-                  className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white"
+                  className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-extrabold text-muted uppercase tracking-wider block mb-1">
                   Alert Notification Body Message
                 </label>
                 <textarea
@@ -1269,13 +1274,13 @@ export default function AdminDashboard() {
                   onChange={(e) => setBroadcastMessage(e.target.value)}
                   rows={4}
                   placeholder="Enter details of your announcement..."
-                  className="w-full bg-black/60 border border-white/10 rounded-2xl p-3 outline-none text-xs text-white"
+                  className="w-full bg-surface-elevated border border-border rounded-2xl p-3 outline-none text-xs text-foreground"
                 />
               </div>
 
               <button
                 type="submit"
-                className="px-6 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-red-600/30 transition active:scale-95"
+                className="px-6 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 text-foreground rounded-2xl font-black text-xs shadow-lg shadow-red-600/30 transition active:scale-95"
               >
                 📢 Broadcast Push Alert Now
               </button>
@@ -1328,113 +1333,113 @@ function DeletedAccountsTab() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Loading deleted account requests...</div>;
+    return <div className="flex items-center justify-center py-20 text-muted text-sm">Loading deleted account requests...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 text-xs text-rose-300 font-medium">
+      <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 text-xs text-primary font-medium">
         ⚠️ These users have requested account deletion. Review their full data before permanently wiping it.
-        Total pending: <span className="font-black text-white">{deletedProfiles.length}</span>
+        Total pending: <span className="font-black text-foreground">{deletedProfiles.length}</span>
       </div>
 
       {deletedProfiles.length === 0 ? (
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-10 text-center text-gray-500">
+        <div className="bg-surface-elevated border border-border rounded-3xl p-10 text-center text-muted">
           No pending account deletion requests.
         </div>
       ) : (
         deletedProfiles.map((p) => (
-          <div key={p.device_id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+          <div key={p.device_id} className="bg-surface-elevated border border-border rounded-3xl overflow-hidden">
             {/* Header Row */}
             <div
-              className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition"
+              className="p-4 flex items-center justify-between cursor-pointer hover:bg-surface-elevated transition"
               onClick={() => setExpandedId(expandedId === p.device_id ? null : p.device_id)}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gray-800 overflow-hidden border border-white/10 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-gray-800 overflow-hidden border border-border shrink-0">
                   {p.photo_url ? (
                     <img src={p.photo_url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-black">
+                    <div className="w-full h-full flex items-center justify-center text-muted font-black">
                       {p.name?.[0] || "?"}
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="font-black text-white text-sm">{p.name || "Unnamed"}, {p.age || "?"}</p>
-                  <p className="text-[11px] text-gray-400">{p.gender} • {p.campus || p.location || "No location"}</p>
+                  <p className="font-black text-foreground text-sm">{p.name || "Unnamed"}, {p.age || "?"}</p>
+                  <p className="text-[11px] text-muted">{p.gender} • {p.campus || p.location || "No location"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-rose-400 font-bold bg-rose-500/20 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-primary font-bold bg-primary/20 px-2 py-0.5 rounded-full">
                   Delete Requested
                 </span>
-                <span className="text-gray-400 text-xs">{expandedId === p.device_id ? "▲" : "▼"}</span>
+                <span className="text-muted text-xs">{expandedId === p.device_id ? "▲" : "▼"}</span>
               </div>
             </div>
 
             {/* Expanded Full Details */}
             {expandedId === p.device_id && (
-              <div className="border-t border-white/10 p-5 space-y-4">
-                <h4 className="text-xs font-black text-gray-300 uppercase tracking-wider">Full Account Data</h4>
+              <div className="border-t border-border p-5 space-y-4">
+                <h4 className="text-xs font-black text-secondary uppercase tracking-wider">Full Account Data</h4>
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Device ID</p>
-                    <p className="text-white font-mono text-[11px] break-all">{p.device_id}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Device ID</p>
+                    <p className="text-foreground font-mono text-[11px] break-all">{p.device_id}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Coins / Karma</p>
-                    <p className="text-amber-400 font-black">🪙 {p.coins || 0} • ⭐ {p.karma || 0}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Coins / Karma</p>
+                    <p className="text-warning font-black">🪙 {p.coins || 0} • ⭐ {p.karma || 0}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Verified</p>
-                    <p className={p.verified ? "text-blue-400 font-bold" : "text-gray-500"}>{p.verified ? "✅ Yes" : "❌ No"}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Verified</p>
+                    <p className={p.verified ? "text-blue-400 font-bold" : "text-muted"}>{p.verified ? "✅ Yes" : "❌ No"}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Student Status</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Student Status</p>
                     <p className="text-purple-400 font-bold">{p.studentVerificationStatus || "none"}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Joined</p>
-                    <p className="text-white">{p.created_at ? new Date(p.created_at).toLocaleDateString() : "Unknown"}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Joined</p>
+                    <p className="text-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString() : "Unknown"}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Last Active</p>
-                    <p className="text-white">{p.last_active ? new Date(p.last_active).toLocaleDateString() : "Unknown"}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Last Active</p>
+                    <p className="text-foreground">{p.last_active ? new Date(p.last_active).toLocaleDateString() : "Unknown"}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl col-span-2">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Bio</p>
-                    <p className="text-white">{p.bio || "No bio"}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl col-span-2">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Bio</p>
+                    <p className="text-foreground">{p.bio || "No bio"}</p>
                   </div>
-                  <div className="bg-black/40 p-3 rounded-xl col-span-2">
-                    <p className="text-gray-400 text-[10px] uppercase font-bold mb-1">Hobbies</p>
-                    <p className="text-white">{p.hobbies?.join(", ") || "None"}</p>
+                  <div className="bg-surface-elevated p-3 rounded-xl col-span-2">
+                    <p className="text-muted text-[10px] uppercase font-bold mb-1">Hobbies</p>
+                    <p className="text-foreground">{p.hobbies?.join(", ") || "None"}</p>
                   </div>
                 </div>
 
                 {/* Photos */}
                 {p.photos && p.photos.length > 0 && (
                   <div>
-                    <p className="text-[10px] uppercase font-black text-gray-400 mb-2">Photos ({p.photos.length})</p>
+                    <p className="text-[10px] uppercase font-black text-muted mb-2">Photos ({p.photos.length})</p>
                     <div className="flex gap-2 overflow-x-auto">
                       {p.photos.map((url: string, i: number) => (
-                        <img key={i} src={url} alt={`Photo ${i+1}`} className="w-16 h-20 object-cover rounded-xl shrink-0 border border-white/10" />
+                        <img key={i} src={url} alt={`Photo ${i+1}`} className="w-16 h-20 object-cover rounded-xl shrink-0 border border-border" />
                       ))}
                     </div>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-2 border-t border-white/10">
+                <div className="flex gap-3 pt-2 border-t border-border">
                   <button
                     onClick={() => handleRestoreProfile(p.device_id)}
-                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs transition"
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-success text-foreground rounded-xl font-black text-xs transition"
                   >
                     ✅ Restore Account
                   </button>
                   <button
                     onClick={() => handlePermanentDelete(p.device_id)}
-                    className="flex-1 py-2.5 bg-rose-700 hover:bg-rose-600 text-white rounded-xl font-black text-xs transition"
+                    className="flex-1 py-2.5 bg-rose-700 hover:bg-primary-hover text-white rounded-xl font-black text-xs transition"
                   >
                     🗑️ Permanently Delete All Data
                   </button>

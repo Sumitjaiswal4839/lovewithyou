@@ -10,7 +10,7 @@ export function Skeleton({ className, variant = "text", ...props }: SkeletonProp
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-white/5 border border-white/10 shrink-0",
+        "relative overflow-hidden bg-surface-elevated border border-border shrink-0",
         "before:absolute before:inset-0",
         "before:-translate-x-full",
         "before:animate-[shimmer_1.5s_infinite]",
