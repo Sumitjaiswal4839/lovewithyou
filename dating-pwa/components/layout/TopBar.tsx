@@ -4,6 +4,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { Coins, Menu } from "lucide-react";
 import { useState } from "react";
 import { SidebarDrawer } from "../SidebarDrawer";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function TopBar() {
   const coins = useUserStore((state) => state.coins);
@@ -39,10 +40,15 @@ export function TopBar() {
             </div>
           </div>
 
-          {/* Coin Wallet with #FFDC17 Gold */}
-          <div className="flex items-center gap-1.5 badge-gold px-3 py-1.5 rounded-full font-extrabold text-xs backdrop-blur-md shadow-sm">
-            <Coins size={14} className="text-[#FFDC17]" />
-            <span>{coins}</span>
+          {/* Right side items */}
+          <div className="flex items-center gap-3">
+            {/* Coin Wallet with #FFDC17 Gold */}
+            <div className="flex items-center gap-1.5 badge-gold px-3 py-1.5 rounded-full font-extrabold text-xs backdrop-blur-md shadow-sm">
+              <Coins size={14} className="text-[#FFDC17]" />
+              <span>{coins}</span>
+            </div>
+            
+            <NotificationBell />
           </div>
         </div>
       </header>

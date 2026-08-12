@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Shield, Lock, Eye, MapPin, Database, Server, Smartphone, Cpu } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, MapPin, Database, Server, Smartphone, Cpu, UserCheck, Activity } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function PrivacyPolicyPage() {
@@ -97,8 +97,26 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-border">
+          <h2 className="text-foreground font-bold text-base flex items-center gap-2">
+            <UserCheck size={18} className="text-primary" /> 8. AI Verification &amp; Biometric Privacy
+          </h2>
+          <p>
+            When utilizing our advanced AI-powered Catfish Selfie Verification, your facial scan is processed instantly to generate a confidence score. We do not store biometric templates permanently; the data is strictly used for one-time verification to keep the LoveWithYou ecosystem safe and authentic.
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-border">
+          <h2 className="text-foreground font-bold text-base flex items-center gap-2">
+            <Activity size={18} className="text-primary" /> 9. Platform Activity &amp; Notifications Data
+          </h2>
+          <p>
+            Data regarding your interactions, such as &quot;My Connections&quot; (matches and likes), Secret Match Arena participation, and Campus Hub activities, are stored securely to provide you with real-time push notifications and a personalized experience. Your Coin Wallet transactions and Daily Cupid&apos;s Slot Machine history are logged transparently in a secure ledger accessible only to you.
+          </p>
+        </section>
+
         <div className="text-center pt-8 pb-4 text-xs text-muted">
-          Last Updated: August 2026 • LoveWithYou Data Protection Office
+          Last Updated: Version 5.30.97 • LoveWithYou Data Protection Office
         </div>
       </div>
     </div>

@@ -51,6 +51,26 @@ const faqs = [
     category: "Gamification",
     question: "How is the Compatibility Meter calculated?",
     answer: "Instead of random numbers, our Compatibility Meter compares your hobbies and interests with your match. It starts at a base score of 65% and adds 10% for every matching interest (up to 99%)!"
+  },
+  {
+    category: "Verification",
+    question: "How does the AI Catfish Selfie Verification work?",
+    answer: "Our advanced AI system scans your real-time selfie and compares it against your profile photos to generate a confidence score. This guarantees that you are interacting with 100% genuine, verified users."
+  },
+  {
+    category: "Features",
+    question: "What are Secret Match Arenas?",
+    answer: "Secret Match Arenas include exciting gamified discovery modes like the 18+ After-Dark Lounge, Midnight 2v2 Squads, Random Live Chat, and 3-Minute Blind Audio Dates. They offer thrilling new ways to connect beyond the standard swipe!"
+  },
+  {
+    category: "App Navigation",
+    question: "Where can I find my matches and likes?",
+    answer: "You can seamlessly access all your interactions through the new 'My Connections' sub-nav in the sidebar. Plus, our dedicated Notifications center keeps you instantly updated on all your latest matches and messages."
+  },
+  {
+    category: "Account & Settings",
+    question: "What's new in version 5.30.97?",
+    answer: "Version 5.30.97 introduces a clean and de-duplicated Settings Suite, a real-time Coin Wallet in the top bar, Campus Hub, transparent Coin Ledger history, and major stability enhancements!"
   }
 ];
 

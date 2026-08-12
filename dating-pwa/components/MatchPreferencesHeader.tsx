@@ -5,7 +5,6 @@ import { useUserStore } from "@/store/useUserStore";
 import { SlidersHorizontal, ChevronDown, MapPin, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/ToastProvider";
-import { NotificationBell } from "@/components/ui/NotificationBell";
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -272,7 +271,6 @@ export default function MatchPreferencesHeader() {
           >
             SAVE
           </button>
-          <NotificationBell />
           <ChevronDown size={14} className={`text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
         </div>
       </div>

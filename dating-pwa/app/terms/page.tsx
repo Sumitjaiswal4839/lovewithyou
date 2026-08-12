@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ShieldCheck, Scale, Coins, CreditCard, Lock, Radio, UserCheck, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Scale, Coins, CreditCard, Lock, Radio, UserCheck, AlertTriangle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function TermsPage() {
@@ -108,8 +108,26 @@ export default function TermsPage() {
           </p>
         </section>
 
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-border">
+          <h2 className="text-foreground font-bold text-base flex items-center gap-2">
+            <Sparkles size={18} className="text-primary" /> 8. Premium Features &amp; Gamified Interactions
+          </h2>
+          <p>
+            New gamified experiences, including the Daily Cupid&apos;s Slot Machine, 18+ After-Dark Lounge, Midnight 2v2 Squads, Campus Hub, and Secret Match Arenas, are governed by our community guidelines. Features such as &quot;My Connections&quot; and real-time push notifications are provided to enhance your matchmaking experience. All premium features are seamlessly managed within our clean and de-duplicated Settings Suite (v5.30.97).
+          </p>
+        </section>
+
+        <section className="space-y-3 bg-white/[0.02] p-5 rounded-2xl border border-border">
+          <h2 className="text-foreground font-bold text-base flex items-center gap-2">
+            <ShieldCheck size={18} className="text-primary" /> 9. AI Catfish Verification &amp; Authenticity
+          </h2>
+          <p>
+            To ensure the authenticity of our community, LoveWithYou employs advanced AI-powered Catfish Selfie Verification. By using the platform, you agree to periodic verification checks. Accounts failing to verify their identity may be restricted or permanently banned to maintain a 100% genuine user base.
+          </p>
+        </section>
+
         <div className="text-center pt-8 pb-4 text-xs text-muted">
-          Last Updated: August 2026 • LoveWithYou Legal Compliance
+          Last Updated: Version 5.30.97 • LoveWithYou Legal Compliance
         </div>
       </div>
     </div>

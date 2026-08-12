@@ -227,12 +227,11 @@ export default function SettingsPage() {
           </button>
           <div>
             <h1 className="text-base font-black text-foreground tracking-tight">Settings</h1>
-            <p className="text-[10px] text-muted">Clean &amp; De-duplicated Settings Suite</p>
           </div>
         </div>
 
         <span className="text-[10px] bg-primary/20 text-primary font-extrabold px-3 py-1 rounded-full border border-primary/30 flex items-center gap-1">
-          <Sparkles size={12} /> v5.4.30
+          <Sparkles size={12} /> v5.30.97
         </span>
       </div>
 

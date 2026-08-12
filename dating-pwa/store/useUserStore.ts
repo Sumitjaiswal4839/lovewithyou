@@ -487,7 +487,7 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
         try {
           const state = get();
           if (!state.isAuthenticated) return;
-          const res = await fetch(`${BACKEND_URL}/notifications`, {
+          const res = await fetch(`${BACKEND_URL}/api/v1/notifications`, {
             headers: { 'Authorization': `Bearer ${state.authToken}` }
           });
           if (res.ok) {
@@ -502,7 +502,7 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
       markNotificationRead: async (id: string) => {
         try {
           const state = get();
-          await fetch(`${BACKEND_URL}/notifications/${id}/read`, {
+          await fetch(`${BACKEND_URL}/api/v1/notifications/${id}/read`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${state.authToken}` }
           });
@@ -516,7 +516,7 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
       markAllNotificationsRead: async () => {
         try {
           const state = get();
-          await fetch(`${BACKEND_URL}/notifications/read-all`, {
+          await fetch(`${BACKEND_URL}/api/v1/notifications/read-all`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${state.authToken}` }
           });

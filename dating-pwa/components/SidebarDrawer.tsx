@@ -62,6 +62,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showSecretArenas, setShowSecretArenas] = useState(false);
+  const [showConnections, setShowConnections] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -265,23 +266,49 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
               {/* Real App Core Navigation Features */}
               <div className="py-1">
-                {/* My Matches */}
-                <button onClick={() => navigateTo('/chat?tab=matches')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <MessageCircle size={20} style={{ color: 'var(--color-primary)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>My Matches</span>
-                  </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-soft)' }}>Chat</span>
-                </button>
+                {/* Connections Accordion (Sub Nav) */}
+                <div className="border-t pt-1 pb-1" style={{ borderColor: 'var(--color-divider)' }}>
+                  <button 
+                    onClick={() => setShowConnections(!showConnections)}
+                    className="w-full flex items-center justify-between px-5 py-4 transition text-left hover:opacity-80"
+                  >
+                    <div className="flex items-center gap-4">
+                      <HeartPulse size={20} style={{ color: 'var(--color-romantic)' }} />
+                      <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>My Connections 💌</span>
+                    </div>
+                    <ChevronRight size={18} className={`transition-transform ${showConnections ? 'rotate-90' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
+                  </button>
 
-                {/* Who Liked Me */}
-                <button onClick={() => navigateTo('/chat?tab=likes')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <HeartPulse size={20} style={{ color: 'var(--color-romantic)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Who Liked Me</span>
-                  </div>
-                  <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-romantic)' }} />
-                </button>
+                  <AnimatePresence>
+                    {showConnections && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                        style={{ backgroundColor: 'var(--color-surface-elevated)' }}
+                      >
+                        {/* My Matches */}
+                        <button onClick={() => navigateTo('/chat?tab=matches')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
+                          <div className="flex items-center gap-3">
+                            <MessageCircle size={16} style={{ color: 'var(--color-primary)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>My Matches</span>
+                          </div>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-soft)' }}>Chat</span>
+                        </button>
+
+                        {/* Who Liked Me */}
+                        <button onClick={() => navigateTo('/chat?tab=likes')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 pb-4 hover:opacity-80">
+                          <div className="flex items-center gap-3">
+                            <Heart size={16} style={{ color: 'var(--color-romantic)' }} />
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Who Liked Me</span>
+                          </div>
+                          <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-romantic)' }} />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* Secret Match Arenas Accordion */}
                 <div className="border-y my-1" style={{ borderColor: 'var(--color-divider)' }}>
@@ -419,7 +446,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
                   <div className="w-full flex items-center justify-between px-5 py-2.5 text-left">
                     <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Version</span>
-                    <span className="text-xs font-black" style={{ color: 'var(--color-text-muted)' }}>5.4.30</span>
+                    <span className="text-xs font-black" style={{ color: 'var(--color-text-muted)' }}>5.30.97</span>
                   </div>
                 </div>
 
@@ -436,7 +463,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
               <span className="font-black flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
                 <Sparkles size={14} /> LoveWithYou
               </span>
-              <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>v5.4.30 VIP</span>
+              <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>v5.30.97 VIP</span>
             </div>
           </motion.div>
 
