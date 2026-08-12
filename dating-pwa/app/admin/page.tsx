@@ -104,7 +104,10 @@ export default function AdminDashboard() {
 
   const fetchSubAdmins = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/admin/subadmins");
+      const isProd = process.env.NODE_ENV === "production";
+      const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080")).replace(/\/+$/, "");
+      
+      const res = await fetch(`${backendUrl}/api/v1/admin/subadmins`);
       if (res.ok) {
         const data = await res.json();
         setSubAdmins(data || []);
@@ -252,7 +255,10 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/admin/subadmins", {
+      const isProd = process.env.NODE_ENV === "production";
+      const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080")).replace(/\/+$/, "");
+      
+      const res = await fetch(`${backendUrl}/api/v1/admin/subadmins`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -281,7 +287,10 @@ export default function AdminDashboard() {
   const handleDeleteSubAdmin = async (id: string) => {
     if (!confirm("Delete this Sub-Admin profile?")) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/admin/subadmins/${id}`, {
+      const isProd = process.env.NODE_ENV === "production";
+      const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080")).replace(/\/+$/, "");
+      
+      const res = await fetch(`${backendUrl}/api/v1/admin/subadmins/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {

@@ -338,15 +338,17 @@ export default function Home() {
     
     // Save to Backend for Secure Matching
     if (deviceId) {
-       try {
-         const res = await fetch(`${BACKEND_URL}/swipes`, {
-           method: "POST",
-           headers: { 
-             "Content-Type": "application/json",
-             "X-Request-ID": uuidv4()
-           },
-           body: JSON.stringify({ swiper_id: deviceId, swiped_id: targetProfile.id, direction: direction })
-         });
+        try {
+          const state = useUserStore.getState();
+          const res = await fetch(`${BACKEND_URL}/swipes`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${state.authToken}`,
+              "X-Request-ID": uuidv4()
+            },
+            body: JSON.stringify({ swiper_id: deviceId, swiped_id: targetProfile.id, direction: direction })
+          });
          
          if (res.ok) {
            const data = await res.json();

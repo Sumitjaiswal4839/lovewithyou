@@ -38,7 +38,10 @@ export async function POST(req: Request) {
       // SUB-ADMIN PATH: Username is provided
       // Verify against Go backend database
       try {
-        const verifyRes = await fetch("http://localhost:8080/api/v1/admin/verify", {
+        const isProd = process.env.NODE_ENV === "production";
+        const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080")).replace(/\/+$/, "");
+        
+        const verifyRes = await fetch(`${backendUrl}/api/v1/admin/verify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password }),
