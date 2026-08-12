@@ -114,6 +114,7 @@ export default function RandomChatPage() {
   const [noActiveUser, setNoActiveUser] = useState(false);
 
   const authToken = useUserStore(state => state.authToken);
+  const deviceId = useUserStore(state => state.deviceId);
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
   const scrollToBottom = () => {
@@ -228,7 +229,7 @@ export default function RandomChatPage() {
     ]);
 
     // Initialize WebSocket
-    const deviceIdStr = profile?.device_id || "anon";
+    const deviceIdStr = deviceId || "anon";
     const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${matchData.roomId}&device_id=${deviceIdStr}&token=${authToken}`;
     wsRef.current = new WebSocket(wsUrl);
     wsRef.current.onmessage = (event) => {
@@ -292,7 +293,7 @@ export default function RandomChatPage() {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
        wsRef.current.send(JSON.stringify({
           room_id: "random", // Not needed, backend routes by connection room
-          sender_id: profile?.device_id || "anon",
+          sender_id: deviceId || "anon",
           content: text,
           type: "message"
        }));
