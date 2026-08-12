@@ -84,6 +84,20 @@ export default function SettingsPage() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  const updateSettings = (updates: any) => {
+    if ('allowFriendSearch' in updates) setAllowFriendSearch(updates.allowFriendSearch);
+    if ('allowAutoFriendAccept' in updates) setAllowAutoFriendAccept(updates.allowAutoFriendAccept);
+    if ('automaticTranslation' in updates) setAutomaticTranslation(updates.automaticTranslation);
+    if ('accentColor' in updates) setAccentColor(updates.accentColor);
+    if ('encryptedChat' in updates) setEncryptedChat(updates.encryptedChat);
+    if ('incognitoMode' in updates) setIncognitoMode(updates.incognitoMode);
+    if ('screenshotShield' in updates) setScreenshotShield(updates.screenshotShield);
+    if ('pushNotifications' in updates) setPushNotifications(updates.pushNotifications);
+    if ('hapticsEnabled' in updates) setSoundHaptics(updates.hapticsEnabled);
+    if ('distanceUnit' in updates) setDistanceUnit(updates.distanceUnit);
+    if ('lowDataMode' in updates) setDataSaver(updates.lowDataMode);
+  };
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
