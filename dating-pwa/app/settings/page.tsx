@@ -259,17 +259,17 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between p-4">
               <span className="text-xs font-bold text-foreground">Allow friend search</span>
-              <input type="checkbox" checked={allowFriendSearch} onChange={(e) => setAllowFriendSearch(e.target.checked)} className="w-5 h-5 accent-primary cursor-pointer" />
+              <input type="checkbox" checked={allowFriendSearch} onChange={(e) => updateSettings({ allowFriendSearch: e.target.checked })} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
 
             <div className="flex items-center justify-between p-4">
               <span className="text-xs font-bold text-foreground">Allow Auto-Friend Accept</span>
-              <input type="checkbox" checked={allowAutoFriendAccept} onChange={(e) => setAllowAutoFriendAccept(e.target.checked)} className="w-5 h-5 accent-primary cursor-pointer" />
+              <input type="checkbox" checked={allowAutoFriendAccept} onChange={(e) => updateSettings({ allowAutoFriendAccept: e.target.checked })} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
 
             <div className="flex items-center justify-between p-4">
               <span className="text-xs font-bold text-foreground">Automatic Translation</span>
-              <input type="checkbox" checked={automaticTranslation} onChange={(e) => setAutomaticTranslation(e.target.checked)} className="w-5 h-5 accent-primary cursor-pointer" />
+              <input type="checkbox" checked={automaticTranslation} onChange={(e) => updateSettings({ automaticTranslation: e.target.checked })} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
           </div>
         </div>
@@ -291,25 +291,25 @@ export default function SettingsPage() {
               <span className="text-xs font-bold text-foreground block">Accent Theme Color</span>
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => { setAccentColor("pink"); toast("Accent set to Hot Pink 💖", "success"); }}
+                  onClick={() => { updateSettings({ accentColor: "pink" }); toast("Accent set to Hot Pink 💖", "success"); }}
                   className={`w-8 h-8 rounded-2xl bg-primary flex items-center justify-center text-white transition ${accentColor === 'pink' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
                 >
                   {accentColor === 'pink' && <CheckCircle2 size={14} />}
                 </button>
                 <button 
-                  onClick={() => { setAccentColor("purple"); toast("Accent set to Cyber Purple 🔮", "success"); }}
+                  onClick={() => { updateSettings({ accentColor: "purple" }); toast("Accent set to Cyber Purple 🔮", "success"); }}
                   className={`w-8 h-8 rounded-2xl bg-purple-600 flex items-center justify-center text-foreground transition ${accentColor === 'purple' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
                 >
                   {accentColor === 'purple' && <CheckCircle2 size={14} />}
                 </button>
                 <button 
-                  onClick={() => { setAccentColor("emerald"); toast("Accent set to Neon Emerald ❇️", "success"); }}
+                  onClick={() => { updateSettings({ accentColor: "emerald" }); toast("Accent set to Neon Emerald ❇️", "success"); }}
                   className={`w-8 h-8 rounded-2xl bg-success flex items-center justify-center text-foreground transition ${accentColor === 'emerald' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
                 >
                   {accentColor === 'emerald' && <CheckCircle2 size={14} />}
                 </button>
                 <button 
-                  onClick={() => { setAccentColor("gold"); toast("Accent set to Gold VIP 👑", "success"); }}
+                  onClick={() => { updateSettings({ accentColor: "gold" }); toast("Accent set to Gold VIP 👑", "success"); }}
                   className={`w-8 h-8 rounded-2xl bg-amber-400 flex items-center justify-center text-black transition ${accentColor === 'gold' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
                 >
                   {accentColor === 'gold' && <CheckCircle2 size={14} />}
@@ -363,7 +363,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between p-4">
               <span className="text-xs font-bold text-foreground">Encrypted Chat</span>
-              <input type="checkbox" checked={encryptedChat} onChange={(e) => setEncryptedChat(e.target.checked)} className="w-5 h-5 accent-primary cursor-pointer" />
+              <input type="checkbox" checked={encryptedChat} onChange={(e) => updateSettings({ encryptedChat: e.target.checked })} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
           </div>
         </div>
@@ -384,7 +384,7 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Only profiles you right-swipe can view your card</p>
               </div>
               <button 
-                onClick={() => { setIncognitoMode(!incognitoMode); toast(!incognitoMode ? "👻 Incognito Active!" : "Incognito Off", "info"); }}
+                onClick={() => { updateSettings({ incognitoMode: !incognitoMode }); toast(!incognitoMode ? "👻 Incognito Active!" : "Incognito Off", "info"); }}
                 className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${incognitoMode ? 'bg-indigo-500' : 'bg-surface-elevated'}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${incognitoMode ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -399,7 +399,7 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Block screenshot attempts during private chats</p>
               </div>
               <button 
-                onClick={() => setScreenshotShield(!screenshotShield)}
+                onClick={() => updateSettings({ screenshotShield: !screenshotShield })}
                 className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${screenshotShield ? 'bg-primary' : 'bg-surface-elevated'}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${screenshotShield ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -414,7 +414,7 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Alerts for matches &amp; chats</p>
               </div>
               <button 
-                onClick={() => setPushNotifications(!pushNotifications)}
+                onClick={() => updateSettings({ pushNotifications: !pushNotifications })}
                 className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${pushNotifications ? 'bg-primary' : 'bg-surface-elevated'}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${pushNotifications ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -429,7 +429,7 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Swipe sound &amp; vibration feedback</p>
               </div>
               <button 
-                onClick={() => setSoundHaptics(!soundHaptics)}
+                onClick={() => updateSettings({ hapticsEnabled: !soundHaptics })}
                 className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${soundHaptics ? 'bg-purple-500' : 'bg-surface-elevated'}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${soundHaptics ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -444,8 +444,8 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Measurement unit for matches</p>
               </div>
               <div className="flex items-center gap-1 bg-black/50 p-1 rounded-xl border border-border">
-                <button onClick={() => setDistanceUnit("km")} className={`px-2.5 py-1 rounded-lg text-xs font-black transition ${distanceUnit === 'km' ? 'bg-amber-400 text-black' : 'text-muted'}`}>km</button>
-                <button onClick={() => setDistanceUnit("mi")} className={`px-2.5 py-1 rounded-lg text-xs font-black transition ${distanceUnit === 'mi' ? 'bg-amber-400 text-black' : 'text-muted'}`}>mi</button>
+                <button onClick={() => updateSettings({ distanceUnit: "km" })} className={`px-2.5 py-1 rounded-lg text-xs font-black transition ${distanceUnit === 'km' ? 'bg-amber-400 text-black' : 'text-muted'}`}>km</button>
+                <button onClick={() => updateSettings({ distanceUnit: "mi" })} className={`px-2.5 py-1 rounded-lg text-xs font-black transition ${distanceUnit === 'mi' ? 'bg-amber-400 text-black' : 'text-muted'}`}>mi</button>
               </div>
             </div>
           </div>
@@ -467,7 +467,7 @@ export default function SettingsPage() {
                 <p className="text-[11px] text-muted">Optimizes media stream during calls</p>
               </div>
               <button 
-                onClick={() => setDataSaver(!dataSaver)}
+                onClick={() => updateSettings({ lowDataMode: !dataSaver })}
                 className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${dataSaver ? 'bg-warning' : 'bg-surface-elevated'}`}
               >
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${dataSaver ? 'translate-x-6' : 'translate-x-0'}`} />
@@ -646,7 +646,7 @@ export default function SettingsPage() {
             <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 space-y-3">
               <h3 className="text-base font-black text-foreground text-center">App Language Settings</h3>
               {["System defaults", "English (US)", "Hindi (हिन्दी)", "Spanish (Español)", "French (Français)"].map(lang => (
-                <button key={lang} onClick={() => { setAppLanguage(lang); setActiveModal(null); toast(`Language set to ${lang}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border flex items-center justify-between">
+                <button key={lang} onClick={() => { updateSettings({ language: lang }); setActiveModal(null); toast(`Language set to ${lang}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border flex items-center justify-between">
                   <span>{lang}</span>
                   {appLanguage === lang && <Check size={16} className="text-primary" />}
                 </button>
@@ -661,7 +661,7 @@ export default function SettingsPage() {
               <h3 className="text-base font-black text-foreground">App Font Size</h3>
               <div className="grid grid-cols-3 gap-2">
                 {[8, 10, 12].map(sz => (
-                  <button key={sz} onClick={() => { setFontSize(sz); setActiveModal(null); toast(`Font size set to ${sz}`, "info"); }} className={`p-3 rounded-2xl text-xs font-bold border ${fontSize === sz ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-elevated border-border'}`}>
+                  <button key={sz} onClick={() => { updateSettings({ fontSize: sz }); setActiveModal(null); toast(`Font size set to ${sz}`, "info"); }} className={`p-3 rounded-2xl text-xs font-bold border ${fontSize === sz ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-elevated border-border'}`}>
                     Size {sz}
                   </button>
                 ))}
@@ -675,7 +675,7 @@ export default function SettingsPage() {
             <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 space-y-3">
               <h3 className="text-base font-black text-foreground text-center">Photo Picker Type</h3>
               {["Classic Photo Picker", "HD Cloudinary Cloud Picker", "System Native Gallery"].map(p => (
-                <button key={p} onClick={() => { setPhotoPickerType(p); setActiveModal(null); toast(`Photo picker set to ${p}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border">
+                <button key={p} onClick={() => { updateSettings({ photoPickerType: p }); setActiveModal(null); toast(`Photo picker set to ${p}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border">
                   {p}
                 </button>
               ))}

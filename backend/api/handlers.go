@@ -104,6 +104,11 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/push/broadcast", auth.AuthMiddleware(BroadcastPushNotification)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/redis/pubsub/publish", auth.AuthMiddleware(RedisPubSubClusterBroadcast)).Methods(http.MethodPost, http.MethodOptions)
 
+	// V1 Notifications
+	r.HandleFunc("/api/v1/notifications", auth.AuthMiddleware(GetNotifications)).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/v1/notifications/read-all", auth.AuthMiddleware(MarkAllNotificationsRead)).Methods(http.MethodPut, http.MethodOptions)
+	r.HandleFunc("/api/v1/notifications/{id}/read", auth.AuthMiddleware(MarkNotificationRead)).Methods(http.MethodPut, http.MethodOptions)
+
 	// Admin API (Sub-Admin Management)
 	r.HandleFunc("/api/v1/admin/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/admin/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
@@ -483,4 +488,49 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 		"profile": updated,
 	})
+}
+
+// GetNotifications returns user's notifications
+func GetNotifications(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+	notifs, err := db.GetUserNotifications(deviceID)
+	if err != nil {
+		log.Printf("Internal error fetching notifications: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(notifs)
+}
+
+// MarkNotificationRead marks a specific notification as read
+func MarkNotificationRead(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+	vars := mux.Vars(r)
+	notifID := vars["id"]
+
+	err := db.MarkNotificationAsRead(deviceID, notifID)
+	if err != nil {
+		log.Printf("Error marking notification read: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
+// MarkAllNotificationsRead marks all notifications as read
+func MarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+
+	err := db.MarkAllNotificationsAsRead(deviceID)
+	if err != nil {
+		log.Printf("Error marking all notifications read: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }

@@ -85,6 +85,17 @@ export interface CoinTransaction {
   created_at: string;
 }
 
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  related_entity_id?: string;
+  created_at: string;
+}
+
 interface UserState {
   deviceId: string | null;
   authToken: string | null;
@@ -99,12 +110,26 @@ interface UserState {
   likes: Match[];
   friendRequests: FriendRequest[];
   friends: Friend[];
+  notifications: AppNotification[];
+  unreadNotificationCount: number;
   appSettings: {
     lowDataMode: boolean;
     highContrast: boolean;
     language: string;
     currency: string;
     hapticsEnabled: boolean;
+    pushNotifications: boolean;
+    incognitoMode: boolean;
+    showActiveStatus: boolean;
+    screenshotShield: boolean;
+    distanceUnit: "km" | "mi";
+    accentColor: "pink" | "purple" | "emerald" | "gold";
+    fontSize: number;
+    photoPickerType: string;
+    allowFriendSearch: boolean;
+    allowAutoFriendAccept: boolean;
+    automaticTranslation: boolean;
+    encryptedChat: boolean;
   };
   matchPreferences: {
     gender: "Everyone" | "Male" | "Female";
@@ -138,12 +163,15 @@ interface UserState {
   unlockDailyBlur: () => boolean;
   canSearch: () => boolean;
   incrementSearchCount: () => void;
-  updateSettings: (settings: Partial<UserState['appSettings']>) => void;
+  updateSettings: (settings: Partial<UserState['appSettings']>) => Promise<void>;
   updateMatchPreferences: (prefs: Partial<UserState['matchPreferences']>) => void;
   initLocalization: () => void;
   syncProfile: () => Promise<void>;
   subscribeToPush: () => Promise<void>;
   setLiveUserCount: (count: number) => void;
+  fetchNotifications: () => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   logout: () => void;
 }
 
@@ -179,9 +207,21 @@ export const useUserStore = create<UserState>()(
       appSettings: {
         lowDataMode: false,
         highContrast: false,
-        language: "en",
+        language: "System defaults",
         currency: "INR",
         hapticsEnabled: true,
+        pushNotifications: true,
+        incognitoMode: false,
+        showActiveStatus: true,
+        screenshotShield: true,
+        distanceUnit: "km",
+        accentColor: "pink",
+        fontSize: 10,
+        photoPickerType: "Classic Photo Picker",
+        allowFriendSearch: true,
+        allowAutoFriendAccept: false,
+        automaticTranslation: true,
+        encryptedChat: false,
       },
       matchPreferences: {
         gender: "Everyone",
@@ -200,6 +240,8 @@ export const useUserStore = create<UserState>()(
       likes: [],
       friendRequests: [],
       friends: [],
+      notifications: [],
+      unreadNotificationCount: 0,
       logout: () => {
         localStorage.removeItem("dating-storage");
         set({
@@ -213,6 +255,8 @@ export const useUserStore = create<UserState>()(
           friendRequests: [],
           friends: [],
           coinHistory: [],
+          notifications: [],
+          unreadNotificationCount: 0,
         });
       },
       setDeviceId: async (id: string) => {
@@ -230,8 +274,8 @@ export const useUserStore = create<UserState>()(
             throw new Error('Backend se token nahi mila (Cold start ya Network fail)');
           }
           const data = await res.json();
-          if (data.coins !== undefined) {
-            set({ coins: data.coins });
+          if (data.app_settings) {
+            set({ appSettings: { ...get().appSettings, ...data.app_settings } });
           }
           set({ authToken: data.token, isAuthenticated: true });
         } catch (e) {
@@ -439,6 +483,49 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
       },
       setLocation: (loc: string) => set((state) => ({ profile: state.profile ? { ...state.profile, location: loc } : null })),
       setLiveUserCount: (count) => set({ liveUserCount: count }),
+      fetchNotifications: async () => {
+        try {
+          const state = get();
+          if (!state.isAuthenticated) return;
+          const res = await fetch(`${BACKEND_URL}/notifications`, {
+            headers: { 'Authorization': `Bearer ${state.authToken}` }
+          });
+          if (res.ok) {
+            const notifications = await res.json() || [];
+            const unreadCount = notifications.filter((n: AppNotification) => !n.is_read).length;
+            set({ notifications, unreadNotificationCount: unreadCount });
+          }
+        } catch (e) {
+          console.error("Failed to fetch notifications", e);
+        }
+      },
+      markNotificationRead: async (id: string) => {
+        try {
+          const state = get();
+          await fetch(`${BACKEND_URL}/notifications/${id}/read`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${state.authToken}` }
+          });
+          const newNotifs = state.notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
+          const unreadCount = newNotifs.filter(n => !n.is_read).length;
+          set({ notifications: newNotifs, unreadNotificationCount: unreadCount });
+        } catch (e) {
+          console.error("Failed to mark notification read", e);
+        }
+      },
+      markAllNotificationsRead: async () => {
+        try {
+          const state = get();
+          await fetch(`${BACKEND_URL}/notifications/read-all`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${state.authToken}` }
+          });
+          const newNotifs = state.notifications.map(n => ({ ...n, is_read: true }));
+          set({ notifications: newNotifs, unreadNotificationCount: 0 });
+        } catch (e) {
+          console.error("Failed to mark all notifications read", e);
+        }
+      },
       addMatch: (match) => set((state) => ({ matches: [...state.matches, match] })),
       addLike: (match) => set((state) => ({ likes: [...state.likes, match] })),
       
@@ -513,7 +600,29 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
         }
         set({ dailySearchCount: newCount, lastSearchDate: today });
       },
-      updateSettings: (settings) => set((state) => ({ appSettings: { ...state.appSettings, ...settings } })),
+      updateSettings: async (settings) => {
+        const newState = { ...get().appSettings, ...settings };
+        set({ appSettings: newState });
+        
+        // Sync to backend
+        const state = get();
+        if (state.profile && state.isAuthenticated) {
+          const updatedProfile = { ...state.profile, app_settings: newState };
+          set({ profile: updatedProfile });
+          try {
+            await fetch(`${BACKEND_URL}/profile`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.authToken}`,
+              },
+              body: JSON.stringify(updatedProfile),
+            });
+          } catch (e) {
+            console.error("Failed to sync settings:", e);
+          }
+        }
+      },
       updateMatchPreferences: (prefs) => set((state) => ({ matchPreferences: { ...state.matchPreferences, ...prefs } })),
       initLocalization: () => {
         try {

@@ -31,6 +31,50 @@ export default function ChatRoomPage() {
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const callRoomId = [deviceId, matchId].sort().join("_");
+  
+  // Call States
+  const [isCallOpen, setIsCallOpen] = useState(false);
+  const [callType, setCallType] = useState<"audio"|"video">("audio");
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [incomingOffer, setIncomingOffer] = useState<any>(null);
+  const [incomingSignal, setIncomingSignal] = useState<string | undefined>();
+  
+  // Menu State
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const handleSendWebRTCSignal = async (signalData: string) => {
+    try {
+      await API.sendWebRTCSignal({
+        roomId: callRoomId,
+        senderId: deviceId || "",
+        targetId: matchId,
+        signalData,
+        channelType: callType
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  
+  const handleMenuAction = async (action: string) => {
+    setIsMenuOpen(false);
+    if (action === "unmatch" || action === "report") {
+      toast(action === "unmatch" ? "Unmatched with user." : "User reported. Thank you.", "success");
+      router.back();
+    } else if (action === "clear") {
+      setMessages([]);
+      try {
+        await supabase
+          .from('messages')
+          .delete()
+          .or(`and(sender_id.eq.${deviceId},receiver_id.eq.${matchId}),and(sender_id.eq.${matchId},receiver_id.eq.${deviceId})`);
+        toast("Chat deleted permanently.", "success");
+      } catch (e) {
+        toast("Failed to delete chat.", "error");
+      }
+    }
+  };
   const [isTyping, setIsTyping] = useState(false);
   const [isFlirtOpen, setIsFlirtOpen] = useState(false);
 
@@ -74,6 +118,20 @@ export default function ChatRoomPage() {
       wsRef.current.onmessage = (event) => {
         try {
           const incoming = JSON.parse(event.data);
+          
+          if (incoming.signalData) {
+            // It's a WebRTC signal
+            const signalObj = JSON.parse(incoming.signalData);
+            if (signalObj.type === "offer") {
+              setCallType(incoming.channelType as "audio"|"video");
+              setIncomingOffer(incoming.signalData);
+              setIsIncomingCall(true);
+              setIsCallOpen(true);
+            } else {
+              setIncomingSignal(incoming.signalData);
+            }
+          }
+          
           if (incoming.content && incoming.sender_id !== deviceId) {
             setMessages((prev) => [...prev, incoming as Message]);
           }

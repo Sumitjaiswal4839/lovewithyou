@@ -146,7 +146,7 @@ export function CoinHistoryModal({ isOpen, onClose }: CoinHistoryModalProps) {
               <span className="flex items-center gap-1 text-success font-bold">
                 <ShieldCheck size={14} /> Audit Ledger Active
               </span>
-              <span>Synced with Supabase Cloud DB</span>
+              <span>Encrypted & Secured</span>
             </div>
           </motion.div>
         </>

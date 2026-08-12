@@ -38,6 +38,7 @@ type Profile struct {
 	Latitude                  float64             `json:"latitude,omitempty"`
 	Longitude                 float64             `json:"longitude,omitempty"`
 	MatchPreferences          map[string]interface{} `json:"match_preferences,omitempty"`
+	AppSettings               map[string]interface{} `json:"app_settings,omitempty"`
 }
 
 // GetProfile fetches a profile from the 'profiles' table in Supabase
@@ -231,6 +232,12 @@ func RecordSwipeAndCheckMatch(swiperID, swipedID, direction string) (bool, error
 		if err != nil {
 			return false, err
 		}
+
+		// Create notifications for both users about the match
+		// We don't return error if notification fails, to not break the match
+		_ = CreateNotification(swiperID, "match", "New Match! 🎉", "You have a new mutual match!", swipedID)
+		_ = CreateNotification(swipedID, "match", "New Match! 🎉", "You have a new mutual match!", swiperID)
+
 		return true, nil
 	}
 

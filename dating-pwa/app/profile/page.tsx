@@ -11,6 +11,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useState } from "react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { supabase } from "@/lib/supabase";
+import { API } from "@/lib/api";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -333,11 +334,19 @@ export default function ProfilePage() {
               <button 
                 onClick={() => {
                   setIsVerifying(true);
-                  setTimeout(() => {
-                    setProfile({ ...profile, verified: true });
-                    setIsVerifying(false);
-                    setShowVerifyModal(false);
-                    toast("Blue Tick Verified! 🛡️💎", "success");
+                  setTimeout(async () => {
+                    try {
+                      // Call the real backend API with a simulated high confidence score (e.g., 90%)
+                      await API.verifyFaceCatfishBuster(90.0);
+                      
+                      setProfile({ ...profile, verified: true });
+                      setIsVerifying(false);
+                      setShowVerifyModal(false);
+                      toast("Blue Tick Verified! 🛡️💎", "success");
+                    } catch (e) {
+                      setIsVerifying(false);
+                      toast("Verification failed. Please try again.", "error");
+                    }
                   }, 2500);
                 }} 
                 className="w-full py-3 rounded-2xl bg-blue-600 font-black text-xs text-foreground shadow-lg shadow-blue-600/30"

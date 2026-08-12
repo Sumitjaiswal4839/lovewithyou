@@ -348,6 +348,42 @@ export const API = {
       console.error("Coin history fetch error:", error);
       throw error;
     }
+  },
+
+  // --- Notifications ---
+  async fetchNotifications() {
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/notifications`);
+      if (!response.ok) throw new Error("Failed to fetch notifications");
+      return await response.json();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async markNotificationAsRead(id: string) {
+    try {
+      await fetchWithAuth(`${API_BASE_URL}/notifications/${id}/read`, { method: "PUT" });
+    } catch (e) {}
+  },
+
+  async markAllNotificationsAsRead() {
+    try {
+      await fetchWithAuth(`${API_BASE_URL}/notifications/read-all`, { method: "PUT" });
+    } catch (e) {}
+  },
+
+  // --- Safety & Verification ---
+  async verifyFaceCatfishBuster(confidenceScore: number) {
+    const response = await fetchWithAuth(`${API_BASE_URL}/safety/verify-smile`, {
+      method: "POST",
+      body: JSON.stringify({ client_confidence: confidenceScore })
+    });
+    
+    if (!response.ok) {
+      throw new Error("Verification failed");
+    }
+    return await response.json();
   }
 };
 
