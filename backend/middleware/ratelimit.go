@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"dating-backend/auth"
 	"golang.org/x/time/rate"
 )
 
@@ -30,12 +31,11 @@ func getClientIP(r *http.Request) string {
 
 func RateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 🔴 NAYA LOGIC: Pehle Device ID dhundo (Header se)
-		identifier := r.Header.Get("X-Device-Id")
-		
-		// Agar Device ID nahi hai (jaise pehli baar login), tabhi IP use karo
-		if identifier == "" {
-			identifier = getClientIP(r)
+		var identifier string
+		if devID, ok := r.Context().Value(auth.DeviceIDKey).(string); ok && devID != "" {
+			identifier = "user:" + devID
+		} else {
+			identifier = "ip:" + getClientIP(r)
 		}
 
 		mu.Lock()

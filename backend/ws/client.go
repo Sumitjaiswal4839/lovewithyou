@@ -111,12 +111,8 @@ func (c *Client) writePump() {
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
 	if !ok || deviceID == "" {
-		// Fallback for query param just in case, though AuthMiddleware handles it
-		deviceID = r.URL.Query().Get("device_id")
-		if deviceID == "" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
+		http.Error(w, "Unauthorized: Invalid or missing device token", http.StatusUnauthorized)
+		return
 	}
 
 	roomID := r.URL.Query().Get("room_id")

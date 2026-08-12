@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -49,8 +50,12 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			// Ensure the signing method is exactly what we expect
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
 			return []byte(os.Getenv("DEVICE_TOKEN_SECRET")), nil
-		})
+		}, jwt.WithValidMethods([]string{"HS256"}))
 		
 		if err != nil || !token.Valid {
 			http.Error(w, "unauthorized - invalid token", http.StatusUnauthorized)

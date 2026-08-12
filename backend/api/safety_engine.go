@@ -45,27 +45,33 @@ type RedisPubSubPayload struct {
 	Payload   any    `json:"payload"`
 }
 
-// VerifyFaceCatfishBuster runs an AI smile ratio evaluation against stored photos
 func VerifyFaceCatfishBuster(w http.ResponseWriter, r *http.Request) {
-    deviceID := r.Context().Value("device_id").(string)
-	var req struct {
-        ClientConfidence float64 `json:"client_confidence"`
-    }
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	// 1. Get verified identity
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    // ✅ FIX: Don't unconditionally pass. Require client model to pass a threshold.
-    if req.ClientConfidence < 85.0 {
-        http.Error(w, "Face verification failed threshold", http.StatusBadRequest)
-        return
-    }
+	// 2. Server-side validation logic
+	isFaceAuthentic, err := ProcessFaceVerificationServerSide(deviceID) 
+	if err != nil || !isFaceAuthentic {
+		http.Error(w, "Face verification failed", http.StatusBadRequest)
+		return
+	}
 
-    // Update profile verified status in DB
-    db.Client.From("profiles").Update(map[string]interface{}{"verified": true}, "", "").Eq("device_id", deviceID).Execute()
-
+	// 3. Update DB safely
+	db.Client.From("profiles").Update(map[string]interface{}{"verified": true}, "", "").Eq("device_id", deviceID).Execute()
+	
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "verified_blue_diamond",
 		Message: "Verification successful.",
 	})
+}
+
+func ProcessFaceVerificationServerSide(deviceID string) (bool, error) {
+	// Placeholder for actual Backend AI Face Processing logic
+	return true, nil
 }
 
 // StartSosCheckinTimer starts a 2-hour physical date safety check-in countdown
@@ -120,24 +126,35 @@ func ConfirmSafeCheckin(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(map[string]string{"status": "safe_confirmed"})
 }
 
-// ReportScreenshotViolation penalizes violators by deducting 20 Karma immediately
-func ReportScreenshotViolation(w http.ResponseWriter, r *http.Request) {
-    // Extract offender's device ID from request
-    var req struct { OffenderID string `json:"offender_id"` }
-    json.NewDecoder(r.Body).Decode(&req)
-
-    // ✅ FIX: Actually deduct 20 karma points in the database.
-    _ = db.Client.Rpc("deduct_karma", "", map[string]interface{}{
-        "p_device_id": req.OffenderID,
-        "p_amount":    20,
-    })
-    
-    sendJSONResponse(w, http.StatusOK, ResponsePayload{Message: "Screenshot reported, 20 Karma deducted."})
+type ReportRequest struct {
+	RoomID     string `json:"room_id"`      // Added RoomID to verify interaction
+	OffenderID string `json:"offender_id"`
+	Reason     string `json:"reason"`
 }
 
-// WebRTCSignalExchange routes ultra-low latency direct peer-to-peer data streams
+func ReportScreenshotViolation(w http.ResponseWriter, r *http.Request) {
+	reporterID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
+	var req ReportRequest
+	json.NewDecoder(r.Body).Decode(&req)
+
+	// 1. Verify that Reporter and Offender were actually in the same room recently
+	wasInRoom := db.VerifyUsersSharedRoom(reporterID, req.OffenderID, req.RoomID)
+	if !wasInRoom {
+		http.Error(w, "Forbidden: No recent interaction found with this user", http.StatusForbidden)
+		return
+	}
+
+	// 2. Queue for manual review or apply rate-limit instead of instant deduction
+	db.LogViolationReport(reporterID, req.OffenderID, req.Reason)
+
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{Message: "Screenshot reported, violation logged."})
+}
+
 func WebRTCSignalExchange(hub *ws.Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		senderID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
 		var req WebRTCSignalPayload
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request", http.StatusBadRequest)
@@ -149,7 +166,16 @@ func WebRTCSignalExchange(hub *ws.Hub) http.HandlerFunc {
 			return
 		}
 
-		// ✅ FIX: Actually route the signal to the target device's WebSocket.
+		// Fix #11: Ensure both are active participants in the same room before routing
+		isParticipant, _ := db.IsMatchParticipant(senderID, req.RoomID)
+		if !isParticipant {
+			http.Error(w, "Forbidden: Not in the same active room", http.StatusForbidden)
+			return
+		}
+
+		// Forward signal safely
+		req.SenderID = senderID // Forced by server
+
 		delivered := hub.SendToDevice(req.TargetID, req) 
 		
 		if !delivered {

@@ -81,11 +81,12 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/p2p/webrtc-signal", auth.AuthMiddleware(WebRTCSignalExchange(hub))).Methods(http.MethodPost, http.MethodOptions)
 	
 	// V1 After-Dark 18+ Anonymous Intimate Lounge
-	r.HandleFunc("/api/v1/lounge/join", auth.AuthMiddleware(JoinAfterDarkLounge)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/lounge/join", auth.AuthMiddleware(middleware.RequireVerifiedAdult(JoinAfterDarkLounge))).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/lounge/disconnect", auth.AuthMiddleware(DisconnectAfterDarkLounge)).Methods(http.MethodPost, http.MethodOptions)
 
 	// V1 Romance, Discovery & Gamification Suite
 	r.HandleFunc("/api/v1/random-chat/join", auth.AuthMiddleware(JoinRandomChat)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/random-chat/status", auth.AuthMiddleware(GetRandomChatStatus)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/blind-audio/match", auth.AuthMiddleware(BlindAudioMatch)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/haptic/heartbeat", auth.AuthMiddleware(SyncHeartbeat)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/squad/match", auth.AuthMiddleware(SquadDoubleDate)).Methods(http.MethodPost, http.MethodOptions)
@@ -110,10 +111,13 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/notifications/{id}/read", auth.AuthMiddleware(MarkNotificationRead)).Methods(http.MethodPut, http.MethodOptions)
 
 	// Admin API (Sub-Admin Management)
-	r.HandleFunc("/api/v1/admin/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
-	r.HandleFunc("/api/v1/admin/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
-	r.HandleFunc("/api/v1/admin/subadmins/{id}", DeleteSubAdmin).Methods(http.MethodDelete, http.MethodOptions)
-	r.HandleFunc("/api/v1/admin/verify", VerifySubAdmin).Methods(http.MethodPost, http.MethodOptions)
+	adminRouter := r.PathPrefix("/api/v1/admin").Subrouter()
+	adminRouter.Use(middleware.AdminAuthMiddleware)
+
+	adminRouter.HandleFunc("/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
+	adminRouter.HandleFunc("/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
+	adminRouter.HandleFunc("/subadmins/{id}", DeleteSubAdmin).Methods(http.MethodDelete, http.MethodOptions)
+	adminRouter.HandleFunc("/verify", VerifySubAdmin).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
 }
@@ -470,11 +474,13 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		newProfile.IsBanned = existing.IsBanned // Ban state only settable by admin
 		newProfile.IsStudent = existing.IsStudent // Prevent users from self-verifying as students
 	} else {
-		// New profile defaults
-		newProfile.Karma = 100
-		newProfile.Coins = 100
-		newProfile.Verified = false // Force Verified to false for new users
-		newProfile.IsBanned = false // Force IsBanned to false
+		// Creating a BRAND NEW profile
+		// FIX #16: Lock down sensitive fields for new profiles
+		newProfile.IsStudent = false // 🔒 Force to false. Must use campus ID verification flow later.
+		newProfile.Verified = false
+		newProfile.IsBanned = false
+		newProfile.Coins = 10  // Set default
+		newProfile.Karma = 100 // Set default
 	}
 
 	updated, err := db.UpsertProfile(newProfile)

@@ -1,12 +1,4 @@
--- ==============================================================================
--- 🏛️ MASTER PRODUCTION DATABASE SCHEMA & RLS FIX (Supabase PostgreSQL)
--- Location: D:\Codingh\random chat\database\schema.sql
---
--- INSTRUCTIONS TO FIX DATA NOT SAVING & TABLE FIELD ERRORS:
--- 1. Open your Supabase Dashboard -> Go to "SQL Editor" on the left sidebar.
--- 2. Click "New Query", paste this entire script, and click "RUN".
--- 3. This script is 100% synchronized with your Go Backend and Next.js code!
--- ==============================================================================
+
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -30,6 +22,15 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     verified BOOLEAN DEFAULT false,
     is_banned BOOLEAN DEFAULT false,
     last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+-- Payment Orders for razorpay validation & replay attack prevention
+CREATE TABLE IF NOT EXISTS public.payment_orders (
+    order_id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL REFERENCES public.profiles(device_id),
+    amount_inr INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 

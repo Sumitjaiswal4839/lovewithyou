@@ -15,7 +15,6 @@ type PaymentVerifyReq struct {
 	OrderID   string `json:"razorpay_order_id"`
 	PaymentID string `json:"razorpay_payment_id"`
 	Signature string `json:"razorpay_signature"`
-	Amount    int    `json:"amount"` // Corresponding coin amount
 }
 
 func VerifyRazorpayPayment(w http.ResponseWriter, r *http.Request) {
@@ -48,13 +47,33 @@ func VerifyRazorpayPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Securely add coins server-side using the atomic DB call
-	_, err := db.UpdateCoinsAtomic(deviceID, req.Amount, "Razorpay purchase "+req.OrderID)
+	// 3. ✅ FIX: Fetch the actual Order from YOUR Database
+	order, err := db.GetOrderDetails(req.OrderID) 
+	if err != nil || order == nil {
+		http.Error(w, "Order not found", http.StatusNotFound)
+		return
+	}
+
+	// 4. ✅ FIX: REPLAY ATTACK PREVENTION
+	if order.Status == "completed" || order.Status == "paid" {
+		http.Error(w, "Payment already processed for this order", http.StatusConflict)
+		return
+	}
+
+	// 5. Calculate Coins based on the SERVER-KNOWN amount (1 INR = 10 Coins)
+	coinsToCredit := order.AmountINR * 10 
+
+	// 6. ✅ ATOMIC UPDATE: Coins add karein aur Order ko "completed" mark karein ek hi sath
+	err = db.CompleteOrderAndCreditCoins(req.OrderID, deviceID, coinsToCredit)
 	if err != nil {
-		http.Error(w, "failed to update coins", http.StatusInternalServerError)
+		http.Error(w, "Failed to process payment internally", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status": "success"}`))
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Payment verified and coins credited successfully",
+		"coins_added": coinsToCredit,
+	})
 }

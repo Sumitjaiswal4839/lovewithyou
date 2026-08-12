@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"dating-backend/auth"
 )
 
 // --- 18+ After-Dark Consensual Intimate Lounge Engine ---
@@ -17,7 +19,6 @@ import (
 // Handles 100,000+ concurrent users matching candidates in RAM & Redis queues.
 
 type AfterDarkJoinRequest struct {
-	DeviceID     string `json:"deviceId"`
 	MyGender     string `json:"myGender"`
 	TargetGender string `json:"targetGender"`
 	VibeTag      string `json:"vibeTag"`
@@ -66,6 +67,12 @@ func generateSessionToken() string {
 
 // JoinAfterDarkLounge handles high-concurrency 100k anonymous matching
 func JoinAfterDarkLounge(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || verifiedDeviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var req AfterDarkJoinRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid After-Dark payload", http.StatusBadRequest)
@@ -85,7 +92,7 @@ func JoinAfterDarkLounge(w http.ResponseWriter, r *http.Request) {
 
 	candidate := AfterDarkMatchCandidate{
 		SessionID:    sessionToken,
-		DeviceID:     req.DeviceID,
+		DeviceID:     verifiedDeviceID,
 		MyGender:     myGender,
 		TargetGender: partnerGender,
 		VibeTag:      req.VibeTag,

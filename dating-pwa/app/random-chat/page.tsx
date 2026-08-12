@@ -107,6 +107,15 @@ export default function RandomChatPage() {
   const [inputText, setInputText] = useState("");
   const [viewedDisappearingMsgs, setViewedDisappearingMsgs] = useState<Record<string, boolean>>({});
 
+  const wsRef = useRef<WebSocket | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [liveUsersCount, setLiveUsersCount] = useState(0);
+  const [noActiveUser, setNoActiveUser] = useState(false);
+
+  const authToken = useUserStore(state => state.authToken);
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -118,43 +127,124 @@ export default function RandomChatPage() {
   // Handle Match Search after Agreement
   useEffect(() => {
     if (isSearching) {
-      const timer = setTimeout(() => {
-        setIsSearching(false);
-        setIsConnected(true);
+      setNoActiveUser(false);
+      setLiveUsersCount(0);
 
-        const partnerGenderName = targetGenderPreference === "Female" ? "Ayesha" : targetGenderPreference === "Male" ? "Rohan" : "Ananya";
-        const partnerGenderType = targetGenderPreference === "Female" ? "Female" : targetGenderPreference === "Male" ? "Male" : "Female";
-
-        const newPartner: PartnerItem = {
-          id: Math.random().toString(),
-          originalName: partnerGenderName,
-          hiddenName: `${partnerGenderName[0]}***${partnerGenderName[partnerGenderName.length - 1]}`,
-          location: "Delhi, DL",
-          gender: partnerGenderType,
-          isLiked: false,
-          photos: [
-            partnerGenderType === "Female" 
-              ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&h=700&fit=crop"
-              : "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=700&fit=crop"
-          ],
-          matchedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setPartner(newPartner);
-        setMatchingHistory(prev => [newPartner, ...prev]);
-
-        setMessages([
-          {
-            id: Date.now().toString(),
-            senderId: "partner",
-            text: `Hi! Connected via ${landedVibe ? landedVibe : targetGenderPreference === "Female" ? "Female-Only ♀️" : "Random"} match pool!`,
-            timestamp: new Date()
+      const joinQueue = async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/v1/random-chat/join`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+              targetGender: targetGenderPreference
+            })
+          });
+          const data = await res.json();
+          
+          if (data.status === "matched") {
+             handleMatchSuccess(data.data);
+          } else if (data.status === "waiting") {
+             setLiveUsersCount(data.data.liveUsers || 1);
+             startPolling();
           }
-        ]);
-      }, 2500);
-      return () => clearTimeout(timer);
+        } catch (e) {
+          console.error(e);
+          setNoActiveUser(true);
+          setIsSearching(false);
+        }
+      };
+
+      joinQueue();
+
+      searchTimeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        setIsSearching(false);
+        setNoActiveUser(true);
+      }, 20000); // 20 seconds timeout
+
+      return () => {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      };
     }
-  }, [isSearching, targetGenderPreference, landedVibe]);
+  }, [isSearching, targetGenderPreference, authToken, BACKEND_URL]);
+
+  const startPolling = () => {
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/v1/random-chat/status`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.status === "matched") {
+           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+           if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+           handleMatchSuccess(data.data);
+        } else if (data.status === "waiting") {
+           setLiveUsersCount(data.data.liveUsers || 1);
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 3000);
+  };
+
+  const handleMatchSuccess = (matchData: any) => {
+    setIsSearching(false);
+    setIsConnected(true);
+
+    const partnerGenderType = matchData.partnerGender || "Female";
+    const partnerGenderName = partnerGenderType === "Female" ? "Ayesha" : "Rohan";
+
+    const newPartner: PartnerItem = {
+      id: matchData.partnerId || Math.random().toString(),
+      originalName: partnerGenderName,
+      hiddenName: `${partnerGenderName[0]}***${partnerGenderName[partnerGenderName.length - 1]}`,
+      location: "Delhi, DL",
+      gender: partnerGenderType,
+      isLiked: false,
+      photos: [
+        partnerGenderType === "Female" 
+          ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&h=700&fit=crop"
+          : "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=700&fit=crop"
+      ],
+      matchedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setPartner(newPartner);
+    setMatchingHistory(prev => [newPartner, ...prev]);
+
+    setMessages([
+      {
+        id: Date.now().toString(),
+        senderId: "partner",
+        text: `Hi! Connected via ${targetGenderPreference === "Female" ? "Female-Only ♀️" : "Random"} match pool!`,
+        timestamp: new Date()
+      }
+    ]);
+
+    // Initialize WebSocket
+    const deviceIdStr = profile?.device_id || "anon";
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${matchData.roomId}&device_id=${deviceIdStr}&token=${authToken}`;
+    wsRef.current = new WebSocket(wsUrl);
+    wsRef.current.onmessage = (event) => {
+      try {
+        const incoming = JSON.parse(event.data);
+        if (incoming.content && incoming.sender_id !== deviceIdStr) {
+           setMessages(prev => [...prev, {
+             id: Date.now().toString(),
+             senderId: "partner",
+             text: incoming.content,
+             timestamp: new Date()
+           } as Message]);
+        }
+      } catch (e) {}
+    };
+  };
 
   const handleAgreeAndEnter = () => {
     if (coins < 1) {
@@ -199,24 +289,14 @@ export default function RandomChatPage() {
 
     setMessages((prev) => [...prev, newMessage]);
 
-    setTimeout(() => {
-      if (isConnected) {
-        let reply = "That's super cool! Tell me more ✨";
-        if (text.includes("GIF_") || text.includes("STICKER_")) reply = "Haha love that reaction! 😂🔥";
-        if (text.startsWith("[AUDIO]")) reply = "Listening to your voice note right now! 🎙️🎧";
-        if (text.startsWith("✈️") || text.startsWith("🍕") || text.startsWith("🎧")) reply = "Ooh great question! Honestly, I'd pick Paris or Tokyo for a midnight flight! ✈️✨";
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            senderId: partner.id as any,
-            text: text.startsWith("[DISAPPEARING_IMAGE]") ? "Unlocked your snap! 💖" : reply,
-            timestamp: new Date(),
-          },
-        ]);
-      }
-    }, 1500);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+       wsRef.current.send(JSON.stringify({
+          room_id: "random", // Not needed, backend routes by connection room
+          sender_id: profile?.device_id || "anon",
+          content: text,
+          type: "message"
+       }));
+    }
   };
 
   const handleSendMessage = (e?: React.FormEvent) => {
@@ -502,13 +582,37 @@ export default function RandomChatPage() {
     );
   }
 
+  if (noActiveUser) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-center px-4">
+        <div className="w-20 h-20 mb-6 flex items-center justify-center bg-surface-elevated rounded-full">
+           <AlertTriangle size={32} className="text-warning" />
+        </div>
+        <h2 className="text-xl font-black text-foreground mb-1">No Active User Right Now</h2>
+        <p className="text-xs text-muted max-w-xs mx-auto">There are currently no active users in the {targetGenderPreference} pool. Please try again later.</p>
+        <button onClick={() => {
+            setNoActiveUser(false);
+            setShowPreChatModal(true);
+          }} className="mt-8 px-6 py-2.5 bg-gradient-to-r from-primary to-pink-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-primary/30 transition">
+          Back to Preferences
+        </button>
+      </div>
+    );
+  }
+
   if (isSearching) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-background text-center px-4">
         <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-rose-500 animate-spin mb-6"></div>
         <h2 className="text-xl font-black text-foreground mb-1">Searching Random Chat Pool...</h2>
         <p className="text-xs text-muted">Filtering for <span className="text-primary font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span> matches nearby</p>
-        <button onClick={() => setShowPreChatModal(true)} className="mt-8 px-6 py-2.5 bg-surface-elevated rounded-2xl text-foreground font-bold text-xs hover:bg-surface-elevated transition">
+        <div className="mt-4 text-xs font-black text-primary animate-pulse">Live Monitoring: {liveUsersCount} users active</div>
+        <button onClick={() => {
+            setIsSearching(false);
+            setShowPreChatModal(true);
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+          }} className="mt-8 px-6 py-2.5 bg-surface-elevated rounded-2xl text-foreground font-bold text-xs hover:bg-surface-elevated transition">
           Cancel Search
         </button>
       </div>

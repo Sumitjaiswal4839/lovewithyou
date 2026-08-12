@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +22,12 @@ var upgrader = websocket.Upgrader{
 		origin := r.Header.Get("Origin")
 		return allowedOrigins[origin]
 	},
+}
+
+var toxicityRegex = regexp.MustCompile(`(?i)\b(stupid|idiot|asshole|bitch)\b`)
+
+func isMessageToxic(msgStr string) bool {
+	return toxicityRegex.MatchString(strings.ToLower(msgStr))
 }
 
 // Hub manages active clients and broadcasts messages
@@ -103,7 +110,7 @@ func (h *Hub) Run() {
 
 			// Basic Toxicity AI Filter Mock
 			msgStr := string(message)
-			if strings.Contains(strings.ToLower(msgStr), "stupid") || strings.Contains(strings.ToLower(msgStr), "idiot") {
+			if isMessageToxic(msgStr) {
 				// We inject a toxicity warning
 				warningMsg := map[string]string{
 					"type": "system",

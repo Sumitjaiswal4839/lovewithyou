@@ -1,6 +1,7 @@
 package api
 
 import (
+	"dating-backend/auth"
 	"dating-backend/db"
 	"encoding/json"
 	"fmt"
@@ -76,6 +77,7 @@ func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
 var (
 	randomChatQueueMutex sync.Mutex
 	randomChatQueue      = make(map[string]RandomChatJoinRequest)
+	randomChatMatches    = make(map[string]map[string]any)
 )
 
 // JoinRandomChat handles pre-verified gender matchmaking (Female Only / Male Only / Anyone) with real waiting pool
@@ -87,8 +89,22 @@ type RandomChatJoinRequest struct {
 }
 
 func JoinRandomChat(w http.ResponseWriter, r *http.Request) {
+	// ALWAYS USE THIS, NEVER READ FROM req.Body.DeviceID
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
 	var req RandomChatJoinRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	// Fetch age and details securely from DB, NOT from client body
+	profile, err := db.GetProfile(verifiedDeviceID)
+	if err != nil || profile.Age < 18 { // Enforcing Fix #13
+		http.Error(w, "Forbidden: Must be 18+", http.StatusForbidden)
+		return
+	}
+
+	req.DeviceID = verifiedDeviceID
+	req.MyAge = profile.Age
+	req.MyGender = profile.Gender
 
 	log.Printf("🎲 [Random Chat Queue] User %s (%s, Age %d) requested match for target: %s", req.DeviceID, req.MyGender, req.MyAge, req.TargetGender)
 
@@ -114,6 +130,16 @@ func JoinRandomChat(w http.ResponseWriter, r *http.Request) {
 
 	if matchedPartnerID != "" {
 		roomID := fmt.Sprintf("random_room_%s_%s", req.DeviceID, matchedPartnerID)
+		
+		// Save match for the waiting user (matchedPartnerID)
+		randomChatMatches[matchedPartnerID] = map[string]any{
+			"roomId":               roomID,
+			"partnerId":            req.DeviceID,
+			"partnerGender":        req.MyGender,
+			"connectionsRemaining": 20,
+			"status":               "matched",
+		}
+
 		sendJSONResponse(w, http.StatusOK, ResponsePayload{
 			Status:  "matched",
 			Message: "Real peer matched from waiting queue!",
@@ -130,12 +156,44 @@ func JoinRandomChat(w http.ResponseWriter, r *http.Request) {
 
 	// No match found yet: add caller to waiting pool queue
 	randomChatQueue[req.DeviceID] = req
+	liveUsersCount := len(randomChatQueue)
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "waiting",
 		Message: "Added to waiting queue pool. Searching for active peer...",
 		Data: map[string]any{
 			"status":               "waiting",
 			"connectionsRemaining": 20,
+			"liveUsers":            liveUsersCount,
+		},
+	})
+}
+
+// GetRandomChatStatus checks if the waiting user has been matched
+func GetRandomChatStatus(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
+	randomChatQueueMutex.Lock()
+	defer randomChatQueueMutex.Unlock()
+
+	// Check if they got matched
+	if matchData, exists := randomChatMatches[verifiedDeviceID]; exists {
+		delete(randomChatMatches, verifiedDeviceID)
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status:  "matched",
+			Message: "Match found!",
+			Data:    matchData,
+		})
+		return
+	}
+
+	// Still waiting
+	liveUsersCount := len(randomChatQueue)
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status:  "waiting",
+		Message: "Still waiting...",
+		Data: map[string]any{
+			"status":    "waiting",
+			"liveUsers": liveUsersCount,
 		},
 	})
 }
@@ -177,11 +235,23 @@ func SecondChanceRewind(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// TriggerFlirtGame processes moves in Spin the Bottle, 2 Truths 1 Lie, RPS betting, & Canvas
 func TriggerFlirtGame(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
 	var req FlirtGamePayload
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	log.Printf("🎲 [In-Chat Game] Type: %s executed in Room %s | Wager: %d Coins", req.GameType, req.RoomID, req.Wager)
+
+	// Server-side limit on max wager
+	if req.Wager > 50 {
+		http.Error(w, "Wager too high", http.StatusBadRequest)
+		return
+	}
+
+	// Deduct wager BEFORE playing the game to prevent farming
+	if req.Wager > 0 {
+		db.DeductCoins(verifiedDeviceID, req.Wager)
+	}
 
 	var result map[string]any
 	switch req.GameType {
@@ -193,7 +263,15 @@ func TriggerFlirtGame(w http.ResponseWriter, r *http.Request) {
 		}
 		result = map[string]any{"dare": dares[rand.Intn(len(dares))], "spinAngle": 720 + rand.Intn(360)}
 	case "two_truths":
-		result = map[string]any{"guessResult": "correct", "coinsEarned": req.Wager}
+		// Calculate game outcome SERVER-SIDE (Random 50/50 win logic for example)
+		won := rand.Intn(2) == 0
+		if won {
+			winnings := req.Wager * 2
+			db.AddCoins(verifiedDeviceID, winnings)
+			result = map[string]any{"guessResult": "correct", "coinsEarned": winnings}
+		} else {
+			result = map[string]any{"guessResult": "wrong", "coinsEarned": 0}
+		}
 	case "rps":
 		choices := []string{"rock", "paper", "scissors"}
 		result = map[string]any{"partnerChoice": choices[rand.Intn(len(choices))], "penalty": "Send Virtual Rose 🌹"}
@@ -245,46 +323,28 @@ func SpinDailyCupidSlot(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetLeaderboardVibeKings returns top flirters & connectors for the weekly digital tiara award from Supabase DB
+// Safe struct for public leaderboard
+type LeaderboardProfile struct {
+	Name     string `json:"alias"`
+	Campus   string `json:"campus"`
+	Karma    int    `json:"rating"`
+	PhotoURL string `json:"photo_url"`
+	Badge    string `json:"badge"`
+}
+
 func GetLeaderboardVibeKings(w http.ResponseWriter, r *http.Request) {
-	if db.Client == nil {
-		sendJSONResponse(w, http.StatusOK, ResponsePayload{
-			Status:  "success",
-			Message: "Fallback top connectors retrieved",
-			Data: []map[string]any{
-				{"alias": "Ayesha M.", "campus": "Delhi University Hub", "rating": 980, "badge": "👑 Platinum Vibe Queen"},
-				{"alias": "Rohan S.", "campus": "IIT Tech Center", "rating": 945, "badge": "👑 Platinum Vibe King"},
-			},
-		})
-		return
-	}
-
-	data, _, err := db.Client.From("profiles").
-		Select("name, campus, location, karma, coins, photo_url, gender", "exact", false).
-		Execute()
-
+	// Query with STRICT LIMIT and specific columns only
+	topProfiles, err := db.GetTopKarmaProfiles(50) 
 	if err != nil {
-		log.Printf("Internal error: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
-	var profiles []db.Profile
-	if err := json.Unmarshal(data, &profiles); err != nil {
-		log.Printf("Internal error: %v", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	var leaders []map[string]any
-	for idx, p := range profiles {
+	var leaders []LeaderboardProfile
+	for idx, p := range topProfiles {
 		badge := "💫 Silver Charm"
 		if idx == 0 {
-			if p.Gender == "Female" {
-				badge = "👑 Platinum Vibe Queen"
-			} else {
-				badge = "👑 Platinum Vibe King"
-			}
+			badge = "👑 Platinum Vibe King/Queen"
 		} else if idx < 3 {
 			badge = "✨ Gold Matcher"
 		}
@@ -301,26 +361,25 @@ func GetLeaderboardVibeKings(w http.ResponseWriter, r *http.Request) {
 			loc = "Delhi Hub"
 		}
 
-		leaders = append(leaders, map[string]any{
-			"alias":     name,
-			"campus":    loc,
-			"rating":    p.Karma * 10,
-			"coins":     p.Coins,
-			"photo_url": p.PhotoURL,
-			"badge":     badge,
+		leaders = append(leaders, LeaderboardProfile{
+			Name:     name,
+			Campus:   loc,
+			Karma:    p.Karma * 10,
+			PhotoURL: p.PhotoURL,
+			Badge:    badge,
 		})
 	}
 
 	if len(leaders) == 0 {
-		leaders = []map[string]any{
-			{"alias": "Ayesha M.", "campus": "Delhi University Hub", "rating": 980, "badge": "👑 Platinum Vibe Queen"},
-			{"alias": "Rohan S.", "campus": "IIT Tech Center", "rating": 945, "badge": "👑 Platinum Vibe King"},
+		leaders = []LeaderboardProfile{
+			{Name: "Ayesha M.", Campus: "Delhi University Hub", Karma: 980, Badge: "👑 Platinum Vibe Queen"},
+			{Name: "Rohan S.", Campus: "IIT Tech Center", Karma: 945, Badge: "👑 Platinum Vibe King"},
 		}
 	}
 
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "success",
-		Message: "Real top connectors retrieved from database",
+		Message: "Real top connectors retrieved from database securely",
 		Data:    leaders,
 	})
 }

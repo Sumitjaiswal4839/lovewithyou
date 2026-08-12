@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
+
+	"dating-backend/auth"
+	"dating-backend/db"
 )
 
 // --- Data Structs & Models for Campus & Radar Extensions ---
@@ -40,35 +42,46 @@ type ResponsePayload struct {
 	Data    any    `json:"data,omitempty"`
 }
 
-// In-Memory Mutex Lockers for Prototype Simulation
-var (
-	crushLocker = make(map[string][]string) // map[myHandle][]crushHandles
-	crushMu     sync.Mutex
-)
-
 // SyncState synchronizes coin economy and karma values across platforms
 func SyncState(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.Header.Get("X-Device-Id")
-	log.Printf("🔄 [State Sync] Processing sync for hardware ID: %s", deviceID)
+	// 1. Get verified identity
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	var req SyncStateRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
+	profile, err := db.GetProfile(verifiedDeviceID)
+	if err != nil || profile == nil {
+		http.Error(w, "Profile not found", http.StatusNotFound)
+		return
+	}
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "success",
-		Message: "User coin economy and state synchronized successfully",
-		Data:    req,
+	// Send the real, server-verified state back to the client to sync their UI
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"coins":   profile.Coins,
+		"karma":   profile.Karma,
 	})
 }
 
 // RadarPing handles high-priority vibration notifications for GPS radar match requests
 func RadarPing(w http.ResponseWriter, r *http.Request) {
-	var req RadarPingRequest
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		TargetAlias string `json:"targetAlias"`
+		Timestamp   int64  `json:"timestamp"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid Radar Ping payload", http.StatusBadRequest)
 		return
 	}
-	log.Printf("📡 [Radar Ping] Sender %s pinged anonymous peer %s at %d", req.SenderID, req.TargetAlias, time.Now().Unix())
+	log.Printf("📡 [Radar Ping] Sender %s pinged anonymous peer %s at %d", verifiedDeviceID, req.TargetAlias, time.Now().Unix())
 
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "ping_delivered",
@@ -78,39 +91,45 @@ func RadarPing(w http.ResponseWriter, r *http.Request) {
 
 // SecretCrush registers a private crush handle and evaluates mutual match convergence
 func SecretCrush(w http.ResponseWriter, r *http.Request) {
-	var req SecretCrushRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid Secret Crush payload", http.StatusBadRequest)
+	// FIX #18: Only use the verified token identity
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	crushMu.Lock()
-	crushLocker[req.MyDeviceID] = append(crushLocker[req.MyDeviceID], req.CrushHandle)
-
-	// Check for mutual crush convergence
-	isMutual := false
-	for _, targetCrush := range crushLocker[req.CrushHandle] {
-		if targetCrush == req.MyDeviceID {
-			isMutual = true
-			break
-		}
+	var req struct {
+		CrushHandle string `json:"crush_handle"`
 	}
-	crushMu.Unlock()
+	json.NewDecoder(r.Body).Decode(&req)
 
-	log.Printf("💘 [Secret Crush] User %s marked crush on %s | Mutual Match: %t", req.MyDeviceID, req.CrushHandle, isMutual)
+	if req.CrushHandle == "" {
+		http.Error(w, "Crush handle is required", http.StatusBadRequest)
+		return
+	}
 
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "crush_recorded",
-		Message: "Secret crush stored securely in anonymous memory lock box",
-		Data:    map[string]bool{"mutualMatch": isMutual},
+	// Use verifiedDeviceID securely
+	mutualMatch := db.CheckAndSetSecretCrush(verifiedDeviceID, req.CrushHandle)
+
+	json.NewEncoder(w).Encode(map[string]bool{
+		"mutualMatch": mutualMatch,
 	})
 }
 
 // PostConfession publishes a student community confession to the verified feed
 func PostConfession(w http.ResponseWriter, r *http.Request) {
-	var req ConfessionRequest
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Text          string `json:"text"`
+		DepartmentTag string `json:"departmentTag"`
+	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("🔥 [New Confession] [%s]: %s", req.DepartmentTag, req.Text)
+	log.Printf("🔥 [New Confession] [%s] by %s: %s", req.DepartmentTag, verifiedDeviceID, req.Text)
 
 	sendJSONResponse(w, http.StatusCreated, ResponsePayload{
 		Status:  "published",
