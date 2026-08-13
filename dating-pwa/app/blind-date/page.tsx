@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-mo
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useUserStore } from "@/store/useUserStore";
-import { Heart, X, Play, Pause, Headphones, Clock, Flame, Unlock, Sparkles, PhoneCall, Volume2 } from "lucide-react";
+import { Heart, X, Play, Pause, Headphones, Clock, Flame, Unlock, Sparkles, PhoneCall, Volume2, AlertTriangle } from "lucide-react";
 import { API } from "@/lib/api";
 import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
 
@@ -47,6 +47,14 @@ export default function BlindDatePage() {
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
+  // Polling States
+  const [isSearching, setIsSearching] = useState(false);
+  const [liveUsersCount, setLiveUsersCount] = useState(0);
+  const [noActiveUser, setNoActiveUser] = useState(false);
+  const [matchedPartnerId, setMatchedPartnerId] = useState<string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (inCall && timeLeft > 0 && !unlocked) {
@@ -70,7 +78,7 @@ export default function BlindDatePage() {
   useEffect(() => {
     if (!inCall || !deviceId) return;
 
-    const partnerId = "anon_partner";
+    const partnerId = matchedPartnerId || "anon_partner";
     const isProd = process.env.NODE_ENV === "production";
     const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
     const authToken = useUserStore.getState().authToken;
@@ -147,8 +155,9 @@ export default function BlindDatePage() {
     };
   }, [inCall, deviceId]);
 
-  const handleStart3MinDate = async () => {
-    await API.startBlindAudioMatch(deviceId || "me", "Romantic & Deep");
+  const handleMatchSuccess = (matchData: any) => {
+    setIsSearching(false);
+    setMatchedPartnerId(matchData.partnerId);
     setInCall(true);
     setTimeLeft(180);
     setMyYes(false);
@@ -156,6 +165,74 @@ export default function BlindDatePage() {
     setUnlocked(false);
     toast("🎙️ Connected to Live 3-Minute Blind Audio Date via P2P WebRTC!", "success");
   };
+
+  const startPolling = () => {
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+    const authToken = useUserStore.getState().authToken;
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/v1/blind-audio/status`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.status === "matched") {
+           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+           if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+           handleMatchSuccess(data.data);
+        } else if (data.status === "waiting") {
+           setLiveUsersCount(data.data.liveUsers || 1);
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 3000);
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      setIsSearching(false);
+      setNoActiveUser(true);
+    }, 20000);
+  };
+
+  const handleStart3MinDate = async () => {
+    setIsSearching(true);
+    setNoActiveUser(false);
+    setLiveUsersCount(0);
+
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+    const authToken = useUserStore.getState().authToken;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/blind-audio/match`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ vibe: "Romantic & Deep" })
+      });
+      const data = await res.json();
+      
+      if (data.status === "matched") {
+         handleMatchSuccess(data.data);
+      } else if (data.status === "waiting") {
+         setLiveUsersCount(data.data.liveUsers || 1);
+         startPolling();
+      }
+    } catch (e) {
+      console.error(e);
+      setNoActiveUser(true);
+      setIsSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, []);
 
   const handleTapYes = () => {
     setMyYes(true);
@@ -292,12 +369,34 @@ export default function BlindDatePage() {
                 </p>
               </div>
 
-              <button
-                onClick={handleStart3MinDate}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-primary hover:to-pink-500 font-extrabold text-base text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
-              >
-                <Sparkles size={20} /> Match &amp; Connect Voice Now 🎙️
-              </button>
+              {noActiveUser && (
+                <div className="p-4 rounded-2xl bg-surface-elevated border border-border text-center space-y-2 mt-4">
+                  <AlertTriangle size={24} className="text-warning mx-auto" />
+                  <p className="text-sm font-bold text-foreground">No Active User Right Now</p>
+                  <p className="text-xs text-muted">There are currently no active users waiting for a Blind Date. Please try again later.</p>
+                  <button onClick={() => setNoActiveUser(false)} className="mt-2 text-xs font-bold text-primary underline">Dismiss</button>
+                </div>
+              )}
+
+              {isSearching ? (
+                <div className="w-full py-4 rounded-2xl bg-surface-elevated border border-border flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-rose-500 animate-spin"></div>
+                  <p className="text-sm font-bold text-foreground animate-pulse">Searching for match...</p>
+                  <p className="text-xs font-black text-primary">Live Monitoring: {liveUsersCount} users active</p>
+                  <button onClick={() => {
+                      setIsSearching(false);
+                      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                    }} className="mt-2 text-xs text-muted underline">Cancel</button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleStart3MinDate}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-primary hover:to-pink-500 font-extrabold text-base text-white shadow-[0_0_25px_rgba(244,63,94,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={20} /> Match &amp; Connect Voice Now 🎙️
+                </button>
+              )}
             </div>
           ) : (
             <div className="w-full flex flex-col items-center justify-between space-y-6 py-4">

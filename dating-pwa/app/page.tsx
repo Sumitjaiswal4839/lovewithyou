@@ -85,7 +85,7 @@ export default function Home() {
     setIsLoadingProfiles(true);
     try {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(50);

@@ -88,8 +88,10 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/random-chat/join", auth.AuthMiddleware(JoinRandomChat)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/random-chat/status", auth.AuthMiddleware(GetRandomChatStatus)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/blind-audio/match", auth.AuthMiddleware(BlindAudioMatch)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/blind-audio/status", auth.AuthMiddleware(GetBlindAudioStatus)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/haptic/heartbeat", auth.AuthMiddleware(SyncHeartbeat)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/squad/match", auth.AuthMiddleware(SquadDoubleDate)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/squad/status", auth.AuthMiddleware(GetSquadMatchStatus)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/swipes/rewind", auth.AuthMiddleware(SecondChanceRewind)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/chat/game/play", auth.AuthMiddleware(TriggerFlirtGame)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/radar/broadcast", auth.AuthMiddleware(PheromoneBroadcast)).Methods(http.MethodPost, http.MethodOptions)
@@ -111,13 +113,17 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/notifications/{id}/read", auth.AuthMiddleware(MarkNotificationRead)).Methods(http.MethodPut, http.MethodOptions)
 
 	// Admin API (Sub-Admin Management)
+	// 1. PUBLIC ADMIN ROUTE (No Auth Required for login check)
+	r.HandleFunc("/api/v1/admin/verify", VerifySubAdmin).Methods(http.MethodPost, http.MethodOptions)
+
+	// 2. PROTECTED ADMIN ROUTES (Requires AdminAuthMiddleware)
 	adminRouter := r.PathPrefix("/api/v1/admin").Subrouter()
 	adminRouter.Use(middleware.AdminAuthMiddleware)
-
+	
+	// Sirf CRUD operations ko protect karein
 	adminRouter.HandleFunc("/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
 	adminRouter.HandleFunc("/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
 	adminRouter.HandleFunc("/subadmins/{id}", DeleteSubAdmin).Methods(http.MethodDelete, http.MethodOptions)
-	adminRouter.HandleFunc("/verify", VerifySubAdmin).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
 }

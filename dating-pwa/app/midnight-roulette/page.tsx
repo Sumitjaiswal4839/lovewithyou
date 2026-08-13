@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Moon, Users, Sparkles, X, Shield, Clock, Send, Heart, Flame, Lock, UserPlus } from "lucide-react";
 import { API } from "@/lib/api";
@@ -21,6 +21,12 @@ export default function MidnightRoulettePage() {
   const [squadName, setSquadName] = useState<string>("Midnight Nighthawks 🔥");
   const [friendTag, setFriendTag] = useState<string>("@Rahul_Du_Hub");
   const [squadReady, setSquadReady] = useState<boolean>(false);
+  const [isSearchingSquad, setIsSearchingSquad] = useState<boolean>(false);
+  const [liveSquadsCount, setLiveSquadsCount] = useState<number>(0);
+  const [noActiveSquad, setNoActiveSquad] = useState<boolean>(false);
+  const [matchedPartnerSquad, setMatchedPartnerSquad] = useState<string | null>(null);
+  const squadPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const squadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Roulette States
   const [inLounge, setInLounge] = useState<boolean>(false);
@@ -39,10 +45,80 @@ export default function MidnightRoulettePage() {
       toast("Please tag a friend to form a 2v2 squad!", "error");
       return;
     }
-    const res = await API.startDoubleDateSquad(deviceId || "anon_leader", friendTag, squadName);
-    setSquadReady(true);
-    toast(`👯‍♂️ 2v2 Squad '${squadName}' registered with ${friendTag}! Searching for match...`, "success");
+    
+    setIsSearchingSquad(true);
+    setNoActiveSquad(false);
+    setLiveSquadsCount(0);
+
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+    const authToken = useUserStore.getState().authToken;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/squad/match`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ friendTag, squadName })
+      });
+      const data = await res.json();
+      
+      if (data.status === "matched") {
+         handleSquadMatchSuccess(data.data);
+      } else if (data.status === "waiting") {
+         setLiveSquadsCount(data.data.liveSquads || 1);
+         startSquadPolling();
+      }
+    } catch (err) {
+      console.error(err);
+      setNoActiveSquad(true);
+      setIsSearchingSquad(false);
+    }
   };
+
+  const startSquadPolling = () => {
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+    const authToken = useUserStore.getState().authToken;
+
+    squadPollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/v1/squad/status`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.status === "matched") {
+           if (squadPollIntervalRef.current) clearInterval(squadPollIntervalRef.current);
+           if (squadTimeoutRef.current) clearTimeout(squadTimeoutRef.current);
+           handleSquadMatchSuccess(data.data);
+        } else if (data.status === "waiting") {
+           setLiveSquadsCount(data.data.liveSquads || 1);
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 3000);
+
+    squadTimeoutRef.current = setTimeout(() => {
+      if (squadPollIntervalRef.current) clearInterval(squadPollIntervalRef.current);
+      setIsSearchingSquad(false);
+      setNoActiveSquad(true);
+    }, 20000);
+  };
+
+  const handleSquadMatchSuccess = (matchData: any) => {
+    setIsSearchingSquad(false);
+    setMatchedPartnerSquad(matchData.partnerSquad);
+    setSquadReady(true);
+    toast(`👯‍♂️ 2v2 Squad matched with '${matchData.partnerSquad}'! Entering room...`, "success");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (squadPollIntervalRef.current) clearInterval(squadPollIntervalRef.current);
+      if (squadTimeoutRef.current) clearTimeout(squadTimeoutRef.current);
+    };
+  }, []);
 
   const handleSendConfessional = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,38 +257,60 @@ export default function MidnightRoulettePage() {
             </div>
 
             {!squadReady ? (
-              <form onSubmit={handleCreateSquad} className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-5 shadow-xl">
-                <div>
-                  <label className="text-xs font-bold uppercase text-muted block mb-1.5">Your Squad Name</label>
-                  <input
-                    type="text"
-                    value={squadName}
-                    onChange={(e) => setSquadName(e.target.value)}
-                    className="w-full bg-surface-elevated border border-white/15 rounded-2xl px-4 py-3 text-sm text-foreground focus:border-purple-500 outline-none font-bold"
-                  />
+              noActiveSquad ? (
+                <div className="bg-surface-elevated border border-border rounded-3xl p-6 text-center space-y-4 shadow-xl">
+                  <div className="w-16 h-16 rounded-full bg-warning/20 border border-warning/50 mx-auto flex items-center justify-center">
+                    <Shield size={32} className="text-warning" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-foreground">No Squads Available</h3>
+                  <p className="text-xs text-muted">There are no other active 2v2 squads waiting at the moment. Please try again later.</p>
+                  <button onClick={() => setNoActiveSquad(false)} className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold w-full">Try Again</button>
                 </div>
-                <div>
-                  <label className="text-xs font-bold uppercase text-muted block mb-1.5">Tag Your Friend (Handle or Campus ID)</label>
-                  <div className="flex gap-2">
+              ) : isSearchingSquad ? (
+                <div className="bg-surface-elevated border border-border rounded-3xl p-6 text-center space-y-4 shadow-xl">
+                  <div className="w-16 h-16 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin mx-auto"></div>
+                  <h3 className="text-xl font-extrabold text-foreground animate-pulse">Searching for Opponent Squad...</h3>
+                  <p className="text-xs font-black text-purple-400">Live Monitoring: {liveSquadsCount} squads waiting</p>
+                  <button onClick={() => {
+                    setIsSearchingSquad(false);
+                    if (squadPollIntervalRef.current) clearInterval(squadPollIntervalRef.current);
+                    if (squadTimeoutRef.current) clearTimeout(squadTimeoutRef.current);
+                  }} className="text-xs text-muted underline">Cancel</button>
+                </div>
+              ) : (
+                <form onSubmit={handleCreateSquad} className="bg-surface-elevated border border-border rounded-3xl p-6 space-y-5 shadow-xl">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted block mb-1.5">Your Squad Name</label>
                     <input
                       type="text"
-                      value={friendTag}
-                      onChange={(e) => setFriendTag(e.target.value)}
-                      placeholder="@Friend_Handle"
-                      className="flex-1 bg-surface-elevated border border-white/15 rounded-2xl px-4 py-3 text-sm text-foreground focus:border-purple-500 outline-none font-medium"
+                      value={squadName}
+                      onChange={(e) => setSquadName(e.target.value)}
+                      className="w-full bg-surface-elevated border border-white/15 rounded-2xl px-4 py-3 text-sm text-foreground focus:border-purple-500 outline-none font-bold"
                     />
-                    <button type="button" onClick={() => setFriendTag("@Priya_College_Partner")} className="px-3 bg-surface-elevated rounded-2xl text-xs font-bold text-purple-300 hover:bg-surface-elevated">
-                      Auto-Select
-                    </button>
                   </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-foreground font-extrabold text-base shadow-[0_0_30px_rgba(168,85,247,0.5)] flex items-center justify-center gap-2 transition active:scale-95"
-                >
-                  <UserPlus size={20} /> Form 2v2 Squad & Match Now 🔥
-                </button>
-              </form>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-muted block mb-1.5">Tag Your Friend (Handle or Campus ID)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={friendTag}
+                        onChange={(e) => setFriendTag(e.target.value)}
+                        placeholder="@Friend_Handle"
+                        className="flex-1 bg-surface-elevated border border-white/15 rounded-2xl px-4 py-3 text-sm text-foreground focus:border-purple-500 outline-none font-medium"
+                      />
+                      <button type="button" onClick={() => setFriendTag("@Priya_College_Partner")} className="px-3 bg-surface-elevated rounded-2xl text-xs font-bold text-purple-300 hover:bg-surface-elevated">
+                        Auto-Select
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-foreground font-extrabold text-base shadow-[0_0_30px_rgba(168,85,247,0.5)] flex items-center justify-center gap-2 transition active:scale-95"
+                  >
+                    <UserPlus size={20} /> Form 2v2 Squad & Match Now 🔥
+                  </button>
+                </form>
+              )
             ) : (
               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-purple-950/40 border border-purple-500/50 rounded-3xl p-6 text-center space-y-5 shadow-2xl">
                 <div className="w-16 h-16 rounded-full bg-purple-600/30 border border-purple-500 mx-auto flex items-center justify-center animate-bounce">
@@ -224,7 +322,7 @@ export default function MidnightRoulettePage() {
                 </div>
                 <div className="p-4 rounded-2xl bg-surface-elevated border border-border space-y-2 text-left">
                   <p className="text-xs text-success font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Matched with Squad: &quot;Campus Queens 💖&quot;
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Matched with Squad: &quot;{matchedPartnerSquad}&quot;
                   </p>
                   <p className="text-[11px] text-muted">4-Way WebRTC audio & group chat room ready!</p>
                 </div>

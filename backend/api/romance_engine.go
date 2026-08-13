@@ -46,32 +46,81 @@ type PheromoneBroadcastRequest struct {
 	BroadcastMsg string `json:"broadcastMsg"`
 }
 
-var blindDateWaitingUser string
-var blindDateMutex sync.Mutex
+var (
+	blindDateMutex sync.Mutex
+	blindDateQueue = make(map[string]bool)
+	blindDateMatches = make(map[string]map[string]any)
+)
 
 // BlindAudioMatch connects users for 3-minute voice-first blind conversations
 func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
-    deviceID := r.Context().Value("device_id").(string)
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || verifiedDeviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    blindDateMutex.Lock()
-    defer blindDateMutex.Unlock()
+	blindDateMutex.Lock()
+	defer blindDateMutex.Unlock()
 
-    if blindDateWaitingUser == "" || blindDateWaitingUser == deviceID {
-        blindDateWaitingUser = deviceID
-        sendJSONResponse(w, http.StatusOK, ResponsePayload{Status: "waiting"})
-        return
-    }
+	var matchedPartner string
+	for id := range blindDateQueue {
+		if id != verifiedDeviceID {
+			matchedPartner = id
+			break
+		}
+	}
 
-    // Pair them up
-    partner := blindDateWaitingUser
-    blindDateWaitingUser = "" 
-    roomID := "blind_" + deviceID + "_" + partner
+	if matchedPartner != "" {
+		delete(blindDateQueue, matchedPartner)
+		roomID := "blind_" + verifiedDeviceID + "_" + matchedPartner
 
-    sendJSONResponse(w, http.StatusOK, map[string]string{
-        "status":     "matched",
-        "room_id":    roomID,
-        "partner_id": partner,
-    })
+		blindDateMatches[matchedPartner] = map[string]any{
+			"roomId": roomID,
+			"partnerId": verifiedDeviceID,
+		}
+
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "matched",
+			Data: map[string]any{
+				"roomId": roomID,
+				"partnerId": matchedPartner,
+			},
+		})
+		return
+	}
+
+	blindDateQueue[verifiedDeviceID] = true
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status: "waiting",
+		Data: map[string]any{
+			"liveUsers": len(blindDateQueue),
+		},
+	})
+}
+
+// GetBlindAudioStatus handles real-time queue polling for blind dates
+func GetBlindAudioStatus(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
+	blindDateMutex.Lock()
+	defer blindDateMutex.Unlock()
+
+	if matchData, exists := blindDateMatches[verifiedDeviceID]; exists {
+		delete(blindDateMatches, verifiedDeviceID)
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "matched",
+			Data: matchData,
+		})
+		return
+	}
+
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status: "waiting",
+		Data: map[string]any{
+			"liveUsers": len(blindDateQueue),
+		},
+	})
 }
 
 var (
@@ -211,16 +260,80 @@ func SyncHeartbeat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+var (
+	squadMutex sync.Mutex
+	squadQueue = make(map[string]SquadMatchRequest)
+	squadMatches = make(map[string]map[string]any)
+)
+
 // SquadDoubleDate initiates 2v2 squad matchmaking rooms
 func SquadDoubleDate(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
 	var req SquadMatchRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("👯‍♂️ [2v2 Squad] Leader %s formed squad '%s' with friend %s", req.LeaderID, req.SquadName, req.FriendTag)
+	req.LeaderID = verifiedDeviceID
 
+	squadMutex.Lock()
+	defer squadMutex.Unlock()
+
+	var matchedLeader string
+	for id := range squadQueue {
+		if id != verifiedDeviceID {
+			matchedLeader = id
+			break
+		}
+	}
+
+	if matchedLeader != "" {
+		matchedSquad := squadQueue[matchedLeader]
+		delete(squadQueue, matchedLeader)
+		roomID := fmt.Sprintf("squad_room_%s_%s", verifiedDeviceID, matchedLeader)
+
+		squadMatches[matchedLeader] = map[string]any{
+			"squadRoomId": roomID,
+			"partnerSquad": req.SquadName,
+		}
+
+		sendJSONResponse(w, http.StatusCreated, ResponsePayload{
+			Status: "matched",
+			Data: map[string]any{
+				"squadRoomId": roomID,
+				"partnerSquad": matchedSquad.SquadName,
+			},
+		})
+		return
+	}
+
+	squadQueue[verifiedDeviceID] = req
 	sendJSONResponse(w, http.StatusCreated, ResponsePayload{
-		Status:  "squad_ready",
-		Message: "2v2 Double Date squad registered. Searching for opposing squad pair!",
-		Data:    map[string]string{"squadRoomId": "squad_room_9812"},
+		Status: "waiting",
+		Data: map[string]any{
+			"liveSquads": len(squadQueue),
+		},
+	})
+}
+
+// GetSquadMatchStatus handles real-time queue polling for 2v2 squad matches
+func GetSquadMatchStatus(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, _ := r.Context().Value(auth.DeviceIDKey).(string)
+
+	squadMutex.Lock()
+	defer squadMutex.Unlock()
+
+	if matchData, exists := squadMatches[verifiedDeviceID]; exists {
+		delete(squadMatches, verifiedDeviceID)
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "matched",
+			Data: matchData,
+		})
+		return
+	}
+
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status: "waiting",
+		Data: map[string]any{
+			"liveSquads": len(squadQueue),
+		},
 	})
 }
 

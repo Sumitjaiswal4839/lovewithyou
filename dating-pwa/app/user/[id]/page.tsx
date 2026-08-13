@@ -15,7 +15,7 @@ export default function UserProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("*")
         .or(`device_id.eq.${id},id.eq.${id}`)
         .single();

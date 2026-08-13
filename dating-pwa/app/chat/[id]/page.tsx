@@ -260,7 +260,7 @@ export default function ChatRoomPage() {
     const fetchPartnerDetails = async () => {
       if (!matchId) return;
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("name, photo_url")
         .or(`device_id.eq.${matchId},id.eq.${matchId}`)
         .single();

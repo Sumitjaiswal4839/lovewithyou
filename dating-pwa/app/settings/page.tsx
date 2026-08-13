@@ -129,7 +129,7 @@ export default function SettingsPage() {
 
         if (blocks && blocks.length > 0) {
           const blockedIds = blocks.map((b: any) => b.blocked_id);
-          const { data: profiles } = await supabase.from("profiles").select("device_id, name").in("device_id", blockedIds);
+          const { data: profiles } = await supabase.from("public_profiles").select("device_id, name").in("device_id", blockedIds);
           
           if (profiles) {
             setBlockedList(blocks.map((b: any) => {
@@ -149,7 +149,7 @@ export default function SettingsPage() {
 
         if (reports && reports.length > 0) {
           const reportedIds = reports.map((r: any) => r.reported_id);
-          const { data: profiles } = await supabase.from("profiles").select("device_id, name").in("device_id", reportedIds);
+          const { data: profiles } = await supabase.from("public_profiles").select("device_id, name").in("device_id", reportedIds);
           
           if (profiles) {
             setReportedList(reports.map((r: any) => {

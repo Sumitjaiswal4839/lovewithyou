@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"dating-backend/auth"
@@ -46,37 +48,63 @@ type RedisPubSubPayload struct {
 }
 
 func VerifyFaceCatfishBuster(w http.ResponseWriter, r *http.Request) {
-	// 1. Get verified identity
 	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
-	if !ok {
+	if !ok || deviceID == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// 2. Server-side validation logic
-	isFaceAuthentic, err := ProcessFaceVerificationServerSide(deviceID) 
-	if err != nil || !isFaceAuthentic {
-		http.Error(w, "Face verification failed", http.StatusBadRequest)
+	var req SmileVerifyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.SelfieBase64 == "" {
+		http.Error(w, "Invalid request or missing selfie", http.StatusBadRequest)
 		return
 	}
 
-	// 3. Update DB safely
-	db.Client.From("profiles").Update(map[string]interface{}{"verified": true}, "", "").Eq("device_id", deviceID).Execute()
+	// Call the Python ML Microservice
+	isAuthentic, estimatedAge := callPythonMLService(req.SelfieBase64)
+	if !isAuthentic || estimatedAge < 18 {
+		http.Error(w, "Face verification failed or age requirement not met", http.StatusForbidden)
+		return
+	}
+
+	// Update DB securely
+	db.Client.From("profiles").Update(map[string]interface{}{
+		"verified": true,
+		"age":      estimatedAge,
+	}, "", "").Eq("device_id", deviceID).Execute()
 	
-	sendJSONResponse(w, http.StatusOK, ResponsePayload{
-		Status:  "verified_blue_diamond",
-		Message: "Verification successful.",
-	})
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
-func ProcessFaceVerificationServerSide(deviceID string) (bool, error) {
-	// Placeholder for actual Backend AI Face Processing logic
-	return true, nil
+func callPythonMLService(base64Image string) (bool, int) {
+	mlURL := os.Getenv("ML_SERVICE_URL")
+	if mlURL == "" {
+		mlURL = "http://localhost:5000/verify" // Fallback for local testing
+	}
+
+	payload, _ := json.Marshal(map[string]string{"image": base64Image})
+	resp, err := http.Post(mlURL, "application/json", bytes.NewBuffer(payload))
+	
+	if err != nil || resp.StatusCode != 200 {
+		return false, 0
+	}
+
+	var result struct {
+		IsHuman bool `json:"is_human"`
+		Age     int  `json:"age"`
+	}
+	json.NewDecoder(resp.Body).Decode(&result)
+	
+	return result.IsHuman, result.Age
 }
 
 // StartSosCheckinTimer starts a 2-hour physical date safety check-in countdown
 func StartSosCheckinTimer(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.Context().Value("device_id").(string) // Securely get ID
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	var req SosCheckinRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
 	

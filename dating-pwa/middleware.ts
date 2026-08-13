@@ -3,26 +3,30 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 export async function middleware(request: NextRequest) {
-  // Protect /admin routes
-  if (request.nextUrl.pathname.startsWith("/admin")) {
+  const path = request.nextUrl.pathname;
+
+  // Allow the base /admin page to load so the login form can be seen.
+  // Only protect sub-routes like /admin/dashboard or /admin/users
+  if (path.startsWith("/admin/") && path !== "/admin") {
     const adminSession = request.cookies.get("admin_session")?.value;
     const jwtSecret = process.env.JWT_SECRET;
 
     if (!adminSession || !jwtSecret) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
 
     try {
-      // Verify JWT securely
       const secret = new TextEncoder().encode(jwtSecret);
       await jwtVerify(adminSession, secret);
       return NextResponse.next();
     } catch (error) {
-      // Token invalid or expired
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
+  
   return NextResponse.next();
 }
 
-export const config = { matcher: "/admin/:path*" };
+export const config = { 
+  matcher: ["/admin/:path*"] 
+};

@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
     // 2. Direct Supabase Query Fallback
     try {
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("name, campus, location, karma, photo_url, gender")
         .order("karma", { ascending: false })
         .limit(20);

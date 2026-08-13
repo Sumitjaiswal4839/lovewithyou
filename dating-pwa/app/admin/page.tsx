@@ -165,7 +165,7 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       const { data: usersData, error: usersErr } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
         .order("created_at", { ascending: false });
 
       const { data: pendingData } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("*")
         .eq("studentVerificationStatus", "pending");
 
@@ -1317,7 +1317,7 @@ function DeletedAccountsTab() {
       setIsLoading(true);
       // Fetch profiles marked for deletion (is_deleted flag or deletion_requested_at set)
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("*")
         .not("deletion_requested_at", "is", null)
         .order("deletion_requested_at", { ascending: false });

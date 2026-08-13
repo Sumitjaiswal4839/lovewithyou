@@ -57,7 +57,7 @@ export default function NearbyMapPage() {
   useEffect(() => {
     const fetchNearbyProfiles = async () => {
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("id, device_id, name, photo_url, gender, campus, location, verified, latitude, longitude");
 
       if (data && data.length > 0) {
