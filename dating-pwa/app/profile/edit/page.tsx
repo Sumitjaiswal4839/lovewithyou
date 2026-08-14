@@ -128,7 +128,7 @@ export default function EditProfilePage() {
         newPhotos.push(url);
       }
       setFormData({ ...formData, photos: newPhotos });
-      setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" });
+      setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" } as any);
       toast("Photo uploaded successfully! ✅", "success");
     } catch (err) {
       toast("Photo upload failed. Try again.", "error");
@@ -139,7 +139,7 @@ export default function EditProfilePage() {
     e.stopPropagation();
     const newPhotos = formData.photos.filter((_, i) => i !== index);
     setFormData({ ...formData, photos: newPhotos });
-    setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" });
+    setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" } as any);
   };
 
   if (!profile) {
