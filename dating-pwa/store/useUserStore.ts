@@ -160,6 +160,8 @@ interface UserState {
   receiveFriendRequest: (userId: string, name: string, img: string) => void;
   acceptFriendRequest: (userId: string) => void;
   declineFriendRequest: (userId: string) => void;
+  unmatchUser: (userId: string) => Promise<void>;
+  deleteFriend: (userId: string) => Promise<void>;
   unlockDailyBlur: () => boolean;
   canSearch: () => boolean;
   incrementSearchCount: () => void;
@@ -569,6 +571,36 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
       declineFriendRequest: (userId) => set((state) => ({
         friendRequests: state.friendRequests.filter(r => r.id !== userId)
       })),
+
+      unmatchUser: async (userId) => {
+        set((state) => ({
+          matches: state.matches.filter(m => m.id !== userId)
+        }));
+        const state = get();
+        if (state.deviceId) {
+          try {
+            await supabase.from("swipes").delete().match({ swiper_id: state.deviceId, swiped_id: userId });
+            await supabase.from("swipes").delete().match({ swiper_id: userId, swiped_id: state.deviceId });
+          } catch (e) {
+            console.error("Failed to unmatch in Supabase", e);
+          }
+        }
+      },
+
+      deleteFriend: async (userId) => {
+        set((state) => ({
+          friends: state.friends.filter(f => f.id !== userId)
+        }));
+        const state = get();
+        if (state.deviceId) {
+          try {
+            await supabase.from("friends").delete().match({ user_id: state.deviceId, friend_id: userId });
+            await supabase.from("friends").delete().match({ user_id: userId, friend_id: state.deviceId });
+          } catch (e) {
+            console.error("Failed to delete friend in Supabase", e);
+          }
+        }
+      },
 
       unlockDailyBlur: () => {
         const state = get();

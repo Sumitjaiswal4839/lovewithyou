@@ -227,3 +227,43 @@ func RedisPubSubClusterBroadcast(w http.ResponseWriter, r *http.Request) {
 		Data:    map[string]any{"clusterNode": "redis-ind-delhi-1", "latencyMs": 14.2},
 	})
 }
+
+type SubmitReportRequest struct {
+	OffenderID string `json:"offender_id"`
+	Reason     string `json:"reason"`
+}
+
+func SubmitUserReport(w http.ResponseWriter, r *http.Request) {
+	reporterID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || reporterID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req SubmitReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	if req.OffenderID == "" || req.Reason == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Insert into reports table
+	_, _, err := db.Client.From("reports").Insert(map[string]interface{}{
+		"reporter_id": reporterID,
+		"offender_id": req.OffenderID,
+		"reason":      req.Reason,
+	}, false, "", "", "exact").Execute()
+
+	if err != nil {
+		http.Error(w, "Failed to submit report", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+

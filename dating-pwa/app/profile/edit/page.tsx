@@ -4,9 +4,9 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/Button";
-import { Lock, Camera, ArrowLeft, Mic, Square, Play, Trash2, Sparkles, ScanFace, EyeOff, Bell, Shield, Languages, Music } from "lucide-react";
+import { Lock, Camera, ArrowLeft, Mic, Square, Play, Trash2, Sparkles, ScanFace, EyeOff, Bell, Shield, Languages, Music, Plus, X } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
-import { uploadToCloudinary, uploadMultipleToCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const PROMPTS = [
   "My biggest red flag is...",
@@ -34,6 +34,7 @@ export default function EditProfilePage() {
     faith: profile?.faith || "",
     intent: profile?.intent || "Long-term",
     zodiacSign: profile?.zodiacSign || "",
+    photos: profile?.photos || (profile?.photo_url ? [profile.photo_url] : []),
   });
 
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -104,6 +105,8 @@ export default function EditProfilePage() {
       zodiacSign: formData.zodiacSign,
       orientation: formData.orientation,
       faith: formData.faith,
+      photos: formData.photos,
+      photo_url: formData.photos[0] || "",
       prompts: promptAnswer ? [{ question: selectedPrompt, answer: promptAnswer }] : [],
     });
     
@@ -112,17 +115,31 @@ export default function EditProfilePage() {
     router.push("/profile");
   };
 
-  const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file || !profile) return;
     try {
       toast("Uploading photo...", "message");
       const url = await uploadToCloudinary(file);
-      setProfile({ ...profile, photo_url: url });
-      toast("Profile photo updated! ✅", "success");
+      const newPhotos = [...formData.photos];
+      if (index < newPhotos.length) {
+        newPhotos[index] = url;
+      } else {
+        newPhotos.push(url);
+      }
+      setFormData({ ...formData, photos: newPhotos });
+      setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" });
+      toast("Photo uploaded successfully! ✅", "success");
     } catch (err) {
       toast("Photo upload failed. Try again.", "error");
     }
+  };
+
+  const handleDeletePhoto = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newPhotos = formData.photos.filter((_, i) => i !== index);
+    setFormData({ ...formData, photos: newPhotos });
+    setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" });
   };
 
   if (!profile) {
@@ -139,27 +156,42 @@ export default function EditProfilePage() {
         <h2 className="text-2xl font-bold">Edit Profile</h2>
       </div>
 
-      {/* Photo Upload */}
-      <div className="flex justify-center">
-        <div className="relative group cursor-pointer" onClick={() => photoInputRef.current?.click()}>
-          <div className="w-32 h-32 rounded-full border-4 border-glass-border overflow-hidden bg-background flex items-center justify-center">
-            {profile.photo_url ? (
-              <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <Camera size={32} className="text-muted" />
-            )}
-          </div>
-          <div className="absolute inset-0 bg-surface-elevated rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="text-sm font-medium text-foreground">Change</span>
-          </div>
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleProfilePhotoChange}
-          />
-        </div>
+      {/* Photo Upload Grid (6 Photos) */}
+      <div className="grid grid-cols-3 gap-3">
+        {[0, 1, 2, 3, 4, 5].map((index) => {
+          const photo = formData.photos[index];
+          const isMain = index === 0;
+          return (
+            <div key={index} className={`relative group cursor-pointer rounded-2xl overflow-hidden bg-surface-elevated border-2 border-border aspect-[3/4] flex items-center justify-center ${isMain ? 'col-span-2 row-span-2 aspect-[3/4.2]' : ''}`}>
+              {photo ? (
+                <>
+                  <img src={photo} alt={`Profile ${index + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button onClick={(e) => handleDeletePhoto(index, e)} className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  {isMain && (
+                    <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      MAIN
+                    </div>
+                  )}
+                </>
+              ) : (
+                <label className="w-full h-full flex flex-col items-center justify-center text-muted hover:text-primary transition-colors cursor-pointer border-2 border-dashed border-border rounded-xl m-1">
+                  <Plus size={24} className="mb-1" />
+                  <span className="text-[10px] uppercase font-bold">Add</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePhotoUpload(e, index)}
+                  />
+                </label>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Mode Selector */}

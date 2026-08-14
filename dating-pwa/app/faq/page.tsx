@@ -131,51 +131,52 @@ export default function FAQPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-foreground">
-      {/* Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-border bg-surface-elevated backdrop-blur-md sticky top-0 z-20">
-        <button onClick={() => router.back()} className="p-2 bg-surface-elevated hover:bg-surface-elevated rounded-full text-foreground transition-colors">
-          <ArrowLeft size={20} />
+    <div className="flex flex-col min-h-screen bg-[#080512] text-white">
+      {/* Premium Header */}
+      <div className="flex items-center justify-between p-5 border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-0 z-30 shadow-[0_10px_30px_rgba(168,85,247,0.05)]">
+        <button onClick={() => router.back()} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-105 active:scale-95">
+          <ArrowLeft size={20} className="text-gray-300" />
         </button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            Frequently Asked Questions 
-            <HelpCircle 
-              size={18} 
-              className="text-primary cursor-pointer select-none" 
-              onClick={handleSecretTap}
-            />
+        <div className="text-center" onClick={handleSecretTap}>
+          <h1 className="text-lg font-black tracking-wide flex items-center justify-center gap-2">
+            HELP CENTER <HelpCircle size={16} className="text-purple-500" />
           </h1>
-          <p className="text-xs text-muted">Everything you need to know about LoveWithYou</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Frequently Asked Questions</p>
         </div>
+        <div className="w-10" /> {/* Spacer */}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24 max-w-2xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 max-w-3xl mx-auto w-full">
         <div className="space-y-4">
           
           {/* Header Banner */}
-          <div className="text-center mb-6 mt-2 p-6 rounded-3xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-border">
-            <Sparkles size={32} className="text-primary mx-auto mb-2 animate-bounce" />
-            <h2 className="text-2xl font-black text-foreground mb-1">How can we help?</h2>
-            <p className="text-muted text-xs">Clear answers about Coins, Razorpay, WebRTC Audio, and GPS Radar.</p>
+          <div className="text-center mb-6 mt-2 p-8 rounded-3xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-purple-500/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/30 transition-colors" />
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25 mb-4">
+                <Sparkles size={28} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2 tracking-tight">How can we assist you?</h2>
+              <p className="text-gray-400 text-xs">Clear answers about Coins, Razorpay, WebRTC Audio, and GPS Radar.</p>
+            </div>
           </div>
 
           <div className="space-y-3">
             {faqs.map((faq, index) => (
-              <div key={index} className="bg-white/[0.02] border border-border rounded-2xl overflow-hidden transition-colors hover:border-white/20">
+              <div key={index} className="bg-white/[0.02] border border-white/[0.05] rounded-2xl overflow-hidden transition-colors hover:border-white/10 hover:bg-white/[0.04]">
                 <button 
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className="w-full flex items-center justify-between p-4 text-left"
+                  className="w-full flex items-center justify-between p-5 text-left"
                 >
-                  <div className="flex items-center gap-3 pr-2">
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">
+                  <div className="flex items-center gap-4 pr-2">
+                    <span className="text-[9px] uppercase font-black tracking-widest px-2 py-1 rounded bg-white/5 text-purple-300 border border-purple-500/20 shrink-0">
                       {faq.category}
                     </span>
-                    <span className="font-semibold text-foreground text-sm">{faq.question}</span>
+                    <span className="font-bold text-white text-sm">{faq.question}</span>
                   </div>
                   <ChevronDown 
                     size={18} 
-                    className={`text-primary transition-transform duration-300 shrink-0 ${openIndex === index ? 'rotate-180' : ''}`} 
+                    className={`text-gray-400 transition-transform duration-300 shrink-0 ${openIndex === index ? 'rotate-180' : ''}`} 
                   />
                 </button>
                 <AnimatePresence>
@@ -186,7 +187,7 @@ export default function FAQPage() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="p-4 pt-0 text-xs text-secondary leading-relaxed border-t border-border mt-2 bg-white/[0.01]">
+                      <div className="p-5 pt-0 text-xs text-gray-400 leading-relaxed border-t border-white/5 mt-2 bg-black/20">
                         {faq.answer}
                       </div>
                     </motion.div>
@@ -196,41 +197,43 @@ export default function FAQPage() {
             ))}
           </div>
           
-          <div className="mt-8 p-6 bg-gradient-to-r from-primary/20 to-pink-500/20 border border-primary/30 rounded-3xl text-center">
-            <h3 className="text-foreground font-bold mb-1">Still have questions?</h3>
-            <p className="text-xs text-secondary mb-4">Our Trust &amp; Safety team is available 24/7.</p>
+          {/* Support Banner */}
+          <div className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-3xl text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+            <h3 className="text-white font-black text-lg mb-2 relative z-10">Still have questions?</h3>
+            <p className="text-xs text-gray-400 mb-6 relative z-10">Our Enterprise Trust & Safety team is available 24/7.</p>
             <button 
               onClick={() => router.push('/feedback')}
-              className="px-6 py-3 bg-gradient-to-r from-primary to-pink-600 text-white rounded-full font-bold text-xs shadow-lg hover:scale-105 transition-transform"
+              className="px-8 py-3.5 bg-white text-black hover:bg-gray-200 rounded-full font-black text-xs shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all relative z-10"
             >
-              Send Support Message 💬
+              Contact Support
             </button>
           </div>
         </div>
       </div>
 
       {showAdminModal && (
-        <div className="fixed inset-0 bg-black/80 z-[999] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-black/90 border border-white/20 w-full max-w-sm rounded-3xl p-6 relative shadow-2xl">
-            <button onClick={() => setShowAdminModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <div className="fixed inset-0 bg-black/90 z-[999] flex items-center justify-center p-4 backdrop-blur-xl">
+          <div className="bg-[#080512] border border-white/10 w-full max-w-sm rounded-3xl p-8 relative shadow-2xl">
+            <button onClick={() => setShowAdminModal(false)} className="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors">
               <X size={20} />
             </button>
             
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-3">
-                <Lock size={24} />
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-4 border border-rose-500/20">
+                <Lock size={28} />
               </div>
-              <h2 className="text-xl font-bold text-white">Restricted Area</h2>
-              <p className="text-xs text-gray-400">Master override protocol.</p>
+              <h2 className="text-xl font-black text-white tracking-tight">Restricted Area</h2>
+              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest mt-1">Master Override Protocol</p>
             </div>
 
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <input
-                type="text"
-                placeholder="Ident (Optional for Master)"
+                type="password" /* Hide username as password for security */
+                placeholder="Ident"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-primary transition"
+                className="w-full bg-black border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white outline-none focus:border-rose-500 transition-colors"
               />
               <input
                 type="password"
@@ -238,14 +241,14 @@ export default function FAQPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-primary transition"
+                className="w-full bg-black border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white outline-none focus:border-rose-500 transition-colors"
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl font-bold text-sm text-white shadow-lg disabled:opacity-50"
+                className="w-full py-4 bg-gradient-to-r from-rose-500 to-red-600 rounded-xl font-black text-sm text-white shadow-lg disabled:opacity-50 hover:shadow-rose-500/25 transition-all mt-2"
               >
-                {isLoading ? "Authenticating..." : "Authorize"}
+                {isLoading ? "AUTHENTICATING..." : "AUTHORIZE"}
               </button>
             </form>
           </div>

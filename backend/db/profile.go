@@ -39,6 +39,7 @@ type Profile struct {
 	Longitude                 float64             `json:"longitude,omitempty"`
 	MatchPreferences          map[string]interface{} `json:"match_preferences,omitempty"`
 	AppSettings               map[string]interface{} `json:"app_settings,omitempty"`
+	IsVIP                     bool                `json:"is_vip,omitempty"`
 }
 
 // GetProfile fetches a profile from the 'profiles' table in Supabase

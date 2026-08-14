@@ -205,10 +205,28 @@ export default function ProfilePage() {
         {/* TAB 2: PERSONAL BIO & PROMPTS */}
         {activeTab === "details" && (
           <div className="space-y-5 animate-in fade-in duration-300">
+            
+            {/* 6 Photo Gallery */}
+            {profile.photos && profile.photos.length > 0 && (
+              <div className="bg-surface-elevated border border-border rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">My Gallery</h3>
+                  <Link href="/profile/edit" className="text-xs font-bold text-pink-400 hover:underline">Edit Photos</Link>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {profile.photos.map((photo, i) => (
+                    <div key={i} className={`relative rounded-xl overflow-hidden aspect-[3/4] border border-white/10 shadow ${i === 0 ? 'col-span-2 row-span-2 aspect-[3/4.2]' : ''}`}>
+                      <img src={photo} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="bg-surface-elevated border border-border rounded-3xl p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-black text-foreground uppercase tracking-wider">About Me</h3>
-                <Link href="/profile/edit" className="text-xs font-bold text-pink-400 hover:underline">Edit</Link>
+                <Link href="/profile/edit" className="text-xs font-bold text-pink-400 hover:underline">Edit Bio</Link>
               </div>
               
               <p className="text-secondary text-xs leading-relaxed">

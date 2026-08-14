@@ -52,6 +52,8 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.Use(middleware.RateLimitMiddleware)
 	// API Idempotency to prevent Replay Attacks
 	r.Use(middleware.IdempotencyMiddleware)
+	// Maintenance Mode Check
+	r.Use(middleware.MaintenanceMiddleware)
 
 	// WebSocket
 	r.HandleFunc("/ws", auth.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +106,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/safety/sos-timer", auth.AuthMiddleware(StartSosCheckinTimer)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/sos-confirm", auth.AuthMiddleware(ConfirmSafeCheckin)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/screenshot-violation", auth.AuthMiddleware(ReportScreenshotViolation)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/report", auth.AuthMiddleware(SubmitUserReport)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/push/broadcast", auth.AuthMiddleware(BroadcastPushNotification)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/redis/pubsub/publish", auth.AuthMiddleware(RedisPubSubClusterBroadcast)).Methods(http.MethodPost, http.MethodOptions)
 
@@ -124,6 +127,19 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	adminRouter.HandleFunc("/subadmins", GetSubAdmins).Methods(http.MethodGet, http.MethodOptions)
 	adminRouter.HandleFunc("/subadmins", CreateSubAdmin).Methods(http.MethodPost, http.MethodOptions)
 	adminRouter.HandleFunc("/subadmins/{id}", DeleteSubAdmin).Methods(http.MethodDelete, http.MethodOptions)
+	
+	// Moderation & Trust & Safety
+	adminRouter.HandleFunc("/reports", GetPendingReports).Methods(http.MethodGet, http.MethodOptions)
+	adminRouter.HandleFunc("/reports/resolve", ResolveReport).Methods(http.MethodPost, http.MethodOptions)
+	adminRouter.HandleFunc("/maintenance", ToggleMaintenanceMode).Methods(http.MethodPost, http.MethodOptions)
+	
+	// User Management (VIP & Coins)
+	adminRouter.HandleFunc("/users/{device_id}", AdminSearchUser).Methods(http.MethodGet, http.MethodOptions)
+	adminRouter.HandleFunc("/users/vip", AdminToggleVIP).Methods(http.MethodPost, http.MethodOptions)
+	adminRouter.HandleFunc("/users/coins", AdminUpdateUserCoins).Methods(http.MethodPost, http.MethodOptions)
+	
+	// Global Push Broadcast
+	adminRouter.HandleFunc("/push/broadcast", AdminBroadcastPush).Methods(http.MethodPost, http.MethodOptions)
 
 	return r
 }

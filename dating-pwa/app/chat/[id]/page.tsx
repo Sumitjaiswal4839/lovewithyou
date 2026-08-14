@@ -28,6 +28,8 @@ export default function ChatRoomPage() {
   const friendRequests = useUserStore((state) => state.friendRequests);
   const friends = useUserStore((state) => state.friends);
   const acceptFriendRequest = useUserStore((state) => state.acceptFriendRequest);
+  const unmatchUser = useUserStore((state) => state.unmatchUser);
+  const deleteFriend = useUserStore((state) => state.deleteFriend);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -60,6 +62,10 @@ export default function ChatRoomPage() {
   const handleMenuAction = async (action: string) => {
     setIsMenuOpen(false);
     if (action === "unmatch" || action === "report") {
+      if (action === "unmatch") {
+        await unmatchUser(matchId);
+        await deleteFriend(matchId);
+      }
       toast(action === "unmatch" ? "Unmatched with user." : "User reported. Thank you.", "success");
       router.back();
     } else if (action === "clear") {

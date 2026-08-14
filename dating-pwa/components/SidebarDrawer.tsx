@@ -63,6 +63,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const [showPreferences, setShowPreferences] = useState(false);
   const [showSecretArenas, setShowSecretArenas] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
+  const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -215,53 +216,20 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             {/* Main Navigation List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ backgroundColor: 'var(--color-background)' }}>
               
-              {/* Live Search Bar */}
+              {/* Live Search Bar (Triggers Full Screen) */}
               <div className="p-3 border-b" style={{ borderColor: 'var(--color-divider)' }}>
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search singles by name..."
-                    className="w-full border rounded-2xl py-2 pl-9 pr-4 text-xs focus:outline-none transition shadow-sm"
-                    style={{ 
-                      backgroundColor: 'var(--color-surface)',
-                      borderColor: 'var(--color-border)',
-                      color: 'var(--color-foreground)'
-                    }}
-                  />
-                  {isSearching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)' }} />
-                  )}
-                </div>
-
-                {/* Search Results Dropdown */}
-                {searchResults.length > 0 && searchQuery.length >= 2 && (
-                  <div className="mt-2 border rounded-2xl max-h-48 overflow-y-auto shadow-xl" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-                    {searchResults.map(user => (
-                      <button
-                        key={user.id}
-                        onClick={() => handleUserClick(user)}
-                        className="w-full flex items-center gap-3 p-2.5 transition border-b last:border-0 text-left hover:opacity-80"
-                        style={{ borderColor: 'var(--color-divider)' }}
-                      >
-                        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ backgroundColor: 'var(--color-surface-elevated)' }}>
-                          {user.photo_url ? (
-                            <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <User size={14} className="m-auto h-full" style={{ color: 'var(--color-text-muted)' }} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-xs font-bold truncate" style={{ color: 'var(--color-foreground)' }}>{user.name}</h4>
-                          <p className="text-[10px] truncate" style={{ color: 'var(--color-text-muted)' }}>{user.campus || user.location || "Nearby"}</p>
-                        </div>
-                        <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <button 
+                  onClick={() => setShowFullScreenSearch(true)}
+                  className="w-full relative flex items-center bg-surface border border-border rounded-2xl py-2 pl-9 pr-4 text-xs transition shadow-sm text-muted hover:opacity-80"
+                  style={{ 
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-muted)'
+                  }}
+                >
+                  <Search size={16} className="absolute left-3" style={{ color: 'var(--color-text-muted)' }} />
+                  Search singles by name...
+                </button>
               </div>
 
               {/* Real App Core Navigation Features */}
@@ -466,6 +434,78 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
               <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>v5.30.97 VIP</span>
             </div>
           </motion.div>
+
+          {/* Full Screen Search Modal */}
+          <AnimatePresence>
+            {showFullScreenSearch && (
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                className="fixed inset-0 z-[80] flex flex-col bg-background text-foreground"
+              >
+                <div className="flex items-center gap-3 p-4 border-b border-border bg-surface-elevated">
+                  <button onClick={() => setShowFullScreenSearch(false)} className="p-2 bg-surface hover:bg-surface-elevated rounded-full transition-colors">
+                    <X size={20} />
+                  </button>
+                  <div className="flex-1 relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search users by name..."
+                      className="w-full bg-surface border border-border rounded-full py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-primary transition"
+                    />
+                    {isSearching && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-t-transparent border-primary rounded-full animate-spin" />
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-background">
+                  {searchQuery.length < 2 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-muted space-y-4">
+                      <Search size={48} className="opacity-20" />
+                      <p className="font-bold">Type at least 2 characters to search</p>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="space-y-3">
+                      {searchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => handleUserClick(user)}
+                          className="w-full flex items-center p-3 bg-surface-elevated border border-border rounded-2xl hover:border-primary/50 transition-colors text-left group"
+                        >
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-background border border-border shrink-0">
+                            {user.photo_url ? (
+                              <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={24} className="m-auto h-full text-muted" />
+                            )}
+                          </div>
+                          <div className="ml-4 flex-1">
+                            <h3 className="font-bold text-sm text-foreground flex items-center gap-1">
+                              {user.name}
+                              {user.verified && <Sparkles size={12} className="text-primary" />}
+                            </h3>
+                            <p className="text-xs text-muted mt-0.5">{user.campus || user.location || "Nearby User"}</p>
+                          </div>
+                          <ChevronRight size={18} className="text-muted group-hover:text-primary transition-colors" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : !isSearching ? (
+                    <div className="flex flex-col items-center justify-center h-full text-muted space-y-4">
+                      <Users size={48} className="opacity-20" />
+                      <p className="font-bold">No users found matching "{searchQuery}"</p>
+                    </div>
+                  ) : null}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Coin History Modal */}
           <CoinHistoryModal isOpen={showCoinHistory} onClose={() => setShowCoinHistory(false)} />
