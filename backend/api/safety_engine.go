@@ -79,7 +79,7 @@ func VerifyFaceCatfishBuster(w http.ResponseWriter, r *http.Request) {
 func callPythonMLService(base64Image string) (bool, int) {
 	mlURL := os.Getenv("ML_SERVICE_URL")
 	if mlURL == "" {
-		mlURL = "http://localhost:5000/verify" // Fallback for local testing
+		mlURL = "https://lovewithyou-ml.onrender.com/verify" // Fallback to live ML service
 	}
 
 	payload, _ := json.Marshal(map[string]string{"image": base64Image})
