@@ -3,3 +3,4 @@ gunicorn==21.2.0
 deepface==0.0.79
 opencv-python-headless==4.8.1.78
 numpy==1.26.2
+tensorflow==2.15.0
