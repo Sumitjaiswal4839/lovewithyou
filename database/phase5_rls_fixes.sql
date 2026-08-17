@@ -134,3 +134,5 @@ ALTER TABLE public.sub_admins ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "No frontend access to sub_admins" ON public.sub_admins;
 CREATE POLICY "No frontend access to sub_admins" ON public.sub_admins
   FOR ALL USING (false);
+
+GRANT SELECT ON public.public_profiles TO anon, authenticated;

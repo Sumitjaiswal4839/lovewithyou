@@ -314,7 +314,7 @@ export default function BlindDatePage() {
       {/* Hidden WebRTC Remote Audio Stream */}
       <audio ref={remoteAudioRef} autoPlay />
 
-      <MatchPreferencesHeader />
+
 
       {/* Top Header */}
       <div className="p-4 bg-black/80 backdrop-blur-md border-b border-border flex items-center justify-between z-20 sticky top-0">

@@ -469,7 +469,7 @@ export default function Home() {
     <div className="relative flex flex-col w-full h-[calc(100vh-4rem)] overflow-hidden bg-background transition-colors duration-500">
       
       {/* Top Header & Toggles */}
-      <div className="w-full z-[200] flex flex-col glass border-b border-glass-border shrink-0">
+      <div className="w-full z-40 flex flex-col glass border-b border-glass-border shrink-0">
         <MatchPreferencesHeader />
         <div className="flex justify-between items-center p-4">
         <div 

@@ -622,7 +622,7 @@ export default function RandomChatPage() {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
-      <MatchPreferencesHeader />
+
       <RandomChatHeader 
         partner={partner} 
         onLike={() => handleLikePartner(partner)}

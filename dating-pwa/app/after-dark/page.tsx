@@ -271,7 +271,7 @@ export default function AfterDarkLoungePage() {
   // --- 3. ACTIVE ANONYMOUS CHAT & SEARCHING SCREEN ---
   return (
     <div className="fixed inset-0 z-[150] bg-[#0c0307] flex flex-col text-foreground font-sans overflow-hidden">
-      <MatchPreferencesHeader />
+
       {/* Top Header */}
       <div className="p-3.5 border-b border-border bg-black/80 backdrop-blur-md flex items-center justify-between z-10">
         <div className="flex items-center gap-2.5">
