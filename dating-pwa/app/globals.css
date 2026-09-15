@@ -49,30 +49,30 @@
   --glass-border: rgba(252, 231, 243, 0.6);
 }
 
-/* --- DARK MODE (Purpose Site - Deep Midnight Purple Base) --- */
+/* --- DARK MODE (Premium Sleek Dark Theme) --- */
 .dark {
-  --background: #1a0a2e;       /* Deep Midnight Purple */
-  --surface: #16213e;          /* Dark Navy */
-  --surface-elevated: #0f3460; /* Deep Blue */
-  --text-primary: #f8fafc;     /* Clean White */
-  --text-secondary: #c084fc;   /* Lavender Purple */
-  --text-muted: #94a3b8;       /* Cool Slate Gray */
-  --border: #6c5ce7;           /* Indigo Purple Border */
-  --divider: #362a63;          /* Darker Muted Purple */
+  --background: #09090b;       /* Premium Dark Zinc (Almost Black) */
+  --surface: #18181b;          /* Zinc 900 for Cards/Elements */
+  --surface-elevated: #27272a; /* Zinc 800 for Hover/Elevated */
+  --text-primary: #fafafa;     /* Crisp White */
+  --text-secondary: #a1a1aa;   /* Zinc 400 */
+  --text-muted: #71717a;       /* Zinc 500 */
+  --border: #27272a;           /* Subtle Borders */
+  --divider: #27272a;          /* Subtle Dividers */
   
-  --primary: #ff4d6d;          /* Bright Pink for Dark Mode Pop */
-  --primary-hover: #e11d48;    /* Rose Red */
-  --primary-soft: #38152e;     /* Deep Rose Background */
+  --primary: #e11d48;          /* Rose Red (Brand Consistency) */
+  --primary-hover: #ff4d6d;    /* Bright Pink */
+  --primary-soft: rgba(225, 29, 72, 0.15); /* Soft Rose Background */
   
   --romantic-peach: #fb7185;   /* Coral Pink */
-  --muted-coral: #e17055;      /* Warm Coral */
+  --muted-coral: #fda4af;      /* Warm Coral */
   
   --error: #f87171;
   --warning: #fbbf24;
   --success: #34d399;
 
-  --glass-bg: rgba(22, 33, 62, 0.75);
-  --glass-border: rgba(108, 92, 231, 0.3);
+  --glass-bg: rgba(24, 24, 27, 0.85); /* Blurred Surface */
+  --glass-border: rgba(39, 39, 42, 0.6);
 }
 
 body {

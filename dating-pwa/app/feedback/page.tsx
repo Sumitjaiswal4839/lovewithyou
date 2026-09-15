@@ -71,23 +71,23 @@ export default function FeedbackPage() {
             <button
               type="button"
               onClick={() => setCategory("General")}
-              className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${category === "General" ? "bg-primary border-primary text-white shadow-lg" : "bg-surface-elevated border-border text-white/60"}`}
+              className={`p-2.5 rounded-2xl border text-xs font-extrabold flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${category === "General" ? "bg-gradient-to-b from-pink-500 to-pink-600 border-pink-500 text-white shadow-[0_4px_12px_rgba(236,72,153,0.3)] scale-105" : "bg-surface-elevated border-border text-muted hover:text-foreground"}`}
             >
-              <HelpCircle size={16} /> General
+              <HelpCircle size={18} className={category === "General" ? "text-white" : "text-secondary"} /> General
             </button>
             <button
               type="button"
               onClick={() => setCategory("Razorpay")}
-              className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${category === "Razorpay" ? "bg-primary-hover border-primary text-white shadow-lg" : "bg-surface-elevated border-border text-white/60"}`}
+              className={`p-2.5 rounded-2xl border text-xs font-extrabold flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${category === "Razorpay" ? "bg-gradient-to-b from-blue-500 to-blue-600 border-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3)] scale-105" : "bg-surface-elevated border-border text-muted hover:text-foreground"}`}
             >
-              <CreditCard size={16} /> Razorpay
+              <CreditCard size={18} className={category === "Razorpay" ? "text-white" : "text-secondary"} /> Razorpay
             </button>
             <button
               type="button"
               onClick={() => setCategory("Safety")}
-              className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${category === "Safety" ? "bg-amber-600 border-amber-500 text-foreground shadow-lg" : "bg-surface-elevated border-border text-muted"}`}
+              className={`p-2.5 rounded-2xl border text-xs font-extrabold flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${category === "Safety" ? "bg-gradient-to-b from-amber-500 to-amber-600 border-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.3)] scale-105" : "bg-surface-elevated border-border text-muted hover:text-foreground"}`}
             >
-              <ShieldAlert size={16} /> Safety
+              <ShieldAlert size={18} className={category === "Safety" ? "text-white" : "text-secondary"} /> Safety
             </button>
           </div>
 
@@ -107,7 +107,7 @@ export default function FeedbackPage() {
               value={transactionId}
               onChange={(e) => setTransactionId(e.target.value)}
               placeholder="Razorpay Payment ID (e.g. pay_N12345)"
-              className="w-full bg-black/50 border border-border rounded-xl px-4 py-3 outline-none focus:border-primary text-xs text-foreground mb-3"
+              className="w-full bg-surface-elevated border border-border rounded-2xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm text-foreground mb-3 font-medium placeholder:text-muted shadow-inner transition-all"
             />
           )}
 
@@ -122,13 +122,21 @@ export default function FeedbackPage() {
                 ? "Report harassment or catfish incident..." 
                 : "Write your feedback or suggestions here..."
             }
-            className="w-full bg-black/50 border border-border rounded-2xl px-4 py-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none text-sm text-foreground mb-6"
+            className={`w-full bg-surface-elevated border border-border rounded-2xl px-4 py-4 outline-none focus:ring-1 resize-none text-sm text-foreground mb-6 font-medium placeholder:text-muted shadow-inner transition-all ${
+              category === "Razorpay" ? "focus:border-blue-500 focus:ring-blue-500" :
+              category === "Safety" ? "focus:border-amber-500 focus:ring-amber-500" :
+              "focus:border-pink-500 focus:ring-pink-500"
+            }`}
           />
           
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-4 rounded-2xl bg-primary hover:bg-primary-hover text-white font-bold transition shadow-[0_0_15px_rgba(236,72,153,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full py-4 rounded-2xl text-white font-extrabold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+              category === "Razorpay" ? "bg-gradient-to-r from-blue-500 to-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]" :
+              category === "Safety" ? "bg-gradient-to-r from-amber-500 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_25px_rgba(245,158,11,0.5)]" :
+              "bg-gradient-to-r from-pink-500 to-pink-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_25px_rgba(236,72,153,0.5)]"
+            }`}
           >
             {isSubmitting ? "Sending..." : "Submit Feedback"}
           </button>

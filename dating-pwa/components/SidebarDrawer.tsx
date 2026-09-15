@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { INDIA_STATES, INDIA_CITIES } from "@/lib/indiaData";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -11,29 +10,23 @@ import {
   Users, 
   User, 
   Heart, 
-  SlidersHorizontal, 
-  MessageCircle, 
   HeartPulse, 
   Settings as SettingsIcon, 
-  Edit3, 
-  Globe, 
   HelpCircle, 
-  Share2, 
-  LogOut, 
+  MessageCircle, 
   Coins, 
+  LogOut, 
   Search, 
   ChevronRight, 
-  ChevronDown, 
   Flame, 
   Moon, 
   Sparkles, 
   Award, 
-  Compass,
   Headphones,
   Trophy,
   Calendar,
   GraduationCap,
-  Zap
+  Headset
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -49,18 +42,16 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const { toast } = useToast();
   const profile = useUserStore((state) => state.profile);
   const coins = useUserStore((state) => state.coins);
-  const spendCoins = useUserStore((state) => state.spendCoins);
   const [showCoinHistory, setShowCoinHistory] = useState(false);
   const canSearch = useUserStore((state) => state.canSearch);
   const incrementSearchCount = useUserStore((state) => state.incrementSearchCount);
-  const matchPreferences = useUserStore((state) => state.matchPreferences);
-  const updateMatchPreferences = useUserStore((state) => state.updateMatchPreferences);
 
   const [searchQuery, setSearchQuery] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [showPreferences, setShowPreferences] = useState(false);
   const [showSecretArenas, setShowSecretArenas] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
   const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
@@ -100,6 +91,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
     router.push(path);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUserClick = (user: any) => {
     if (canSearch()) {
       incrementSearchCount();
@@ -107,10 +99,6 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
     } else {
       toast("Not enough coins! You need 1 coin to search more profiles today.", "error");
     }
-  };
-
-  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    updateMatchPreferences({ selectedState: e.target.value, selectedCity: null });
   };
 
   return (
@@ -392,6 +380,12 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>FAQs &amp; Help Center</span>
                 </button>
 
+                {/* Contact & Support */}
+                <button onClick={() => navigateTo('/contact')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
+                  <Headset size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Contact &amp; Support</span>
+                </button>
+
                 {/* Send Feedback */}
                 <button onClick={() => navigateTo('/feedback')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
                   <MessageCircle size={20} style={{ color: 'var(--color-text-secondary)' }} />
@@ -499,7 +493,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                   ) : !isSearching ? (
                     <div className="flex flex-col items-center justify-center h-full text-muted space-y-4">
                       <Users size={48} className="opacity-20" />
-                      <p className="font-bold">No users found matching "{searchQuery}"</p>
+                      <p className="font-bold">No users found matching &quot;{searchQuery}&quot;</p>
                     </div>
                   ) : null}
                 </div>
