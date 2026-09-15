@@ -11,6 +11,7 @@ import ScreenshotShield from "@/components/ScreenshotShield";
 
 
 import { usePresence } from "@/hooks/usePresence";
+import { AgeVerificationBanner } from "@/components/AgeVerificationBanner";
 
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   usePresence();
@@ -48,6 +49,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <A2HSPrompt />
         <PushNotificationPrompt />
         <AdminTrigger />
+        <AgeVerificationBanner />
       </ScreenshotShield>
     </div>
   );

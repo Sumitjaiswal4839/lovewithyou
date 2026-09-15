@@ -174,6 +174,7 @@ interface UserState {
   fetchNotifications: () => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  addLocalNotification: (n: { title: string; message: string; type: string }) => void;
   logout: () => void;
 }
 
@@ -667,6 +668,22 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
         } catch (e) {
           console.error("Localization detection failed", e);
         }
+      },
+
+      addLocalNotification: ({ title, message, type }) => {
+        const newNotif: AppNotification = {
+          id: uuidv4(),
+          user_id: get().deviceId || "local",
+          type,
+          title,
+          message,
+          is_read: false,
+          created_at: new Date().toISOString(),
+        };
+        set((state) => ({
+          notifications: [newNotif, ...state.notifications],
+          unreadNotificationCount: state.unreadNotificationCount + 1,
+        }));
       },
     }),
     {

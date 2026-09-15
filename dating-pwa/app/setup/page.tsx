@@ -1,17 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Lock, AlertTriangle, CheckCircle2, Plus, X as XIcon, Image as ImageIcon } from "lucide-react";
-import dynamic from "next/dynamic";
-const FaceScanner = dynamic(() => import("@/components/FaceScanner"), { 
-  ssr: false, 
-  loading: () => <div className="h-48 rounded-2xl bg-surface-elevated animate-pulse flex items-center justify-center text-muted text-sm">Loading Face Scanner...</div> 
-});
+import { CheckCircle2, Plus, X as XIcon, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import Link from "next/link";
 import { uploadMultipleToCloudinary } from "@/lib/cloudinary";
@@ -30,15 +25,11 @@ export default function SetupPage() {
     gender: "",
     age: "",
     campus: "", // Optional campus field
-    photo_url: "", // Temporarily storing base64 image data
   });
-  
-  const [cameraError, setCameraError] = useState<string | null>(null);
+
   const [termsAgreed, setTermsAgreed] = useState(false);
-  const [aiVerifiedAge, setAiVerifiedAge] = useState<number | null>(null);
-  const [ageError, setAgeError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // 6 Photos required
   const [photos, setPhotos] = useState<string[]>(Array(6).fill(""));
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,7 +75,7 @@ export default function SetupPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || activePhotoIndex === null) return;
-    
+
     if (file.size > 10 * 1024 * 1024) {
       toast("Image must be less than 10MB", "error");
       return;
@@ -116,26 +107,15 @@ export default function SetupPage() {
     });
   };
 
-  const handleAgeEstimated = (age: number) => {
-    if (age < 18) {
-      setAgeError(`AI estimated age is ${Math.round(age)}. You must be 18+ to use this app.`);
-      setAiVerifiedAge(null);
-    } else {
-      setAiVerifiedAge(Math.round(age));
-      setFormData(prev => ({ ...prev, age: Math.round(age).toString(), photo_url: "verified_by_ai" }));
-      setAgeError(null);
-      toast("Age verified by AI!", "success");
-    }
-  };
-
   const handleComplete = async () => {
     if (!formData.name || !formData.gender || !formData.age) {
       toast("Please fill all required fields", "error");
       return;
     }
 
-    if (!formData.photo_url) {
-      toast("A live photo capture is strictly required to proceed.", "error");
+    const ageNum = parseInt(formData.age);
+    if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+      toast("Please enter a valid age (18–100)", "error");
       return;
     }
 
@@ -166,9 +146,9 @@ export default function SetupPage() {
         interests: [],
         location: "",
         campus: formData.campus,
-        age: parseInt(formData.age),
+        age: ageNum,
         photo_url: primaryPhoto,      // Real Cloudinary URL ✅
-        photos: uploadedUrls,          // All 6 Cloudinary URLs ✅
+        photos: uploadedUrls,          // All Cloudinary URLs ✅
         gender: formData.gender,
         verified: true,
         karma: 100,
@@ -204,7 +184,7 @@ export default function SetupPage() {
 
         {/* Local Development Skip Button */}
         {process.env.NODE_ENV === 'development' && (
-          <Button 
+          <Button
             onClick={() => {
               setProfile({
                 name: "Dev User",
@@ -233,30 +213,10 @@ export default function SetupPage() {
           </Button>
         )}
 
-        {/* AI Face Scan Section */}
-        <div className="space-y-3 pt-2">
-          {!aiVerifiedAge ? (
-            <FaceScanner onAgeEstimated={handleAgeEstimated} />
-          ) : (
-            <div className="flex flex-col items-center justify-center p-6 bg-green-500/10 border border-green-500/20 rounded-2xl text-center">
-              <CheckCircle2 className="w-12 h-12 text-green-500 mb-2" />
-              <h3 className="text-lg font-bold text-foreground">Age Verified: {aiVerifiedAge}</h3>
-              <p className="text-muted text-xs">AI successfully confirmed you are 18+</p>
-            </div>
-          )}
-          
-          {ageError && (
-            <div className="flex items-start gap-2 bg-error/20 p-3 rounded-lg text-red-400 text-sm mt-2 w-full text-left">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <span>{ageError}</span>
-            </div>
-          )}
-        </div>
-
         <div className="space-y-4 pt-4">
           <div>
             <label className="text-sm font-medium text-secondary ml-1">Your Name</label>
-            <input 
+            <input
               type="text"
               className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
               placeholder="e.g. Sumit"
@@ -266,22 +226,22 @@ export default function SetupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-secondary ml-1 flex items-center gap-1">
-              Age <Lock size={12} className="text-primary" />
-            </label>
-            <input 
-              type="text"
-              readOnly
-              className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-muted outline-none cursor-not-allowed"
-              placeholder="Verified by AI"
+            <label className="text-sm font-medium text-secondary ml-1">Your Age</label>
+            <input
+              type="number"
+              min="18"
+              max="100"
+              className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
+              placeholder="e.g. 22"
               value={formData.age}
+              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
             />
-            <p className="text-[10px] text-primary mt-1 ml-1">Estimated securely via on-device AI.</p>
+            <p className="text-[10px] text-muted mt-1 ml-1">You must be 18+ to use this app.</p>
           </div>
-          
+
           <div>
             <label className="text-sm font-medium text-secondary ml-1">College/Campus (Optional)</label>
-            <input 
+            <input
               type="text"
               className="w-full mt-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors"
               placeholder="e.g. Delhi University"
@@ -291,17 +251,15 @@ export default function SetupPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-secondary ml-1 flex items-center gap-1">
-              Gender <Lock size={12} className="text-primary" />
-            </label>
+            <label className="text-sm font-medium text-secondary ml-1">Gender</label>
             <div className="flex gap-2 mt-1">
               {["Male", "Female", "Other"].map((g) => (
                 <button
                   key={g}
                   onClick={(e) => { e.preventDefault(); setFormData({ ...formData, gender: g }); }}
                   className={`flex-1 py-3 rounded-xl border transition-all ${
-                    formData.gender === g 
-                      ? "border-primary bg-primary/10 text-primary font-bold" 
+                    formData.gender === g
+                      ? "border-primary bg-primary/10 text-primary font-bold"
                       : "border-border bg-surface-elevated text-white/60 hover:border-gray-500"
                   }`}
                 >
@@ -309,11 +267,8 @@ export default function SetupPage() {
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-muted mt-2 text-center flex items-center justify-center gap-1">
-               Locked permanently post-verification.
-            </p>
           </div>
-          
+
           {/* 6 Photos Requirement */}
           <div className="pt-2">
             <div className="flex items-center justify-between mb-2">
@@ -322,19 +277,19 @@ export default function SetupPage() {
               </label>
               <span className="text-xs text-primary font-bold">{photos.filter(p => p !== "").length} / 6</span>
             </div>
-            <p className="text-xs text-muted ml-1 mb-3">You must add exactly 6 photos to complete your profile.</p>
-            
+            <p className="text-xs text-muted ml-1 mb-3">Upload at least 1 photo to complete your profile.</p>
+
             <div className="grid grid-cols-3 gap-2">
               {photos.map((photo, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   onClick={() => handlePhotoClick(i)}
                   className={`aspect-[3/4] rounded-xl overflow-hidden relative cursor-pointer transition-all border-2 ${photo ? 'border-transparent' : 'border-dashed border-white/20 bg-surface-elevated hover:border-primary hover:bg-surface-elevated flex items-center justify-center'}`}
                 >
                   {photo ? (
                     <>
                       <img src={photo} alt={`Upload ${i+1}`} className="w-full h-full object-cover" />
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
                         className="absolute top-1 right-1 bg-surface-elevated text-foreground rounded-full p-1 hover:bg-error transition-colors"
                       >
@@ -350,17 +305,17 @@ export default function SetupPage() {
               ))}
             </div>
             {/* Hidden File Input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept="image/*" 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
               onChange={handleFileChange}
             />
           </div>
 
         </div>
-        
+
         {/* Safety & Respect Pledge Banner */}
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/30 flex items-start gap-3 my-3">
           <CheckCircle2 className="text-primary shrink-0 mt-0.5" size={20} />
@@ -375,23 +330,23 @@ export default function SetupPage() {
         {/* Terms and Conditions Checkbox */}
         <div className="pt-1">
            <label className="flex items-start gap-3 cursor-pointer">
-             <input 
-               type="checkbox" 
+             <input
+               type="checkbox"
                className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary bg-background"
                checked={termsAgreed}
                onChange={(e) => setTermsAgreed(e.target.checked)}
              />
              <span className="text-xs text-muted leading-tight">
-               I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline">Terms &amp; Conditions</Link> &amp; <Link href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>. My verified gender is bound to my photo capture.
+               I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline">Terms &amp; Conditions</Link> &amp; <Link href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>. I confirm I am 18 years or older.
              </span>
            </label>
         </div>
 
-        <Button 
-          onClick={handleComplete} 
-          className="w-full mt-6" 
-          size="lg" 
-          disabled={!!cameraError || !formData.photo_url || !termsAgreed || photos.filter(p => p !== "").length < 1 || isUploading}
+        <Button
+          onClick={handleComplete}
+          className="w-full mt-6"
+          size="lg"
+          disabled={!formData.name || !formData.gender || !formData.age || !termsAgreed || photos.filter(p => p !== "").length < 1 || isUploading}
         >
           {isUploading ? "Uploading Photos... ⏳" : "Start Matching 🎉"}
         </Button>

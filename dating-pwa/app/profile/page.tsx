@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TrendingUp, Eye, Heart, Users, Award, Calendar, ShieldCheck, Share2, ScanFace, Gift, Copy, X, MessageSquare, GraduationCap, Sparkles, User as UserIcon, BarChart3, Edit3, Settings } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
+import { GetVerifiedModal } from "@/components/GetVerifiedModal";
 import AdvancedDatingWidget from "@/components/profile/AdvancedDatingWidget";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
@@ -28,7 +29,6 @@ export default function ProfilePage() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showAdModal, setShowAdModal] = useState(false);
   const [isWatchingAd, setIsWatchingAd] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isBoosted, setIsBoosted] = useState(false);
   
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -337,46 +337,10 @@ export default function ProfilePage() {
       </div>
 
       {/* MODALS */}
+
+      {/* Get Verified Modal — Full AI Pipeline */}
       {showVerifyModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-background border border-white/20 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl">
-            <div className="w-16 h-16 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4 relative">
-              <ScanFace size={32} className={isVerifying ? "animate-pulse" : ""} />
-            </div>
-            <h3 className="text-lg font-extrabold text-foreground mb-2">Free AI Verification</h3>
-            <p className="text-xs text-muted mb-6">Take a quick selfie to verify your real identity and earn the trusted Blue Tick on your profile.</p>
-            
-            {isVerifying ? (
-              <div className="text-blue-400 font-black text-xs animate-pulse py-3">Scanning Face & Smile Ratio...</div>
-            ) : (
-              <button 
-                onClick={() => {
-                  setIsVerifying(true);
-                  setTimeout(async () => {
-                    try {
-                      // Call the real backend API with a simulated high confidence score (e.g., 90%)
-                      await API.verifyFaceCatfishBuster(90.0);
-                      
-                      setProfile({ ...profile, verified: true });
-                      setIsVerifying(false);
-                      setShowVerifyModal(false);
-                      toast("Blue Tick Verified! 🛡️💎", "success");
-                    } catch (e) {
-                      setIsVerifying(false);
-                      toast("Verification failed. Please try again.", "error");
-                    }
-                  }, 2500);
-                }} 
-                className="w-full py-3 rounded-2xl bg-blue-600 font-black text-xs text-foreground shadow-lg shadow-blue-600/30"
-              >
-                Start Camera Scan
-              </button>
-            )}
-            {!isVerifying && (
-              <button onClick={() => setShowVerifyModal(false)} className="w-full mt-3 py-2 text-xs text-muted font-bold">Cancel</button>
-            )}
-          </div>
-        </div>
+        <GetVerifiedModal onClose={() => setShowVerifyModal(false)} />
       )}
 
       {/* Referral Modal */}
