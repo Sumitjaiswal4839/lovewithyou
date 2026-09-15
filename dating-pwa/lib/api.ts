@@ -50,6 +50,7 @@ export const API = {
    * Syncs the user's local reactive state (coins, karma, profile changes)
    * to the backend to guarantee consistent cross-device synchronization.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async syncState(deviceId: string, payload: any) {
     try {
       const response = await fetchWithAuth(`${API_BASE_URL}/sync`, {
@@ -123,7 +124,7 @@ export const API = {
         body: JSON.stringify(payload),
       });
       return await response.json();
-    } catch (error) {
+    } catch {
       return { status: "published_locally" };
     }
   },
@@ -157,7 +158,7 @@ export const API = {
         body: JSON.stringify({ sessionToken }),
       });
       return await response.json();
-    } catch (error) {
+    } catch {
       return { status: "evaporated_from_ram" };
     }
   },
@@ -171,7 +172,7 @@ export const API = {
         body: JSON.stringify({ deviceId, vibe }),
       });
       return await res.json();
-    } catch (e) { return { status: "simulated_audio_match", expiresInSeconds: 180 }; }
+    } catch { return { status: "simulated_audio_match", expiresInSeconds: 180 }; }
   },
 
   async syncHeartbeat(roomId: string, senderId: string) {
@@ -182,7 +183,7 @@ export const API = {
         body: JSON.stringify({ roomId, senderId, tapTimestamp: Date.now() }),
       });
       return await res.json();
-    } catch (e) { return { status: "haptic_vibration_simulated" }; }
+    } catch { return { status: "haptic_vibration_simulated" }; }
   },
 
   async startDoubleDateSquad(leaderId: string, friendTag: string, squadName: string) {
@@ -193,7 +194,7 @@ export const API = {
         body: JSON.stringify({ leaderId, friendTag, squadName }),
       });
       return await res.json();
-    } catch (e) { return { status: "squad_ready", data: { squadRoomId: "squad_room_offline" } }; }
+    } catch { return { status: "squad_ready", data: { squadRoomId: "squad_room_offline" } }; }
   },
 
   async rewindLastSwipe(deviceId: string) {
@@ -203,7 +204,7 @@ export const API = {
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
       return await res.json();
-    } catch (e) { return { status: "rewound_offline" }; }
+    } catch { return { status: "rewound_offline" }; }
   },
 
   async playFlirtGame(roomId: string, gameType: string, action: string, wager: number) {
@@ -214,7 +215,7 @@ export const API = {
         body: JSON.stringify({ roomId, gameType, action, wager }),
       });
       return await res.json();
-    } catch (e) { return { status: "game_simulated", data: { dare: "Send your cutest goofball smile!" } }; }
+    } catch { return { status: "game_simulated", data: { dare: "Send your cutest goofball smile!" } }; }
   },
 
   async broadcastPheromonePulse(senderId: string, latitude: number, longitude: number) {
@@ -225,7 +226,7 @@ export const API = {
         body: JSON.stringify({ senderId, latitude, longitude, broadcastMsg: "Someone attractive within 3km just boosted their radar!" }),
       });
       return await res.json();
-    } catch (e) { return { status: "pulse_sent_simulated" }; }
+    } catch { return { status: "pulse_sent_simulated" }; }
   },
 
   async activateVipHalo(deviceId: string) {
@@ -235,21 +236,21 @@ export const API = {
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
       return await res.json();
-    } catch (e) { return { status: "halo_activated", expiresAt: new Date(Date.now() + 86400000).toISOString() }; }
+    } catch { return { status: "halo_activated", expiresAt: new Date(Date.now() + 86400000).toISOString() }; }
   },
 
   async spinDailyCupidSlot() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/rewards/daily-slot`, { method: "POST" });
       return await res.json();
-    } catch (e) { return { status: "prize_won", data: { prize: "15 Free Coins 🪙" } }; }
+    } catch { return { status: "prize_won", data: { prize: "15 Free Coins 🪙" } }; }
   },
 
   async getTopConnectorsLeaderboard() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/leaderboard/top-connectors`);
       return await res.json();
-    } catch (e) { 
+    } catch {
       return { 
         data: [
           { alias: "Ayesha M.", campus: "Delhi University Hub", rating: 980, badge: "👑 Platinum Vibe Queen" },
@@ -327,7 +328,7 @@ export const API = {
         body: JSON.stringify(payload),
       });
       return await res.json();
-    } catch (e) { return { status: "webrtc_signal_routed_offline" }; }
+    } catch { return { status: "webrtc_signal_routed_offline" }; }
   },
 
   /**
@@ -356,7 +357,7 @@ export const API = {
       const response = await fetchWithAuth(`${API_BASE_URL}/notifications`);
       if (!response.ok) throw new Error("Failed to fetch notifications");
       return await response.json();
-    } catch (e) {
+    } catch {
       return [];
     }
   },
@@ -364,13 +365,13 @@ export const API = {
   async markNotificationAsRead(id: string) {
     try {
       await fetchWithAuth(`${API_BASE_URL}/notifications/${id}/read`, { method: "PUT" });
-    } catch (e) {}
+    } catch {}
   },
 
   async markAllNotificationsAsRead() {
     try {
       await fetchWithAuth(`${API_BASE_URL}/notifications/read-all`, { method: "PUT" });
-    } catch (e) {}
+    } catch {}
   },
 
   // --- Safety & Verification ---

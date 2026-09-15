@@ -156,7 +156,7 @@ body {
 }
 
 /* Luxury Glassmorphism Utilities */
-@utility glass {
+.glass {
   background-color: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);

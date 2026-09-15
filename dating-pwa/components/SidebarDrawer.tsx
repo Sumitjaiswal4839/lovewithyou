@@ -150,6 +150,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                     }}
                   >
                     {profile.photo_url || (profile.photos && profile.photos[0]) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={profile.photo_url || profile.photos?.[0]} alt={profile.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center btn-signature-gradient font-bold text-xl">
@@ -474,6 +475,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                         >
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-background border border-border shrink-0">
                             {user.photo_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                               <User size={24} className="m-auto h-full text-muted" />
@@ -513,6 +515,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
                 </button>
                 <div className="h-64 bg-black relative">
                   {selectedUser.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={selectedUser.photo_url} alt={selectedUser.name} className="w-full h-full object-cover" />
                   ) : (
                     <User size={64} className="text-white/20 absolute inset-0 m-auto" />

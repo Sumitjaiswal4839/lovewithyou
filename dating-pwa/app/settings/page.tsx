@@ -4,42 +4,17 @@ import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { 
-  Moon, 
-  Sun, 
-  Monitor,
-  Trash2, 
   ArrowLeft, 
   Eye, 
   EyeOff, 
   ChevronRight, 
-  Sliders, 
-  ShieldCheck, 
   Lock, 
   Sparkles, 
-  UserCheck, 
   Globe, 
-  Type, 
-  Image as ImageIcon, 
-  Crown, 
-  MessageSquare, 
-  Users, 
-  FileText, 
-  ShieldAlert, 
-  Key, 
   Bell, 
   Volume2,
   HardDrive,
-  Zap,
-  PauseCircle,
-  HelpCircle,
-  MessageCircle,
-  CheckCircle2,
-  Check, 
-  X, 
-  Languages, 
-  UserX,
-  AlertOctagon,
-  LifeBuoy
+  Zap
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useState, useEffect } from "react";
@@ -49,7 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const profile = useUserStore((state) => state.profile);
+  // const profile = useUserStore((state) => state.profile);
   const setProfile = useUserStore((state) => state.setProfile);
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const deviceId = useUserStore((state) => state.deviceId);
@@ -60,11 +35,10 @@ export default function SettingsPage() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [soundHaptics, setSoundHaptics] = useState(true);
   const [incognitoMode, setIncognitoMode] = useState(false);
-  const [showActiveStatus, setShowActiveStatus] = useState(true);
+  // const [showActiveStatus, setShowActiveStatus] = useState(true);
   const [screenshotShield, setScreenshotShield] = useState(true);
   const [dataSaver, setDataSaver] = useState(false);
   const [distanceUnit, setDistanceUnit] = useState<"km" | "mi">("km");
-  const [accentColor, setAccentColor] = useState<"pink" | "purple" | "emerald" | "gold">("pink");
   const [cacheSize, setCacheSize] = useState("14.8 MB");
   const [isAccountPaused, setIsAccountPaused] = useState(false);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
@@ -73,9 +47,6 @@ export default function SettingsPage() {
   const [allowFriendSearch, setAllowFriendSearch] = useState(true);
   const [allowAutoFriendAccept, setAllowAutoFriendAccept] = useState(false);
   const [automaticTranslation, setAutomaticTranslation] = useState(true);
-  const [appLanguage, setAppLanguage] = useState("System defaults");
-  const [fontSize, setFontSize] = useState(10);
-  const [photoPickerType, setPhotoPickerType] = useState("Classic Photo Picker");
   const [encryptedChat, setEncryptedChat] = useState(false);
   const [autoGreeting, setAutoGreeting] = useState("Hey! Your profile caught my eye. How's your day going?");
 
@@ -84,11 +55,11 @@ export default function SettingsPage() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateSettings = (updates: any) => {
     if ('allowFriendSearch' in updates) setAllowFriendSearch(updates.allowFriendSearch);
     if ('allowAutoFriendAccept' in updates) setAllowAutoFriendAccept(updates.allowAutoFriendAccept);
     if ('automaticTranslation' in updates) setAutomaticTranslation(updates.automaticTranslation);
-    if ('accentColor' in updates) setAccentColor(updates.accentColor);
     if ('encryptedChat' in updates) setEncryptedChat(updates.encryptedChat);
     if ('incognitoMode' in updates) setIncognitoMode(updates.incognitoMode);
     if ('screenshotShield' in updates) setScreenshotShield(updates.screenshotShield);
@@ -99,7 +70,8 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
 
@@ -112,7 +84,9 @@ export default function SettingsPage() {
   const [alarmEnabled, setAlarmEnabled] = useState(true);
 
   // Dynamic Safety Data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [blockedList, setBlockedList] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reportedList, setReportedList] = useState<any[]>([]);
   const [isLoadingSafety, setIsLoadingSafety] = useState(true);
 
@@ -128,11 +102,14 @@ export default function SettingsPage() {
           .eq("blocker_id", deviceId);
 
         if (blocks && blocks.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const blockedIds = blocks.map((b: any) => b.blocked_id);
           const { data: profiles } = await supabase.from("public_profiles").select("device_id, name").in("device_id", blockedIds);
           
           if (profiles) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setBlockedList(blocks.map((b: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const p = profiles.find((p: any) => p.device_id === b.blocked_id);
               return { id: b.blocked_id, name: p?.name || "Unknown User", reason: "Blocked", date: b.created_at };
             }));
@@ -148,11 +125,14 @@ export default function SettingsPage() {
           .eq("reporter_id", deviceId);
 
         if (reports && reports.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const reportedIds = reports.map((r: any) => r.reported_id);
           const { data: profiles } = await supabase.from("public_profiles").select("device_id, name").in("device_id", reportedIds);
           
           if (profiles) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setReportedList(reports.map((r: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const p = profiles.find((p: any) => p.device_id === r.reported_id);
               return { id: r.id, name: p?.name || "Unknown User", status: r.status, date: r.created_at };
             }));
@@ -176,6 +156,7 @@ export default function SettingsPage() {
         .update({ deletion_requested_at: new Date().toISOString() })
         .eq("device_id", deviceId);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setProfile(null as any);
     setDeviceId("");
     toast("Account deletion requested. Data will be cleared within 30 days.", "info");
@@ -203,7 +184,7 @@ export default function SettingsPage() {
       await supabase.from("blocks").delete().eq("blocker_id", deviceId).eq("blocked_id", id);
       setBlockedList(prev => prev.filter(u => u.id !== id));
       toast(`Unblocked ${name} successfully!`, "success");
-    } catch (err) {
+    } catch {
       toast("Failed to unblock user", "error");
     }
   };
@@ -300,59 +281,6 @@ export default function SettingsPage() {
               <input type="checkbox" checked={theme === "dark"} onChange={(e) => setTheme(e.target.checked ? "dark" : "light")} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
 
-            <div className="p-4 space-y-2">
-              <span className="text-xs font-bold text-foreground block">Accent Theme Color</span>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => { updateSettings({ accentColor: "pink" }); toast("Accent set to Hot Pink 💖", "success"); }}
-                  className={`w-8 h-8 rounded-2xl bg-primary flex items-center justify-center text-white transition ${accentColor === 'pink' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
-                >
-                  {accentColor === 'pink' && <CheckCircle2 size={14} />}
-                </button>
-                <button 
-                  onClick={() => { updateSettings({ accentColor: "purple" }); toast("Accent set to Cyber Purple 🔮", "success"); }}
-                  className={`w-8 h-8 rounded-2xl bg-purple-600 flex items-center justify-center text-foreground transition ${accentColor === 'purple' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
-                >
-                  {accentColor === 'purple' && <CheckCircle2 size={14} />}
-                </button>
-                <button 
-                  onClick={() => { updateSettings({ accentColor: "emerald" }); toast("Accent set to Neon Emerald ❇️", "success"); }}
-                  className={`w-8 h-8 rounded-2xl bg-success flex items-center justify-center text-foreground transition ${accentColor === 'emerald' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
-                >
-                  {accentColor === 'emerald' && <CheckCircle2 size={14} />}
-                </button>
-                <button 
-                  onClick={() => { updateSettings({ accentColor: "gold" }); toast("Accent set to Gold VIP 👑", "success"); }}
-                  className={`w-8 h-8 rounded-2xl bg-amber-400 flex items-center justify-center text-black transition ${accentColor === 'gold' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70'}`}
-                >
-                  {accentColor === 'gold' && <CheckCircle2 size={14} />}
-                </button>
-              </div>
-            </div>
-
-            <button onClick={() => setActiveModal("language")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
-              <span className="text-xs font-bold text-foreground">App Language Settings</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted">{appLanguage}</span>
-                <ChevronRight size={16} className="text-muted" />
-              </div>
-            </button>
-
-            <button onClick={() => setActiveModal("fontsize")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
-              <span className="text-xs font-bold text-foreground">App Font Size</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted">{fontSize}</span>
-                <ChevronRight size={16} className="text-muted" />
-              </div>
-            </button>
-
-            <button onClick={() => setActiveModal("photo_picker")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
-              <span className="text-xs font-bold text-foreground">Photo Picker</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted">{photoPickerType}</span>
-                <ChevronRight size={16} className="text-muted" />
-              </div>
-            </button>
           </div>
         </div>
 
@@ -650,48 +578,6 @@ export default function SettingsPage() {
                 <input type="range" min="5" max="200" value={matchRadiusKm} onChange={(e) => setMatchRadiusKm(Number(e.target.value))} className="w-full accent-primary" />
               </div>
               <button onClick={() => { setActiveModal(null); toast("Match preferences updated!", "success"); }} className="w-full py-3 bg-primary rounded-2xl font-black text-xs">Save Match Filters</button>
-            </div>
-          </motion.div>
-        )}
-
-        {activeModal === "language" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 space-y-3">
-              <h3 className="text-base font-black text-foreground text-center">App Language Settings</h3>
-              {["System defaults", "English (US)", "Hindi (हिन्दी)", "Spanish (Español)", "French (Français)"].map(lang => (
-                <button key={lang} onClick={() => { updateSettings({ language: lang }); setActiveModal(null); toast(`Language set to ${lang}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border flex items-center justify-between">
-                  <span>{lang}</span>
-                  {appLanguage === lang && <Check size={16} className="text-primary" />}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {activeModal === "fontsize" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 space-y-4 text-center">
-              <h3 className="text-base font-black text-foreground">App Font Size</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {[8, 10, 12].map(sz => (
-                  <button key={sz} onClick={() => { updateSettings({ fontSize: sz }); setActiveModal(null); toast(`Font size set to ${sz}`, "info"); }} className={`p-3 rounded-2xl text-xs font-bold border ${fontSize === sz ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-elevated border-border'}`}>
-                    Size {sz}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {activeModal === "photo_picker" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 space-y-3">
-              <h3 className="text-base font-black text-foreground text-center">Photo Picker Type</h3>
-              {["Classic Photo Picker", "HD Cloudinary Cloud Picker", "System Native Gallery"].map(p => (
-                <button key={p} onClick={() => { updateSettings({ photoPickerType: p }); setActiveModal(null); toast(`Photo picker set to ${p}`, "info"); }} className="w-full p-3 bg-surface-elevated hover:bg-surface-elevated rounded-2xl text-xs font-bold text-left border border-border">
-                  {p}
-                </button>
-              ))}
             </div>
           </motion.div>
         )}

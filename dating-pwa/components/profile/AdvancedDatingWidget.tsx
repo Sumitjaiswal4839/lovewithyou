@@ -222,7 +222,7 @@ export default function AdvancedDatingWidget() {
           <div className="bg-surface-elevated border border-border focus-within:border-primary/50 rounded-2xl p-3 px-4 transition-all">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-1.5">
-                <PhoneCall size={12} className="text-primary" /> Trusted Friend's Email ID / SOS Contact
+                <PhoneCall size={12} className="text-primary" /> Trusted Friend&apos;s Email ID / SOS Contact
               </label>
               <input 
                 type="email"

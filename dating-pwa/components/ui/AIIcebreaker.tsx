@@ -36,7 +36,7 @@ export function AIIcebreaker({ matchName, matchHobbies, onGenerate }: AIIcebreak
       <div>
         <h3 className="text-foreground font-bold text-lg mb-1">Stuck on what to say?</h3>
         <p className="text-muted text-sm leading-relaxed">
-          Let Gemini AI analyze your hobbies and {matchName}'s profile to craft the perfect opening message.
+          Let Gemini AI analyze your hobbies and {matchName}&apos;s profile to craft the perfect opening message.
         </p>
       </div>
 

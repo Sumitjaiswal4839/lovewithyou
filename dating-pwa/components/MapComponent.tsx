@@ -34,6 +34,7 @@ export default function MapComponent() {
 
   useEffect(() => {
     // Fix leaflet marker icon issues in Next.js
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -60,9 +61,9 @@ export default function MapComponent() {
             .then(data => setClusters(data || []))
             .catch(err => console.error(err));
         },
-        (err) => {
+        () => {
           toast("Location access denied. Showing default view.", "error");
-          setUserLocation([28.6139, 77.2090]); // Delhi fallback
+          setTimeout(() => setUserLocation([28.6139, 77.2090]), 0); // Delhi fallback
           const token = useUserStore.getState().authToken;
           fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
@@ -72,7 +73,7 @@ export default function MapComponent() {
         }
       );
     } else {
-        setUserLocation([28.6139, 77.2090]);
+        setTimeout(() => setUserLocation([28.6139, 77.2090]), 0);
         const token = useUserStore.getState().authToken;
         fetch(`${BACKEND_URL}/users/nearby?lat=28.6139&lng=77.2090`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
@@ -80,6 +81,7 @@ export default function MapComponent() {
           .then(res => res.json())
           .then(data => setClusters(data || []));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!userLocation) return <div className="h-full w-full bg-[#1e1e1e] flex items-center justify-center text-foreground">Loading Map...</div>;

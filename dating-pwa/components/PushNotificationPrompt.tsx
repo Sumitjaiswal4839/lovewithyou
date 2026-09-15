@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, X } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "./ui/Button";
 
 export function PushNotificationPrompt() {
@@ -51,7 +51,7 @@ export function PushNotificationPrompt() {
         <h3 className="font-bold flex items-center gap-2 mb-1">
           <Bell size={16} className="animate-bounce" /> Turn on Notifications
         </h3>
-        <p className="text-xs text-foreground/80">Don't miss out! Get alerted immediately when you get a new match or message.</p>
+        <p className="text-xs text-foreground/80">Don&apos;t miss out! Get alerted immediately when you get a new match or message.</p>
       </div>
       <div className="flex flex-col items-end gap-2">
         <Button onClick={handleAllow} size="sm" className="bg-white text-primary hover:bg-gray-100 whitespace-nowrap">

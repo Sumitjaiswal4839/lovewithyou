@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, HelpCircle, Sparkles, Coins, ShieldCheck, Radio, MapPin, CreditCard, X, Lock } from "lucide-react";
+import { ArrowLeft, ChevronDown, HelpCircle, Sparkles, X, Lock } from "lucide-react";
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -78,9 +78,9 @@ export default function FAQPage() {
   const router = useRouter();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const { toast } = useToast();
-  
+
   // Hidden Trigger State
-  const [tapCount, setTapCount] = useState(0);
+  const tapCountRef = useRef(0);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -91,17 +91,17 @@ export default function FAQPage() {
 
   // Secret 7-Tap Logic
   const handleSecretTap = () => {
-    setTapCount((prev) => {
-      const newCount = prev + 1;
-      if (newCount >= 7) {
-        setShowAdminModal(true);
-        return 0;
-      }
-      return newCount;
-    });
+    tapCountRef.current += 1;
+    
+    if (tapCountRef.current >= 7) {
+      setShowAdminModal(true);
+      tapCountRef.current = 0;
+    }
 
     if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-    tapTimeoutRef.current = setTimeout(() => setTapCount(0), 2000);
+    tapTimeoutRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 2000);
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -113,17 +113,17 @@ export default function FAQPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         toast("Access Granted. Welcome Master.", "success");
         setShowAdminModal(false);
-        router.push("/admin"); 
+        router.push("/admin");
       } else {
         toast(data.error || "Access Denied.", "error");
       }
-    } catch (err) {
+    } catch {
       toast("Connection error.", "error");
     } finally {
       setIsLoading(false);
@@ -148,7 +148,7 @@ export default function FAQPage() {
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-28 max-w-3xl mx-auto w-full">
         <div className="space-y-4">
-          
+
           {/* Header Banner */}
           <div className="text-center mb-6 mt-2 p-8 rounded-3xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-purple-500/20 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/30 transition-colors" />
@@ -164,7 +164,7 @@ export default function FAQPage() {
           <div className="space-y-3">
             {faqs.map((faq, index) => (
               <div key={index} className="bg-white/[0.02] border border-white/[0.05] rounded-2xl overflow-hidden transition-colors hover:border-white/10 hover:bg-white/[0.04]">
-                <button 
+                <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
                   className="w-full flex items-center justify-between p-5 text-left"
                 >
@@ -174,9 +174,9 @@ export default function FAQPage() {
                     </span>
                     <span className="font-bold text-white text-sm">{faq.question}</span>
                   </div>
-                  <ChevronDown 
-                    size={18} 
-                    className={`text-gray-400 transition-transform duration-300 shrink-0 ${openIndex === index ? 'rotate-180' : ''}`} 
+                  <ChevronDown
+                    size={18}
+                    className={`text-gray-400 transition-transform duration-300 shrink-0 ${openIndex === index ? 'rotate-180' : ''}`}
                   />
                 </button>
                 <AnimatePresence>
@@ -196,14 +196,14 @@ export default function FAQPage() {
               </div>
             ))}
           </div>
-          
+
           {/* Support Banner */}
           <div className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-3xl text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
             <h3 className="text-white font-black text-lg mb-2 relative z-10">Still have questions?</h3>
             <p className="text-xs text-gray-400 mb-6 relative z-10">Our Enterprise Trust & Safety team is available 24/7.</p>
-            <button 
-              onClick={() => router.push('/feedback')}
+            <button
+              onClick={() => router.push('/contact')}
               className="px-8 py-3.5 bg-white text-black hover:bg-gray-200 rounded-full font-black text-xs shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all relative z-10"
             >
               Contact Support
@@ -218,7 +218,7 @@ export default function FAQPage() {
             <button onClick={() => setShowAdminModal(false)} className="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors">
               <X size={20} />
             </button>
-            
+
             <div className="flex flex-col items-center mb-8">
               <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-4 border border-rose-500/20">
                 <Lock size={28} />

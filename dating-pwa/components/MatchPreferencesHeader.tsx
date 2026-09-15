@@ -293,7 +293,7 @@ export default function MatchPreferencesHeader() {
                   {["Everyone", "Male", "Female"].map((g) => (
                     <button
                       key={g}
-                      onClick={() => updateMatchPreferences({ gender: g as any })}
+                      onClick={() => updateMatchPreferences({ gender: g as "Male" | "Female" | "Everyone" })}
                       className={`py-2 rounded-xl text-xs font-bold transition-all ${
                         matchPreferences.gender === g 
                           ? "bg-primary text-white shadow-md shadow-primary/20 ring-1 ring-primary" 
