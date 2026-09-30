@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

@@ -68,6 +68,7 @@ export default function Home() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [matchedProfile, setMatchedProfile] = useState<any>(null);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const { toast: uiToast } = useToast();
   const spendCoins = useUserStore((state) => state.spendCoins);
   const addMatch = useUserStore((state) => state.addMatch);
@@ -82,7 +83,7 @@ export default function Home() {
   const fetchRealProfiles = async () => {
     setIsLoadingProfiles(true);
     try {
-      let query = supabase.from("public_profiles").select("*");
+      let query = supabase.from("profiles").select("*");
       
       // Apply match preferences filters at database level
       if (matchPreferences) {
@@ -234,6 +235,13 @@ export default function Home() {
 
   // Redirect to setup if no profile exists — wait for Zustand hydration first
   const [hydrated, setHydrated] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  
+  const currentDisplayId = displayProfiles[0]?.id;
+  useEffect(() => {
+    setTimeout(() => setActiveImageIndex(0), 0);
+     
+  }, [currentDisplayId]);
   useEffect(() => {
     // Give Zustand persist a tick to rehydrate from localStorage
     const t = setTimeout(() => setHydrated(true), 100);
@@ -424,14 +432,8 @@ export default function Home() {
          console.error("Swipe API Error:", err);
        }
     }
-    
-    if (direction === "left") {
-       setLastSwipedProfile(targetProfile);
-    } else {
-       setLastSwipedProfile(null);
-    }
-
     setProfiles((prev) => prev.slice(1));
+    setMediaLoaded(false);
   };
 
   const handleRewind = async () => {
@@ -571,7 +573,16 @@ export default function Home() {
           >
             {/* Top Image Section (Full Bleed) */}
             <div className="relative w-full h-[65%] sm:h-[70%] bg-black shrink-0">
-              {currentProfile.video_url ? (
+              {appSettings.lowDataMode && !mediaLoaded ? (
+                <div 
+                  onClick={() => setMediaLoaded(true)}
+                  className="w-full h-full bg-slate-900 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 transition text-center px-4"
+                >
+                  <WifiOff size={48} className="text-muted mb-4 opacity-50" />
+                  <h3 className="text-white font-bold mb-2">Data Saver Active</h3>
+                  <p className="text-secondary text-sm">Tap to load high-res {currentProfile.video_url ? 'video' : 'photo'}</p>
+                </div>
+              ) : currentProfile.video_url ? (
                 <video 
                   src={currentProfile.video_url} 
                   autoPlay 
@@ -583,11 +594,39 @@ export default function Home() {
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
-                  src={currentProfile.img} 
+                  src={currentProfile.images?.[activeImageIndex] || currentProfile.img} 
                   alt={currentProfile.name} 
-                  className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''} ${appSettings.lowDataMode ? 'blur-[2px] opacity-90' : ''}`}
-                  loading={appSettings.lowDataMode ? "lazy" : "eager"}
+                  className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''}`}
+                  loading="eager"
                 />
+              )}
+              
+              {/* Image Navigation Tap Zones */}
+              {currentProfile.images && currentProfile.images.length > 1 && (
+                <>
+                  <div 
+                    className="absolute top-0 left-0 w-1/2 h-full z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (activeImageIndex > 0) setActiveImageIndex(activeImageIndex - 1);
+                    }}
+                  />
+                  <div 
+                    className="absolute top-0 right-0 w-1/2 h-full z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (activeImageIndex < currentProfile.images.length - 1) setActiveImageIndex(activeImageIndex + 1);
+                    }}
+                  />
+                  {/* Progress Bars */}
+                  <div className="absolute top-2 left-2 right-2 flex gap-1 z-20 pointer-events-none">
+                    {currentProfile.images?.map((_: unknown, idx: number) => (
+                      <div key={idx} className="flex-1 h-1 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm">
+                        <div className={`h-full bg-white transition-all ${idx === activeImageIndex ? 'w-full' : idx < activeImageIndex ? 'w-full opacity-60' : 'w-0'}`} />
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
               
               {/* Unverified Lock Overlay */}

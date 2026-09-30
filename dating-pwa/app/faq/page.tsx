@@ -82,7 +82,7 @@ const faqs = [
   {
     tab: "General",
     icon: "Settings",
-    question: "What's new in version 5.30.97?",
+    question: "What's new in version 1.0.0 ?",
     answer: "Version 5.30.97 introduces a clean and de-duplicated Settings Suite, a real-time Coin Wallet in the top bar, Campus Hub, transparent Coin Ledger history, and major stability enhancements!"
   },
   {

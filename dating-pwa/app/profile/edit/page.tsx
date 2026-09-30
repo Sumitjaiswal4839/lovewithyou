@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/Button";
-import { Lock, Camera, ArrowLeft, Mic, Square, Play, Trash2, Sparkles, ScanFace, EyeOff, Bell, Shield, Languages, Music, Plus, X } from "lucide-react";
+import { Lock, ArrowLeft, Mic, Square, Trash2, Sparkles, ScanFace, EyeOff, Music, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
@@ -43,7 +43,6 @@ export default function EditProfilePage() {
   const [promptAnswer, setPromptAnswer] = useState("");
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -68,7 +67,7 @@ export default function EditProfilePage() {
 
       mediaRecorder.current.start();
       setIsRecording(true);
-    } catch (err) {
+    } catch {
       toast("Microphone access denied or unavailable.", "error");
     }
   };
@@ -128,9 +127,10 @@ export default function EditProfilePage() {
         newPhotos.push(url);
       }
       setFormData({ ...formData, photos: newPhotos });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" } as any);
       toast("Photo uploaded successfully! ✅", "success");
-    } catch (err) {
+    } catch {
       toast("Photo upload failed. Try again.", "error");
     }
   };
@@ -139,7 +139,33 @@ export default function EditProfilePage() {
     e.stopPropagation();
     const newPhotos = formData.photos.filter((_, i) => i !== index);
     setFormData({ ...formData, photos: newPhotos });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] || "" } as any);
+  };
+
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const startPress = (index: number) => {
+    if (index === 0 || !formData.photos[index]) return;
+    longPressTimer.current = setTimeout(() => {
+      const newPhotos = [...formData.photos];
+      const temp = newPhotos[0];
+      newPhotos[0] = newPhotos[index];
+      newPhotos[index] = temp;
+      setFormData({ ...formData, photos: newPhotos });
+      if (profile) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setProfile({ ...profile, photos: newPhotos, photo_url: newPhotos[0] } as any);
+      }
+      toast("Set as Main Photo! 📸", "success");
+    }, 600);
+  };
+
+  const cancelPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   if (!profile) {
@@ -162,9 +188,24 @@ export default function EditProfilePage() {
           const photo = formData.photos[index];
           const isMain = index === 0;
           return (
-            <div key={index} className={`relative group cursor-pointer rounded-2xl overflow-hidden bg-surface-elevated border-2 border-border aspect-[3/4] flex items-center justify-center ${isMain ? 'col-span-2 row-span-2 aspect-[3/4.2]' : ''}`}>
+            <div 
+              key={index} 
+              className={`relative group cursor-pointer rounded-2xl overflow-hidden bg-surface-elevated border-2 border-border aspect-[3/4] flex items-center justify-center select-none ${isMain ? 'col-span-2 row-span-2 aspect-[3/4.2]' : ''}`}
+              onTouchStart={() => startPress(index)}
+              onTouchEnd={cancelPress}
+              onTouchMove={cancelPress}
+              onMouseDown={() => startPress(index)}
+              onMouseUp={cancelPress}
+              onMouseLeave={cancelPress}
+              onContextMenu={(e) => {
+                 if (index !== 0 && photo) {
+                   e.preventDefault();
+                 }
+              }}
+            >
               {photo ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photo} alt={`Profile ${index + 1}`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button onClick={(e) => handleDeletePhoto(index, e)} className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full">

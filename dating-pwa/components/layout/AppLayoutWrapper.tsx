@@ -28,8 +28,10 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Setup: no nav, no topbar — just the page
-  if (isSetup) {
+  const isPublicPage = pathname === "/privacy" || pathname === "/terms" || pathname === "/faq" || pathname === "/contact";
+
+  // Setup or Public pages: no nav, no topbar — just the page
+  if (isSetup || isPublicPage) {
     return (
       <div className="w-full min-h-screen bg-background">
         <ScreenshotShield>{children}</ScreenshotShield>

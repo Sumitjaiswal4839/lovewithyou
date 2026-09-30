@@ -2,13 +2,14 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Eye, Heart, Users, Award, ShieldCheck, Share2, ScanFace, Gift, Copy, X, GraduationCap, Sparkles, Edit3, Settings, ChevronRight } from "lucide-react";
+import { TrendingUp, Eye, Heart, Users, Award, ShieldCheck, Share2, ScanFace, Gift, Copy, X, GraduationCap, Edit3, Settings, ChevronRight } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { StudentVerificationModal } from "@/components/StudentVerificationModal";
 import { GetVerifiedModal } from "@/components/GetVerifiedModal";
 import AdvancedDatingWidget from "@/components/profile/AdvancedDatingWidget";
 import { useState } from "react";
 import { useToast } from "@/components/ui/ToastProvider";
+import { FEATURE_FLAGS } from "@/config/features";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function ProfilePage() {
           <div className="relative mb-4">
             <div className="w-28 h-28 rounded-full border-[3px] border-surface-elevated p-1 shadow-2xl relative z-10 bg-background">
               <div className="w-full h-full rounded-full overflow-hidden bg-surface-elevated">
+                { }
                 {profile.photo_url ? (
                    <img src={profile.photo_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -74,6 +76,7 @@ export default function ProfilePage() {
                      {profile?.name?.[0] || "?"}
                    </div>
                 )}
+
               </div>
             </div>
             
@@ -197,13 +200,25 @@ export default function ProfilePage() {
                 </div>
               </button>
               
-              <button onClick={() => setShowAdModal(true)} className="bg-surface-elevated border border-border rounded-[1.5rem] p-4 flex flex-col items-start gap-3 hover:bg-surface-elevated/80 transition text-left shadow-sm active:scale-95">
+              <button 
+                onClick={() => {
+                  if (FEATURE_FLAGS.MAINTENANCE_WATCH_AD) {
+                    toast("Coming soon! 🚧 Due to ad credentials setup, this is under maintenance.", "message");
+                    return;
+                  }
+                  setShowAdModal(true);
+                }} 
+                className={`bg-surface-elevated border border-border rounded-[1.5rem] p-4 flex flex-col items-start gap-3 transition text-left shadow-sm ${FEATURE_FLAGS.MAINTENANCE_WATCH_AD ? 'opacity-70 cursor-not-allowed' : 'hover:bg-surface-elevated/80 active:scale-95'}`}
+              >
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
                   <TrendingUp size={18} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[13px] text-foreground">Watch Ad</h4>
-                  <p className="text-muted text-[10px] mt-0.5">+50 Free Coins</p>
+                  <h4 className="font-bold text-[13px] text-foreground flex items-center gap-2">
+                    Watch Ad
+                    {FEATURE_FLAGS.MAINTENANCE_WATCH_AD && <span className="bg-rose-500/10 text-rose-500 text-[9px] px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-black">Maintenance</span>}
+                  </h4>
+                  <p className="text-muted text-[10px] mt-0.5">{FEATURE_FLAGS.MAINTENANCE_WATCH_AD ? "Temporarily Disabled" : "+50 Free Coins"}</p>
                 </div>
               </button>
 
@@ -256,7 +271,27 @@ export default function ProfilePage() {
               </button>
             </div>
             
-            <button onClick={() => setShowReferralModal(false)} className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition">
+            <button 
+              onClick={async () => {
+                const inviteLink = `https://lovewithyou.app/invite/${profile?.name?.toLowerCase() || 'user'}`;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: 'Join LoveWithYou',
+                      text: 'Join me on LoveWithYou and get 200 free coins!',
+                      url: inviteLink,
+                    });
+                  } catch (err) {
+                    console.error("Error sharing:", err);
+                  }
+                } else {
+                  navigator.clipboard.writeText(inviteLink);
+                  toast("Link Copied!", "success");
+                }
+                setShowReferralModal(false);
+              }} 
+              className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition"
+            >
               <Share2 size={18} /> Share Direct Link
             </button>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Shield, Lock, Eye, MapPin, Database, Server, Smartphone, Cpu, UserCheck, Activity } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, MapPin, Database, Server, Smartphone, Cpu, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function PrivacyPolicyPage() {
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pb-28 max-w-md mx-auto w-full">
         
         {/* Banner */}
-        <div className="p-5 rounded-2xl bg-surface-elevated border border-border flex items-start gap-4">
+        <div className="p-5 rounded-2xl bg-surface-elevated flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <Lock className="text-primary" size={20} />
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, GraduationCap, Heart, User, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -136,6 +137,10 @@ export default function UserProfilePage() {
               <span className="flex items-center gap-1 text-xs font-bold bg-surface-elevated px-3 py-1.5 rounded-full backdrop-blur-md">
                 <MapPin size={14} /> {profile.location}
               </span>
+            )}
+            
+            {!isAnonymous && !isBlindDate && (
+              <KarmaBadge score={profile.karma || 0} />
             )}
             
             {/* Campus Mode highlights campus */}

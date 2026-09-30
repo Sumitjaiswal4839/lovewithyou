@@ -68,17 +68,17 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-dark-bg border border-glass-border w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl animate-in slide-in-from-bottom-8">
+      <div className="bg-surface-elevated border border-border w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl animate-in slide-in-from-bottom-8">
         <div className="flex justify-between items-start mb-4">
-           <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+           <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
              <GraduationCap size={24} />
            </div>
-           <button onClick={onClose} className="text-muted hover:text-foreground p-1"><X size={20} /></button>
+           <button onClick={onClose} className="p-2 bg-surface hover:bg-background rounded-full text-foreground transition-colors shadow-sm"><X size={20} /></button>
         </div>
         
         <h3 className="text-xl font-bold text-foreground mb-2 text-left">Student Verification</h3>
-        <p className="text-sm text-muted mb-6 text-left">
-          Upload your valid College/University ID card to unlock exclusive student perks like <strong className="text-yellow-400">Double Coins</strong>, <strong className="text-pink-400">Half-Price Boosts</strong>, and Campus Communities.
+        <p className="text-sm text-secondary mb-6 text-left">
+          Upload your valid College/University ID card to unlock exclusive student perks like <strong className="text-yellow-500 dark:text-yellow-400">Double Coins</strong>, <strong className="text-pink-500 dark:text-pink-400">Half-Price Boosts</strong>, and Campus Communities.
         </p>
 
         {profile.studentVerificationStatus === 'pending' ? (
@@ -103,6 +103,7 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
+              { }
               {preview ? (
                 <img src={preview} alt="ID Preview" className="w-full h-full object-cover" />
               ) : (

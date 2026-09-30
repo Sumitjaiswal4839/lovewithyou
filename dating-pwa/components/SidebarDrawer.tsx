@@ -23,18 +23,18 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   return (
     <>
       {/* Backdrop (covers entire screen) */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in transition-opacity"
         style={{ zIndex: 100 }}
         onClick={onClose}
       />
-      
+
       {/* Sidebar Panel (aligned to the left edge of the max-w-md container) */}
-      <div 
+      <div
         className="fixed inset-y-0 left-0 sm:left-1/2 sm:-translate-x-[224px] w-[80%] max-w-[320px] bg-background border-r border-border shadow-2xl animate-in slide-in-from-left flex flex-col pt-safe h-[100dvh] overflow-hidden"
         style={{ zIndex: 101 }}
       >
-        
+
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -60,8 +60,8 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
         {/* Links */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          
-          <button 
+
+          <button
             onClick={() => handleNavigate('/blind-date')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -71,7 +71,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             <span className="font-bold text-foreground text-sm">Blind Date</span>
           </button>
 
-          <button 
+          <button
             onClick={() => handleNavigate('/nearby-map')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -81,7 +81,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             <span className="font-bold text-foreground text-sm">Nearby Map</span>
           </button>
 
-          <button 
+          <button
             onClick={() => handleNavigate('/random-chat')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -91,7 +91,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             <span className="font-bold text-foreground text-sm">Random Chat</span>
           </button>
 
-          <button 
+          <button
             onClick={() => handleNavigate('/midnight-roulette')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -100,8 +100,8 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             </div>
             <span className="font-bold text-foreground text-sm">Midnight Roulette</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => handleNavigate('/campus')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -113,7 +113,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
           <div className="my-2 border-t border-border mx-4" />
 
-          <button 
+          <button
             onClick={() => handleNavigate('/contact')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -123,7 +123,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             <span className="font-bold text-foreground text-sm">Contact & Support</span>
           </button>
 
-          <button 
+          <button
             onClick={() => handleNavigate('/feedback')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -133,7 +133,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
             <span className="font-bold text-foreground text-sm">Send Feedback</span>
           </button>
 
-          <button 
+          <button
             onClick={() => handleNavigate('/faq')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -145,7 +145,7 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
           <div className="my-2 border-t border-border mx-4" />
 
-          <button 
+          <button
             onClick={() => handleNavigate('/settings')}
             className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
@@ -158,10 +158,10 @@ export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
 
         {/* Footer */}
         <div className="p-5 border-t border-border bg-background">
-           <div className="flex items-center gap-2 text-primary font-black text-sm mb-1 justify-center">
-             <Zap size={14} className="fill-primary" /> LoveWithYou PRO
-           </div>
-           <p className="text-center text-[10px] text-muted">Version 1.0.0 (Premium)</p>
+          <div className="flex items-center gap-2 text-primary font-black text-sm mb-1 justify-center">
+            <Zap size={14} className="fill-primary" /> LoveWithYou
+          </div>
+          <p className="text-center text-[10px] text-muted">Version 1.0.0</p>
         </div>
       </div>
     </>
