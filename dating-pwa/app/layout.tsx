@@ -4,10 +4,20 @@ import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppLayoutWrapper } from "@/components/layout/AppLayoutWrapper";
 import Script from "next/script";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 
 export const metadata: Metadata = {
-  title: "LoveWithYou - Find your Match",
-  description: "A secure, coin-based next-gen dating & flirt app.",
+  title: "LoveWithYou - Random Chat & Free Anonymous Dating",
+  description: "Join LoveWithYou for free anonymous dating, meet singles nearby, and start random chats globally. The best secure dating app to meet strangers.",
+  keywords: "random chat, free dating app, meet singles, anonymous chat, strangers chat india, meet singles nearby",
+  openGraph: {
+    title: "LoveWithYou - Random Chat & Anonymous Dating",
+    description: "Meet singles nearby and start random anonymous chats instantly.",
+    url: "https://lovewithyou.vercel.app",
+    siteName: "LoveWithYou",
+    type: "website",
+  },
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.png",
@@ -41,15 +51,39 @@ export default function RootLayout({
             `}
           </Script>
         )}
+        {/* Manual Service Worker Registration for Turbopack */}
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('Service Worker registration successful with scope: ', registration.scope);
+                  },
+                  function(err) {
+                    console.log('Service Worker registration failed: ', err);
+                  }
+                );
+              });
+            }
+          `}
+        </Script>
       </head>
       <body
-        className="antialiased font-sans min-h-screen bg-[#f4f4f5] dark:bg-[#121212] sm:bg-[#e4e4e7] sm:dark:bg-[#0a0a0a] selection:bg-primary/30 transition-colors duration-300"
+        className="antialiased font-sans min-h-screen bg-[#f4f4f5] dark:bg-[#121212] sm:bg-[#e4e4e7] sm:dark:bg-[#0a0a0a] text-foreground selection:bg-primary/30 transition-colors duration-300"
       >
         <ThemeProvider defaultTheme="dark" storageKey="dating-ui-theme">
           <ToastProvider>
-            <AppLayoutWrapper>
-              {children}
-            </AppLayoutWrapper>
+            {process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ? (
+              <MaintenanceScreen />
+            ) : (
+              <>
+                <PushNotificationPrompt />
+                <AppLayoutWrapper>
+                  {children}
+                </AppLayoutWrapper>
+              </>
+            )}
           </ToastProvider>
         </ThemeProvider>
       </body>

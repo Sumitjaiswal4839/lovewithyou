@@ -80,6 +80,11 @@ func BlindAudioMatch(w http.ResponseWriter, r *http.Request) {
 			"partnerId": verifiedDeviceID,
 		}
 
+		// ✅ Persist to DB so session survives server restarts
+		if err := db.SaveBlindAudioSession(verifiedDeviceID, matchedPartner); err != nil {
+			log.Printf("⚠️ [BlindDate] DB persist failed (non-fatal): %v", err)
+		}
+
 		sendJSONResponse(w, http.StatusOK, ResponsePayload{
 			Status: "matched",
 			Data: map[string]any{
@@ -294,6 +299,11 @@ func SquadDoubleDate(w http.ResponseWriter, r *http.Request) {
 			"partnerSquad": req.SquadName,
 		}
 
+		// ✅ Persist to DB so squad room survives server restarts
+		if err := db.SaveSquadMatch(roomID, req.SquadName, verifiedDeviceID, matchedLeader); err != nil {
+			log.Printf("⚠️ [Squad] DB persist failed (non-fatal): %v", err)
+		}
+
 		sendJSONResponse(w, http.StatusCreated, ResponsePayload{
 			Status: "matched",
 			Data: map[string]any{
@@ -340,11 +350,28 @@ func GetSquadMatchStatus(w http.ResponseWriter, r *http.Request) {
 // SecondChanceRewind lets users spend 5 Coins to rewind Left Swipes or missed matches
 func SecondChanceRewind(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-Device-Id")
-	log.Printf("🔄 [Second Chance] Device %s spent 5 Coins to unlock swipe history vault", deviceID)
+	log.Printf("🔄 [Second Chance] Device %s requested swipe history vault", deviceID)
+
+	profile, err := db.RewindLastSwipe(deviceID)
+	if err != nil {
+		log.Printf("⚠️ [Second Chance] Rewind failed for %s: %v", deviceID, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// We only deduct coins AFTER successfully finding a profile to rewind
+	_, err = db.UpdateCoinsAtomic(deviceID, -5, "Second Chance Rewind")
+	if err != nil {
+		log.Printf("⚠️ [Second Chance] Coin deduction failed for %s: %v", deviceID, err)
+		// We still proceed since rewind happened, but this shouldn't happen usually
+	}
 
 	sendJSONResponse(w, http.StatusOK, ResponsePayload{
 		Status:  "rewound",
 		Message: "Previous passed candidate restored to your active deck! 5 Coins deducted.",
+		Data: map[string]interface{}{
+			"profile": profile,
+		},
 	})
 }
 

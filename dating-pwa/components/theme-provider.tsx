@@ -3,10 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
+type AccentTheme = "rose" | "purple" | "emerald" | "amber";
 
 interface ThemeProviderState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  accentTheme: AccentTheme;
+  setAccentTheme: (theme: AccentTheme) => void;
 }
 
 const ThemeProviderContext = ((globalThis as unknown as Record<string, unknown>).__ThemeContext as React.Context<ThemeProviderState | undefined>) || createContext<ThemeProviderState | undefined>(undefined);
@@ -17,13 +20,18 @@ if (process.env.NODE_ENV !== "production") {
 export function ThemeProvider({
   children,
   defaultTheme = "system",
+  defaultAccent = "amber",
   storageKey = "dating-ui-theme",
+  accentStorageKey = "dating-ui-accent",
 }: {
   children: React.ReactNode;
   defaultTheme?: Theme;
+  defaultAccent?: AccentTheme;
   storageKey?: string;
+  accentStorageKey?: string;
 }) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>(defaultAccent);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,10 +40,16 @@ export function ThemeProvider({
     const savedTheme = (localStorage.getItem(storageKey) as Theme) || defaultTheme;
     setTheme(savedTheme);
 
+    const savedAccent = (localStorage.getItem(accentStorageKey) as AccentTheme) || defaultAccent;
+    setAccentTheme(savedAccent);
+
     // Sync across tabs listener
     const handleStorage = (e: StorageEvent) => {
       if (e.key === storageKey && e.newValue) {
         setTheme(e.newValue as Theme);
+      }
+      if (e.key === accentStorageKey && e.newValue) {
+        setAccentTheme(e.newValue as AccentTheme);
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -46,6 +60,7 @@ export function ThemeProvider({
     if (!mounted) return;
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
+    root.setAttribute("data-accent", accentTheme);
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -69,6 +84,11 @@ export function ThemeProvider({
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },
+    accentTheme,
+    setAccentTheme: (newAccent: AccentTheme) => {
+      localStorage.setItem(accentStorageKey, newAccent);
+      setAccentTheme(newAccent);
+    }
   };
 
   // Always render children — theme class is applied to <html> instantly

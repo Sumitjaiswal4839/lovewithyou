@@ -7,110 +7,109 @@ export default function TermsPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#080512] text-white">
-      {/* Premium Header */}
-      <div className="flex items-center justify-between p-5 border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-0 z-30 shadow-[0_10px_30px_rgba(226,54,112,0.05)]">
-        <button onClick={() => router.back()} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-105 active:scale-95">
-          <ArrowLeft size={20} className="text-gray-300" />
-        </button>
-        <div className="text-center">
-          <h1 className="text-lg font-black tracking-wide flex items-center justify-center gap-2">
-            TERMS OF SERVICE <Scale size={16} className="text-rose-500" />
-          </h1>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Enterprise Agreement</p>
+    <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
+      {/* Top Header */}
+      <div className="flex items-center justify-between h-14 px-4 border-b border-border bg-surface/95 backdrop-blur-xl sticky top-0 z-30 pt-safe">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => router.back()} 
+            className="p-1.5 -ml-1 bg-transparent hover:bg-surface-elevated rounded-xl text-foreground transition active:scale-95"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-base font-black text-foreground tracking-tight flex items-center gap-2">
+              Terms of Service <Scale size={16} className="text-primary" />
+            </h1>
+          </div>
         </div>
-        <div className="w-10" /> {/* Spacer */}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 pb-28 max-w-3xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pb-28 max-w-md mx-auto w-full">
         
-        {/* Enterprise Banner */}
-        <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-500/10 via-purple-500/5 to-transparent border border-rose-500/20 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-rose-500/30 transition-colors" />
-          <div className="flex gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg shadow-rose-500/25 shrink-0">
-              <ShieldCheck className="text-white" size={24} />
-            </div>
-            <div>
-              <h3 className="font-black text-white text-lg tracking-tight">Legal Agreement</h3>
-              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
-                Welcome to the LoveWithYou Enterprise Network. By accessing our platform, you are entering into a legally binding contract. Please review our strict compliance policies below.
-              </p>
-            </div>
+        {/* Banner */}
+        <div className="p-5 rounded-2xl bg-surface-elevated border border-border flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <ShieldCheck className="text-primary" size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground text-sm">User Agreement</h3>
+            <p className="text-xs text-muted mt-1 leading-relaxed">
+              Welcome to LoveWithYou. By accessing our platform, you are agreeing to our community rules and terms. Please review them below.
+            </p>
           </div>
         </div>
 
         {/* Section Template */}
+        <div className="space-y-3">
         {[
           {
             icon: UserCheck,
-            title: "1. Eligibility & Age Verification",
-            content: "LoveWithYou is an elite 18+ platform. Access to premium features including the After-Dark Lounge and Midnight Roulette requires strict age verification. Unauthorized underage access will result in an irrevocable hardware ban.",
-            color: "text-blue-400",
+            title: "1. Eligibility & Age",
+            content: "LoveWithYou is an 18+ platform. Access to premium features requires age verification. Unauthorized underage access will result in a ban.",
+            color: "text-blue-500",
             bg: "bg-blue-500/10",
-            border: "border-blue-500/20"
           },
           {
             icon: Lock,
-            title: "2. Zero-Trust Hardware Authentication",
-            content: "We utilize advanced device fingerprinting for passwordless, zero-trust authentication. Your account is cryptographically bound to your physical device. Account sharing is strictly prohibited.",
-            color: "text-emerald-400",
+            title: "2. Device Authentication",
+            content: "We utilize device fingerprinting for passwordless authentication. Your account is bound to your physical device to prevent spam.",
+            color: "text-emerald-500",
             bg: "bg-emerald-500/10",
-            border: "border-emerald-500/20"
           },
           {
             icon: Coins,
-            title: "3. Enterprise Coin Economy",
-            content: "The platform operates on a proprietary virtual currency ledger. Coins hold no fiat value. All transactions are immutably logged in our secure Supabase Audit Ledger to prevent fraud.",
-            color: "text-amber-400",
+            title: "3. Coin Economy",
+            content: "The platform operates on a virtual currency. Coins hold no real-world monetary value and cannot be withdrawn.",
+            color: "text-amber-500",
             bg: "bg-amber-500/10",
-            border: "border-amber-500/20"
           },
           {
             icon: CreditCard,
-            title: "4. Payments & Financial Policy",
-            content: "All fiat-to-coin transactions are processed via Razorpay's enterprise gateway. Purchases are strictly non-refundable. Fraudulent chargebacks will result in immediate legal reporting and account termination.",
-            color: "text-purple-400",
+            title: "4. Payments & Refunds",
+            content: "All transactions are processed securely. Purchases of virtual coins or premium features are non-refundable.",
+            color: "text-purple-500",
             bg: "bg-purple-500/10",
-            border: "border-purple-500/20"
           },
           {
             icon: AlertTriangle,
-            title: "5. Code of Conduct & Anti-Screenshot",
-            content: "We maintain a zero-tolerance policy for harassment. Our proprietary Anti-Screenshot technology protects private chats. Bypassing these security measures will trigger an automatic SOS ban.",
-            color: "text-rose-400",
+            title: "5. Code of Conduct",
+            content: "We maintain a zero-tolerance policy for harassment. Anti-Screenshot technology protects private chats. Bypassing these will trigger an auto-ban.",
+            color: "text-rose-500",
             bg: "bg-rose-500/10",
-            border: "border-rose-500/20"
           },
           {
             icon: Sparkles,
-            title: "6. AI Identity Verification",
-            content: "To guarantee 100% authenticity, our platform utilizes military-grade AI facial scanning to detect catfishing and deepfakes. Periodic re-verification may be required to maintain active status.",
-            color: "text-cyan-400",
+            title: "6. Identity Verification",
+            content: "To guarantee authenticity, our platform utilizes AI facial scanning to detect catfishing. Periodic re-verification may be required.",
+            color: "text-cyan-500",
             bg: "bg-cyan-500/10",
-            border: "border-cyan-500/20"
+          },
+          {
+            icon: Radio,
+            title: "7. Campus Mode Rules",
+            content: "Anonymous Campus posts must adhere to our strict anti-harassment policy. Violations will result in an immediate campus ban.",
+            color: "text-orange-500",
+            bg: "bg-orange-500/10",
           }
         ].map((section, idx) => (
-          <div key={idx} className="bg-white/[0.02] border border-white/[0.05] p-5 rounded-3xl hover:bg-white/[0.04] transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`p-2 rounded-xl ${section.bg} ${section.border} border`}>
-                <section.icon size={18} className={section.color} />
+          <div key={idx} className="bg-surface-elevated border border-border p-4 rounded-2xl flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <div className={`p-1.5 rounded-lg ${section.bg}`}>
+                <section.icon size={16} className={section.color} />
               </div>
-              <h2 className="font-bold text-sm tracking-wide">{section.title}</h2>
+              <h2 className="font-bold text-sm text-foreground">{section.title}</h2>
             </div>
-            <p className="text-xs text-gray-400 leading-relaxed pl-12">
+            <p className="text-xs text-secondary leading-relaxed">
               {section.content}
             </p>
           </div>
         ))}
+        </div>
 
-        <div className="text-center pt-8 flex flex-col items-center">
-          <div className="w-12 h-1 bg-white/10 rounded-full mb-4" />
-          <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
-            LoveWithYou Enterprise Edition • v6.0.0
-          </p>
-          <p className="text-[10px] text-gray-700 mt-1">
-            Protected by advanced cryptographic security.
+        <div className="text-center pt-6 flex flex-col items-center">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-wider">
+            LoveWithYou • Last Updated: Sept 2026
           </p>
         </div>
       </div>

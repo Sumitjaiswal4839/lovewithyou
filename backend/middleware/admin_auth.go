@@ -3,20 +3,40 @@ package middleware
 import (
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 func AdminAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("admin_session")
-		if err != nil {
-			http.Error(w, "Unauthorized: Admin access required", http.StatusUnauthorized)
+		// Allow CORS preflight requests to pass through without auth
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		tokenString := cookie.Value
 		jwtSecret := os.Getenv("JWT_SECRET")
+		var tokenString string
+
+		// Method 1: Cookie se token lo (same-origin)
+		cookie, err := r.Cookie("admin_session")
+		if err == nil {
+			tokenString = cookie.Value
+		}
+
+		// Method 2: Authorization Bearer header se token lo (cross-origin)
+		if tokenString == "" {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			}
+		}
+
+		if tokenString == "" {
+			http.Error(w, "Unauthorized: Admin access required", http.StatusUnauthorized)
+			return
+		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

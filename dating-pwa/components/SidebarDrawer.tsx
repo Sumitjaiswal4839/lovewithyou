@@ -1,36 +1,8 @@
-// components/SidebarDrawer.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  X, 
-  MapPin, 
-  Users, 
-  User, 
-  Heart, 
-  HeartPulse, 
-  Settings as SettingsIcon, 
-  HelpCircle, 
-  MessageCircle, 
-  Coins, 
-  LogOut, 
-  Search, 
-  ChevronRight, 
-  Flame, 
-  Moon, 
-  Sparkles, 
-  Award, 
-  Headphones,
-  Trophy,
-  Calendar,
-  GraduationCap,
-  Headset
-} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/ToastProvider";
-import { CoinHistoryModal } from "@/components/CoinHistoryModal";
+import { X, Map, MessageSquare, Moon, Settings, Zap, HeartPulse, GraduationCap, Mail, HelpCircle, Send } from "lucide-react";
 
 interface SidebarDrawerProps {
   isOpen: boolean;
@@ -39,508 +11,159 @@ interface SidebarDrawerProps {
 
 export function SidebarDrawer({ isOpen, onClose }: SidebarDrawerProps) {
   const router = useRouter();
-  const { toast } = useToast();
   const profile = useUserStore((state) => state.profile);
-  const coins = useUserStore((state) => state.coins);
-  const [showCoinHistory, setShowCoinHistory] = useState(false);
-  const canSearch = useUserStore((state) => state.canSearch);
-  const incrementSearchCount = useUserStore((state) => state.incrementSearchCount);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [showSecretArenas, setShowSecretArenas] = useState(false);
-  const [showConnections, setShowConnections] = useState(false);
-  const [showFullScreenSearch, setShowFullScreenSearch] = useState(false);
+  if (!isOpen) return null;
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length < 2) {
-        setSearchResults([]);
-        return;
-      }
-      setIsSearching(true);
-      try {
-        const isProd = process.env.NODE_ENV === "production";
-        const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
-        const token = useUserStore.getState().authToken;
-        const res = await fetch(`${BACKEND_URL}/users/search?q=${encodeURIComponent(searchQuery)}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await res.json();
-        setSearchResults(data || []);
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  if (!profile) return null;
-
-  const navigateTo = (path: string) => {
+  const handleNavigate = (path: string) => {
     onClose();
     router.push(path);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleUserClick = (user: any) => {
-    if (canSearch()) {
-      incrementSearchCount();
-      setSelectedUser(user);
-    } else {
-      toast("Not enough coins! You need 1 coin to search more profiles today.", "error");
-    }
-  };
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
-          />
+    <>
+      {/* Backdrop (covers entire screen) */}
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in transition-opacity"
+        style={{ zIndex: 100 }}
+        onClick={onClose}
+      />
+      
+      {/* Sidebar Panel (aligned to the left edge of the max-w-md container) */}
+      <div 
+        className="fixed inset-y-0 left-0 sm:left-1/2 sm:-translate-x-[224px] w-[80%] max-w-[320px] bg-background border-r border-border shadow-2xl animate-in slide-in-from-left flex flex-col pt-safe h-[100dvh] overflow-hidden"
+        style={{ zIndex: 101 }}
+      >
+        
+        {/* Header */}
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border overflow-hidden">
+              {profile?.photo_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={profile.photo_url} alt="User" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-primary font-black">
+                  {profile?.name?.[0] || "?"}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-black text-foreground">{profile?.name || "User"}</h3>
+              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{profile?.campus || "LoveWithYou"}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 bg-surface-elevated text-muted hover:text-foreground rounded-full transition">
+            <X size={18} />
+          </button>
+        </div>
 
-          {/* Drawer Panel - Using Theme Variables */}
-          <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            style={{ 
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-foreground)'
-            }}
-            className="fixed top-0 left-0 h-full w-[84%] max-w-[340px] border-r drop-shadow-sm z-[70] shadow-2xl flex flex-col overflow-hidden font-sans"
+        {/* Links */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          
+          <button 
+            onClick={() => handleNavigate('/blind-date')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
           >
-            {/* Header Banner */}
-            <div 
-              className="relative p-5 pt-7 text-inherit overflow-hidden shrink-0 shadow-sm border-b"
-              style={{ 
-                backgroundColor: 'var(--color-surface-elevated)',
-                borderColor: 'var(--color-divider)'
-              }}
-            >
-              <button onClick={onClose} className="absolute top-4 right-4 text-inherit hover:opacity-70 drop-shadow-sm transition p-1">
-                <X size={20} />
-              </button>
-
-              <div className="flex items-center gap-4 relative z-10">
-                {/* Profile Photo */}
-                <div onClick={() => navigateTo("/profile/edit")} className="relative cursor-pointer group shrink-0">
-                  <div 
-                    className="w-16 h-16 rounded-full border-2 overflow-hidden shadow-md"
-                    style={{ 
-                      borderColor: 'var(--color-border)',
-                      backgroundColor: 'var(--color-surface)'
-                    }}
-                  >
-                    {profile.photo_url || (profile.photos && profile.photos[0]) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={profile.photo_url || profile.photos?.[0]} alt={profile.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center btn-signature-gradient font-bold text-xl">
-                        👤
-                      </div>
-                    )}
-                  </div>
-                  <div 
-                    className="absolute bottom-0 right-0 w-5 h-5 border-2 rounded-full flex items-center justify-center text-[10px] text-white"
-                    style={{ 
-                      backgroundColor: 'var(--color-primary)',
-                      borderColor: 'var(--color-surface)'
-                    }}
-                  >
-                    ✎
-                  </div>
-                </div>
-
-                {/* Profile Info & Voucher */}
-                <div className="space-y-1.5 flex-1 min-w-0 pr-6">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-base truncate drop-shadow-sm" style={{ color: 'var(--color-foreground)' }}>
-                      {profile.name || "User"}
-                    </h3>
-                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
-                      ({profile.age || 22})
-                    </span>
-                    <button onClick={() => navigateTo("/settings")} className="hover:opacity-70 drop-shadow-md transition" style={{ color: 'var(--color-text-muted)' }}>
-                      <SettingsIcon size={16} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setShowCoinHistory(true)}
-                      className="flex items-center gap-1 text-xs font-bold badge-gold px-2.5 py-0.5 rounded-full hover:opacity-80 transition cursor-pointer"
-                    >
-                      🪙 {coins || 0} Coins
-                    </button>
-
-                    <button 
-                      onClick={() => navigateTo("/premium")}
-                      className="btn-signature-gradient text-[11px] font-extrabold px-3 py-1 rounded-full shadow-md active:scale-95 transition"
-                    >
-                      Buy Coins
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+              <HeartPulse size={16} />
             </div>
+            <span className="font-bold text-foreground text-sm">Blind Date</span>
+          </button>
 
-            {/* Main Navigation List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ backgroundColor: 'var(--color-background)' }}>
-              
-              {/* Live Search Bar (Triggers Full Screen) */}
-              <div className="p-3 border-b" style={{ borderColor: 'var(--color-divider)' }}>
-                <button 
-                  onClick={() => setShowFullScreenSearch(true)}
-                  className="w-full relative flex items-center bg-surface border border-border rounded-2xl py-2 pl-9 pr-4 text-xs transition shadow-sm text-muted hover:opacity-80"
-                  style={{ 
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text-muted)'
-                  }}
-                >
-                  <Search size={16} className="absolute left-3" style={{ color: 'var(--color-text-muted)' }} />
-                  Search singles by name...
-                </button>
-              </div>
-
-              {/* Real App Core Navigation Features */}
-              <div className="py-1">
-                {/* Connections Accordion (Sub Nav) */}
-                <div className="border-t pt-1 pb-1" style={{ borderColor: 'var(--color-divider)' }}>
-                  <button 
-                    onClick={() => setShowConnections(!showConnections)}
-                    className="w-full flex items-center justify-between px-5 py-4 transition text-left hover:opacity-80"
-                  >
-                    <div className="flex items-center gap-4">
-                      <HeartPulse size={20} style={{ color: 'var(--color-romantic)' }} />
-                      <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>My Connections 💌</span>
-                    </div>
-                    <ChevronRight size={18} className={`transition-transform ${showConnections ? 'rotate-90' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
-                  </button>
-
-                  <AnimatePresence>
-                    {showConnections && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                        style={{ backgroundColor: 'var(--color-surface-elevated)' }}
-                      >
-                        {/* My Matches */}
-                        <button onClick={() => navigateTo('/chat?tab=matches')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <MessageCircle size={16} style={{ color: 'var(--color-primary)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>My Matches</span>
-                          </div>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ color: 'var(--color-primary)', backgroundColor: 'var(--color-primary-soft)' }}>Chat</span>
-                        </button>
-
-                        {/* Who Liked Me */}
-                        <button onClick={() => navigateTo('/chat?tab=likes')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 pb-4 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <Heart size={16} style={{ color: 'var(--color-romantic)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Who Liked Me</span>
-                          </div>
-                          <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-romantic)' }} />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Secret Match Arenas Accordion */}
-                <div className="border-y my-1" style={{ borderColor: 'var(--color-divider)' }}>
-                  <button 
-                    onClick={() => setShowSecretArenas(!showSecretArenas)}
-                    className="w-full flex items-center justify-between px-5 py-4 transition text-left hover:opacity-80"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Sparkles size={20} className="animate-pulse" style={{ color: 'var(--color-coral)' }} />
-                      <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Secret Match Arenas 🎭</span>
-                    </div>
-                    <ChevronRight size={18} className={`transition-transform ${showSecretArenas ? 'rotate-90' : ''}`} style={{ color: 'var(--color-text-muted)' }} />
-                  </button>
-
-                  <AnimatePresence>
-                    {showSecretArenas && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                        style={{ backgroundColor: 'var(--color-surface-elevated)' }}
-                      >
-                        {/* 3-Min Blind Date */}
-                        <button onClick={() => navigateTo('/blind-date')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <Headphones size={16} style={{ color: 'var(--color-primary)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>3-Min Blind Date</span>
-                          </div>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-indigo">Audio</span>
-                        </button>
-
-                        {/* Random Chat */}
-                        <button onClick={() => navigateTo('/random-chat')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <Users size={16} style={{ color: 'var(--color-warning)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Random Chat</span>
-                          </div>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-gold">Live</span>
-                        </button>
-
-                        {/* 18+ Anonymous After-Dark */}
-                        <button onClick={() => navigateTo('/after-dark')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <Flame size={16} className="animate-pulse" style={{ color: 'var(--color-error)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>18+ After-Dark</span>
-                          </div>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-coral">18+</span>
-                        </button>
-
-                        {/* Midnight Roulette & 2v2 Squads */}
-                        <button onClick={() => navigateTo('/midnight-roulette')} className="w-full flex items-center justify-between px-5 py-3 transition text-left pl-14 pb-4 hover:opacity-80">
-                          <div className="flex items-center gap-3">
-                            <Moon size={16} style={{ color: 'var(--text-secondary)' }} />
-                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>Midnight 2v2 Squads</span>
-                          </div>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Campus Hub */}
-                <button onClick={() => navigateTo('/campus')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <GraduationCap size={20} style={{ color: 'var(--color-success)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Campus Hub</span>
-                  </div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-lime">Students</span>
-                </button>
-
-                {/* Leaderboard */}
-                <button onClick={() => navigateTo('/leaderboard')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <Trophy size={20} style={{ color: 'var(--color-primary)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Leaderboard</span>
-                  </div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase badge-magenta">Top Connectors</span>
-                </button>
-
-                {/* Events */}
-                <button onClick={() => navigateTo('/events')} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <Calendar size={20} style={{ color: 'var(--text-secondary)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Events Calendar</span>
-                  </div>
-                </button>
-
-                {/* Coin History & Ledger */}
-                <button onClick={() => setShowCoinHistory(true)} className="w-full flex items-center justify-between px-5 py-3.5 transition text-left hover:opacity-80">
-                  <div className="flex items-center gap-4">
-                    <Coins size={20} style={{ color: 'var(--color-warning)' }} />
-                    <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Coin History &amp; Ledger</span>
-                  </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase badge-gold">Transparent</span>
-                </button>
-
-                {/* Daily Cupid's Slot Machine */}
-                <button onClick={() => navigateTo('/profile')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
-                  <Award size={20} style={{ color: 'var(--color-warning)' }} />
-                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Daily Cupid&apos;s Slot Machine</span>
-                </button>
-
-                {/* Settings */}
-                <button onClick={() => navigateTo('/settings')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
-                  <SettingsIcon size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>App Settings &amp; Security</span>
-                </button>
-
-                {/* FAQs */}
-                <button onClick={() => navigateTo('/faq')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
-                  <HelpCircle size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>FAQs &amp; Help Center</span>
-                </button>
-
-                {/* Contact & Support */}
-                <button onClick={() => navigateTo('/contact')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
-                  <Headset size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Contact &amp; Support</span>
-                </button>
-
-                {/* Send Feedback */}
-                <button onClick={() => navigateTo('/feedback')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left hover:opacity-80">
-                  <MessageCircle size={20} style={{ color: 'var(--color-text-secondary)' }} />
-                  <span className="text-sm font-extrabold" style={{ color: 'var(--color-foreground)' }}>Send Feedback</span>
-                </button>
-
-                {/* Legal & Safety (Others) */}
-                <div className="border-t mt-2 py-2" style={{ borderColor: 'var(--color-divider)' }}>
-                  <h4 className="px-5 py-2 text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>Legal &amp; Safety</h4>
-                  
-                  <button onClick={() => navigateTo('/terms')} className="w-full flex items-center justify-between px-5 py-2.5 transition text-left hover:opacity-80">
-                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Terms of Service</span>
-                    <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
-                  </button>
-
-                  <button onClick={() => navigateTo('/privacy')} className="w-full flex items-center justify-between px-5 py-2.5 transition text-left hover:opacity-80">
-                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Privacy Policy</span>
-                    <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
-                  </button>
-
-                  <div className="w-full flex items-center justify-between px-5 py-2.5 text-left">
-                    <span className="text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>Version</span>
-                    <span className="text-xs font-black" style={{ color: 'var(--color-text-muted)' }}>5.30.97</span>
-                  </div>
-                </div>
-
-                {/* Sign Out */}
-                <button onClick={() => navigateTo('/setup')} className="w-full flex items-center gap-4 px-5 py-3.5 transition text-left border-t mt-2" style={{ color: 'var(--color-error)', borderColor: 'var(--color-divider)' }}>
-                  <LogOut size={20} />
-                  <span className="text-sm font-extrabold">Sign Out of Account</span>
-                </button>
-              </div>
+          <button 
+            onClick={() => handleNavigate('/nearby-map')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
+              <Map size={16} />
             </div>
+            <span className="font-bold text-foreground text-sm">Nearby Map</span>
+          </button>
 
-            {/* Bottom Footer */}
-            <div className="p-3 flex items-center justify-between text-xs font-bold shrink-0" style={{ backgroundColor: 'var(--color-surface-elevated)', color: 'var(--color-foreground)' }}>
-              <span className="font-black flex items-center gap-1" style={{ color: 'var(--color-primary)' }}>
-                <Sparkles size={14} /> LoveWithYou
-              </span>
-              <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>v5.30.97 VIP</span>
+          <button 
+            onClick={() => handleNavigate('/random-chat')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+              <MessageSquare size={16} />
             </div>
-          </motion.div>
+            <span className="font-bold text-foreground text-sm">Random Chat</span>
+          </button>
 
-          {/* Full Screen Search Modal */}
-          <AnimatePresence>
-            {showFullScreenSearch && (
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                className="fixed inset-0 z-[80] flex flex-col bg-background text-foreground"
-              >
-                <div className="flex items-center gap-3 p-4 border-b border-border bg-surface-elevated">
-                  <button onClick={() => setShowFullScreenSearch(false)} className="p-2 bg-surface hover:bg-surface-elevated rounded-full transition-colors">
-                    <X size={20} />
-                  </button>
-                  <div className="flex-1 relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                    <input
-                      autoFocus
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search users by name..."
-                      className="w-full bg-surface border border-border rounded-full py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-primary transition"
-                    />
-                    {isSearching && (
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-t-transparent border-primary rounded-full animate-spin" />
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-background">
-                  {searchQuery.length < 2 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted space-y-4">
-                      <Search size={48} className="opacity-20" />
-                      <p className="font-bold">Type at least 2 characters to search</p>
-                    </div>
-                  ) : searchResults.length > 0 ? (
-                    <div className="space-y-3">
-                      {searchResults.map((user) => (
-                        <button
-                          key={user.id}
-                          onClick={() => handleUserClick(user)}
-                          className="w-full flex items-center p-3 bg-surface-elevated border border-border rounded-2xl hover:border-primary/50 transition-colors text-left group"
-                        >
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-background border border-border shrink-0">
-                            {user.photo_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={user.photo_url} alt={user.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <User size={24} className="m-auto h-full text-muted" />
-                            )}
-                          </div>
-                          <div className="ml-4 flex-1">
-                            <h3 className="font-bold text-sm text-foreground flex items-center gap-1">
-                              {user.name}
-                              {user.verified && <Sparkles size={12} className="text-primary" />}
-                            </h3>
-                            <p className="text-xs text-muted mt-0.5">{user.campus || user.location || "Nearby User"}</p>
-                          </div>
-                          <ChevronRight size={18} className="text-muted group-hover:text-primary transition-colors" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : !isSearching ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted space-y-4">
-                      <Users size={48} className="opacity-20" />
-                      <p className="font-bold">No users found matching &quot;{searchQuery}&quot;</p>
-                    </div>
-                  ) : null}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Coin History Modal */}
-          <CoinHistoryModal isOpen={showCoinHistory} onClose={() => setShowCoinHistory(false)} />
-
-          {/* User Search Detail Popup */}
-          {selectedUser && (
-            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-sm rounded-3xl overflow-hidden border relative" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
-                <button onClick={() => setSelectedUser(null)} className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:opacity-80">
-                  <X size={16} />
-                </button>
-                <div className="h-64 bg-black relative">
-                  {selectedUser.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={selectedUser.photo_url} alt={selectedUser.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={64} className="text-white/20 absolute inset-0 m-auto" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                      {selectedUser.name}
-                      {selectedUser.isStudent && <div className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'var(--color-primary)' }}>STUDENT</div>}
-                    </h3>
-                    <p className="text-white/70 text-sm flex items-center gap-1">
-                      <MapPin size={12} /> {selectedUser.location || "Nearby"}
-                    </p>
-                  </div>
-                </div>
-                <div className="p-5 space-y-4">
-                  <button className="w-full py-3 rounded-2xl font-extrabold text-xs text-white btn-signature-gradient" onClick={() => { onClose(); router.push(`/user/${selectedUser.id}`); }}>
-                    View Complete Profile
-                  </button>
-                </div>
-              </motion.div>
+          <button 
+            onClick={() => handleNavigate('/midnight-roulette')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition-transform">
+              <Moon size={16} />
             </div>
-          )}
-        </>
-      )}
-    </AnimatePresence>
+            <span className="font-bold text-foreground text-sm">Midnight Roulette</span>
+          </button>
+          
+          <button 
+            onClick={() => handleNavigate('/campus')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 group-hover:scale-110 transition-transform">
+              <GraduationCap size={16} />
+            </div>
+            <span className="font-bold text-foreground text-sm">Campus Hub</span>
+          </button>
+
+          <div className="my-2 border-t border-border mx-4" />
+
+          <button 
+            onClick={() => handleNavigate('/contact')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center border border-pink-500/20 group-hover:scale-110 transition-transform">
+              <Mail size={16} />
+            </div>
+            <span className="font-bold text-foreground text-sm">Contact & Support</span>
+          </button>
+
+          <button 
+            onClick={() => handleNavigate('/feedback')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20 group-hover:scale-110 transition-transform">
+              <Send size={16} />
+            </div>
+            <span className="font-bold text-foreground text-sm">Send Feedback</span>
+          </button>
+
+          <button 
+            onClick={() => handleNavigate('/faq')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center border border-teal-500/20 group-hover:scale-110 transition-transform">
+              <HelpCircle size={16} />
+            </div>
+            <span className="font-bold text-foreground text-sm">FAQ & Help Center</span>
+          </button>
+
+          <div className="my-2 border-t border-border mx-4" />
+
+          <button 
+            onClick={() => handleNavigate('/settings')}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-surface-elevated active:bg-surface-elevated transition-colors text-left group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-surface-elevated text-muted flex items-center justify-center border border-border group-hover:scale-110 transition-transform">
+              <Settings size={16} />
+            </div>
+            <span className="font-bold text-foreground text-sm">Settings & Account</span>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-border bg-background">
+           <div className="flex items-center gap-2 text-primary font-black text-sm mb-1 justify-center">
+             <Zap size={14} className="fill-primary" /> LoveWithYou PRO
+           </div>
+           <p className="text-center text-[10px] text-muted">Version 1.0.0 (Premium)</p>
+        </div>
+      </div>
+    </>
   );
 }

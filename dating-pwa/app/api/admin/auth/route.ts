@@ -84,7 +84,12 @@ export async function POST(req: Request) {
       .setExpirationTime("4h")
       .sign(secret);
 
-    const response = NextResponse.json({ success: true, message: "Welcome Master" });
+    const response = NextResponse.json({ 
+      success: true, 
+      message: "Welcome Master",
+      role: role === "master_admin" ? "master" : "subadmin",
+      token
+    });
 
     // Set secure HTTP-only cookie
     response.cookies.set({

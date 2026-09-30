@@ -38,13 +38,13 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto min-h-screen bg-background relative shadow-2xl overflow-x-hidden sm:border-x border-border pb-16 pt-14 transition-colors duration-300">
+    <div className={`w-full max-w-md mx-auto min-h-screen bg-background relative shadow-2xl overflow-x-hidden sm:border-x border-border pb-16 pt-14 transition-colors duration-300`}>
       <ScreenshotShield>
         <TopBar />
         <main className="min-h-full relative">
           {children}
         </main>
-        {/* BottomNav always visible on all non-admin, non-setup pages */}
+        {/* BottomNav controlled via CSS in specific pages like Random Chat */}
         <BottomNav />
         <A2HSPrompt />
         <PushNotificationPrompt />

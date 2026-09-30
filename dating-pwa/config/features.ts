@@ -1,0 +1,13 @@
+export const FEATURE_FLAGS = {
+  // Set to true to put a specific feature under maintenance
+  MAINTENANCE_EMAIL_AUTH: true,
+  MAINTENANCE_PAYMENTS: false,
+  MAINTENANCE_RANDOM_CHAT: true,
+  MAINTENANCE_CAMPUS_MODE: false,
+  MAINTENANCE_MATCHING: false,
+  MAINTENANCE_BLIND_DATE: false,
+  MAINTENANCE_MIDNIGHT_ROULETTE: false,
+  MAINTENANCE_MAP_RADAR: false,
+  MAINTENANCE_CUPID_SLOT: false,
+  MAINTENANCE_VIDEO_CALLS: false,
+};

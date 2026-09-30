@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+@theme  {
   /* Dynamic Variables Mapped */
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -23,65 +23,143 @@
   --color-glass-border: var(--glass-border);
 }
 
-/* --- LIGHT MODE (Purpose Site - Light Pink White Base) --- */
-:root, .light {
-  --background: #fff5f8;       /* Light Pink White */
-  --surface: #ffffff;          /* Pure White */
-  --surface-elevated: #fce7f3; /* Soft Pink Accent */
-  --text-primary: #1c1917;     /* Near Black */
-  --text-secondary: #9d174d;   /* Dark Rose */
-  --text-muted: #83787b;       /* Muted Grayish Pink */
-  --border: #fce7f3;           /* Soft Pink Border */
-  --divider: #fae0eb;          /* Slightly darker soft pink */
-  
-  --primary: #e11d48;          /* Rose Red */
-  --primary-hover: #ff4d6d;    /* Bright Pink */
-  --primary-soft: #ffe4e6;     /* Very Light Rose */
-  
-  --romantic-peach: #fb7185;   /* Coral Pink */
-  --muted-coral: #fda4af;      /* Lighter Coral */
-  
-  --error: #ef4444;            /* Red */
-  --warning: #f59e0b;          /* Amber */
-  --success: #10b981;          /* Emerald Green */
+/* --- ACCENT THEMES --- */
+/* Default (Rose) */
+:root, [data-accent="rose"] {
+  --theme-primary: #e11d48;
+  --theme-primary-hover: #ff4d6d;
+  --theme-primary-soft-light: #ffe4e6;
+  --theme-primary-soft-dark: rgba(225, 29, 72, 0.15);
+}
 
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(252, 231, 243, 0.6);
+/* Purple Accent */
+[data-accent="purple"] {
+  --theme-primary: #7c3aed;
+  --theme-primary-hover: #8b5cf6;
+  --theme-primary-soft-light: #ede9fe;
+  --theme-primary-soft-dark: rgba(124, 58, 237, 0.15);
+}
+
+/* Emerald Accent */
+[data-accent="emerald"] {
+  --theme-primary: #10b981;
+  --theme-primary-hover: #34d399;
+  --theme-primary-soft-light: #d1fae5;
+  --theme-primary-soft-dark: rgba(16, 185, 129, 0.15);
+}
+
+/* Amber Accent */
+[data-accent="amber"] {
+  --theme-primary: #f59e0b;
+  --theme-primary-hover: #fbbf24;
+  --theme-primary-soft-light: #fef3c7;
+  --theme-primary-soft-dark: rgba(245, 158, 11, 0.15);
+}
+
+/* --- LIGHT MODE (Neumorphism Base) --- */
+:root, .light {
+  --background: #e0e5ec;       /* Neumorphic Light Gray */
+  --surface: #e0e5ec;          /* Matches Background */
+  --surface-elevated: #e6ebf2; /* Slightly Lighter */
+  --text-primary: #333333;     /* Dark Gray for readability */
+  --text-secondary: #6b7280;   /* Muted Gray */
+  --text-muted: #9ca3af;
+  --border: #d1d9e6;           /* Subtle Inner Border */
+  --divider: #d1d9e6;
+  
+  /* Neumorphic Shadow Colors - Light Mode */
+  --neu-light-shadow: #ffffff;
+  --neu-dark-shadow: #a3b1c6;
+
+  --primary: #f97316;          /* Bright Orange (from screenshot) */
+  --primary-hover: #ea580c;
+  --primary-soft: rgba(249, 115, 22, 0.15);
+  
+  --error: #ef4444;            
+  --warning: #f59e0b;          
+  --success: #10b981;          
+
+  --glass-bg: rgba(224, 229, 236, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.3);
 }
 
 /* --- DARK MODE (Premium Sleek Dark Theme) --- */
 .dark {
-  --background: #09090b;       /* Premium Dark Zinc (Almost Black) */
-  --surface: #18181b;          /* Zinc 900 for Cards/Elements */
-  --surface-elevated: #27272a; /* Zinc 800 for Hover/Elevated */
-  --text-primary: #fafafa;     /* Crisp White */
-  --text-secondary: #a1a1aa;   /* Zinc 400 */
-  --text-muted: #71717a;       /* Zinc 500 */
-  --border: #27272a;           /* Subtle Borders */
-  --divider: #27272a;          /* Subtle Dividers */
+  --background: #1a1b1e;       /* Premium Dark */
+  --surface: #1a1b1e;          /* Matches Background */
+  --surface-elevated: #25262b; 
+  --text-primary: #f8f9fa;     
+  --text-secondary: #909296;   
+  --text-muted: #5c5f66;       
+  --border: #2c2e33;           
+  --divider: #2c2e33;          
   
-  --primary: #e11d48;          /* Rose Red (Brand Consistency) */
-  --primary-hover: #ff4d6d;    /* Bright Pink */
-  --primary-soft: rgba(225, 29, 72, 0.15); /* Soft Rose Background */
-  
-  --romantic-peach: #fb7185;   /* Coral Pink */
-  --muted-coral: #fda4af;      /* Warm Coral */
+  /* Neumorphic Shadow Colors - Dark Mode */
+  --neu-light-shadow: #2c2e33; /* Slightly lighter gray */
+  --neu-dark-shadow: #0d0d0f;  /* Very dark, almost black */
+
+  --primary: #8b5cf6;          /* Bright Purple */
+  --primary-hover: #7c3aed;
+  --primary-soft: rgba(139, 92, 246, 0.15);
   
   --error: #f87171;
   --warning: #fbbf24;
   --success: #34d399;
 
-  --glass-bg: rgba(24, 24, 27, 0.85); /* Blurred Surface */
-  --glass-border: rgba(39, 39, 42, 0.6);
+  --glass-bg: rgba(26, 27, 30, 0.65); 
+  --glass-border: rgba(44, 46, 51, 0.6);
 }
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Clean Native Mobile Utility Classes --- */
+/* The user requested avoiding excessive shadows, borders, and decorative elements. */
+.neu-flat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.neu-pressed {
+  background: var(--surface-elevated);
+  border-radius: 1rem;
+}
+
+.neu-convex {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.neu-concave {
+  background: var(--background);
+  border-radius: 1rem;
+}
+
+.neu-button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.neu-button:active {
+  background: var(--surface-elevated);
+  transform: scale(0.98);
+}
+
+/* Bright Orange to Purple Gradient (from screenshot) */
+.screenshot-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #c084fc 100%);
+  color: #fff;
 }
 
 @keyframes pulse {
@@ -96,7 +174,7 @@ body {
 
 /* --- Signature Romantic Gradient (Rose Red -> Coral -> Lavender) --- */
 .btn-signature-gradient {
-  background: linear-gradient(135deg, #e11d48 0%, #fb7185 50%, #c084fc 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #fb7185 50%, #c084fc 100%);
   color: #ffffff;
   transition: all 0.3s ease;
   border: none;
@@ -104,7 +182,7 @@ body {
 
 .btn-signature-gradient:hover {
   opacity: 0.95;
-  box-shadow: 0 0 25px rgba(225, 29, 72, 0.5); /* Rose Red Glow */
+  box-shadow: 0 0 25px var(--primary-soft);
   transform: translateY(-2px);
 }
 
@@ -179,4 +257,9 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   pointer-events: none;
+}
+
+/* Leaflet Map Dark Mode Filter Trick */
+.dark-map-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }

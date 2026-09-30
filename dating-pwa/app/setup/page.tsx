@@ -6,10 +6,12 @@ import { useUserStore } from "@/store/useUserStore";
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { CheckCircle2, Plus, X as XIcon, Image as ImageIcon } from "lucide-react";
+import { CheckCircle2, Plus, X as XIcon, Image as ImageIcon, Mail, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import Link from "next/link";
 import { uploadMultipleToCloudinary } from "@/lib/cloudinary";
+import { supabase } from "@/lib/supabase";
+import { FEATURE_FLAGS } from "@/config/features";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -24,9 +26,75 @@ export default function SetupPage() {
     name: "",
     gender: "",
     age: "",
-    campus: "", // Optional campus field
+    campus: "",
   });
 
+  // Email OTP Verification State
+  type SetupStep = "email" | "otp" | "profile";
+  const [step, setStep] = useState<SetupStep>(FEATURE_FLAGS.MAINTENANCE_EMAIL_AUTH ? "profile" : "email");
+  const [email, setEmail] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  const startResendTimer = () => {
+    setResendTimer(30);
+    const interval = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast("Please enter a valid email address.", "error");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      // Use Supabase email OTP (magic link with OTP)
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true }
+      });
+      if (error) throw error;
+      toast(`📧 OTP sent to ${email}! Check your inbox & spam.`, "success");
+      setStep("otp");
+      startResendTimer();
+    } catch (err) {
+      console.error("OTP send error:", err);
+      toast("Failed to send OTP. Try again.", "error");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpInput.length !== 6) {
+      toast("Please enter the 6-digit OTP from your email.", "error");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpInput,
+        type: "email"
+      });
+      if (error) throw error;
+      toast("✅ Email verified successfully!", "success");
+      setStep("profile");
+    } catch (err) {
+      console.error("OTP verify error:", err);
+      toast("Invalid or expired OTP. Please try again.", "error");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -174,6 +242,103 @@ export default function SetupPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 bg-background">
+
+      {/* === STEP 1: EMAIL ENTRY === */}
+      {step === "email" && (
+        <Card className="w-full max-w-md space-y-6 !p-6 border-primary/20">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Mail size={32} className="text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">Verify Your Email</h1>
+            <p className="text-muted text-xs">
+              We&apos;ll send a one-time password to your email. Your email is only used for verification and is never shown to others.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-foreground block">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+              placeholder="yourname@example.com"
+              className="w-full px-4 py-3 bg-surface-elevated border border-border rounded-xl text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-[10px] text-muted">
+              🔒 Your email is private — it&apos;s only used to send this one-time verification code.
+            </p>
+          </div>
+
+          <Button
+            onClick={handleSendOtp}
+            className="w-full"
+            disabled={isSendingOtp}
+          >
+            {isSendingOtp ? "Sending OTP..." : "Send Verification Code →"}
+          </Button>
+        </Card>
+      )}
+
+      {/* === STEP 2: OTP VERIFICATION === */}
+      {step === "otp" && (
+        <Card className="w-full max-w-md space-y-6 !p-6 border-primary/20">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <ShieldCheck size={32} className="text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold">Enter OTP</h1>
+            <p className="text-muted text-xs">
+              A 6-digit code was sent to <span className="text-primary font-bold">{email}</span>. Check your inbox and spam folder.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-foreground block">6-Digit Code</label>
+            <input
+              type="number"
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value.slice(0, 6))}
+              onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()}
+              placeholder="000000"
+              maxLength={6}
+              className="w-full px-4 py-4 bg-surface-elevated border border-border rounded-xl text-foreground text-2xl text-center font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <Button
+            onClick={handleVerifyOtp}
+            className="w-full"
+            disabled={isVerifyingOtp}
+          >
+            {isVerifyingOtp ? "Verifying..." : "✅ Verify & Continue"}
+          </Button>
+
+          <div className="text-center">
+            {resendTimer > 0 ? (
+              <p className="text-xs text-muted">Resend OTP in {resendTimer}s</p>
+            ) : (
+              <button
+                onClick={handleSendOtp}
+                disabled={isSendingOtp}
+                className="text-xs text-primary font-bold hover:underline"
+              >
+                {isSendingOtp ? "Sending..." : "Resend OTP"}
+              </button>
+            )}
+            <button
+              onClick={() => { setStep("email"); setOtpInput(""); }}
+              className="block mx-auto mt-2 text-xs text-muted hover:text-foreground"
+            >
+              ← Change Email
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* === STEP 3: PROFILE SETUP (only after email verified) === */}
+      {step === "profile" && (
       <Card className="w-full max-w-md space-y-6 !p-6 border-primary/20">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold">Mandatory Verification</h1>
@@ -351,6 +516,7 @@ export default function SetupPage() {
           {isUploading ? "Uploading Photos... ⏳" : "Start Matching 🎉"}
         </Button>
       </Card>
+      )}
     </div>
   );
 }

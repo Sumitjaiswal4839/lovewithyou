@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/supabase-community/postgrest-go"
 )
 
 type Profile struct {
@@ -48,6 +51,20 @@ func GetProfile(deviceID string) (*Profile, error) {
 		return nil, fmt.Errorf("supabase client not initialized")
 	}
 
+	cacheKey := "profile:" + deviceID
+
+	// 1. Check Redis Cache First
+	if RedisClient != nil {
+		cachedProfile, err := RedisClient.Get(Ctx, cacheKey).Result()
+		if err == nil && cachedProfile != "" {
+			var profile Profile
+			if json.Unmarshal([]byte(cachedProfile), &profile) == nil {
+				return &profile, nil
+			}
+		}
+	}
+
+	// 2. Fallback to Supabase
 	data, count, err := Client.From("profiles").Select("*", "exact", false).Eq("device_id", deviceID).Single().Execute()
 	if err != nil {
 		return nil, err
@@ -60,6 +77,14 @@ func GetProfile(deviceID string) (*Profile, error) {
 	if err := json.Unmarshal(data, &profile); err != nil {
 		return nil, err
 	}
+
+	// 3. Save to Redis Cache (15 minutes expiration)
+	if RedisClient != nil {
+		if profileJSON, err := json.Marshal(profile); err == nil {
+			RedisClient.Set(Ctx, cacheKey, profileJSON, 15*time.Minute)
+		}
+	}
+
 	return &profile, nil
 }
 
@@ -81,10 +106,21 @@ func UpsertProfile(profile Profile) (*Profile, error) {
 		return nil, err
 	}
 
+	var savedProfile *Profile
 	if len(profiles) > 0 {
-		return &profiles[0], nil
+		savedProfile = &profiles[0]
+	} else {
+		savedProfile = &profile
 	}
-	return &profile, nil
+
+	// Update Redis Cache
+	if RedisClient != nil && savedProfile != nil {
+		if profileJSON, err := json.Marshal(savedProfile); err == nil {
+			RedisClient.Set(Ctx, "profile:"+savedProfile.DeviceID, profileJSON, 15*time.Minute)
+		}
+	}
+
+	return savedProfile, nil
 }
 
 // GetOrCreateProfile gets an existing profile or creates a new one with default coins
@@ -210,6 +246,18 @@ func RecordSwipeAndCheckMatch(swiperID, swipedID, direction string) (bool, error
 		return false, nil
 	}
 
+	// Insert into swipe_history_vault for Second Chance Rewind
+	vaultEntry := map[string]interface{}{
+		"device_id": swiperID,
+		"target_id": swipedID,
+		"action":    direction,
+		"rewound":   false,
+	}
+	_, _, errVault := Client.From("swipe_history_vault").Insert(vaultEntry, false, "", "", "exact").Execute()
+	if errVault != nil {
+		fmt.Printf("Warning: failed to record in swipe_history_vault: %v\n", errVault)
+	}
+
 	if direction == "left" {
 		return false, nil
 	}
@@ -242,6 +290,10 @@ func RecordSwipeAndCheckMatch(swiperID, swipedID, direction string) (bool, error
 		_ = CreateNotification(swipedID, "match", "New Match! 🎉", "You have a new mutual match!", swiperID)
 
 		return true, nil
+	}
+
+	if direction == "right" {
+		_ = CreateNotification(swipedID, "like", "New Like! 💖", "Someone liked your profile! Swipe to find out who.", swiperID)
 	}
 
 	return false, nil
@@ -370,4 +422,59 @@ func IsMatchParticipant(deviceID, roomID string) (bool, error) {
 	}
 
 	return len(matches) > 0, nil
+}
+
+func RewindLastSwipe(deviceID string) (map[string]interface{}, error) {
+	if Client == nil {
+		return nil, fmt.Errorf("supabase client not initialized")
+	}
+
+	var results []map[string]interface{}
+	data, count, err := Client.From("swipe_history_vault").Select("*", "exact", false).
+		Eq("device_id", deviceID).
+		Eq("rewound", "false").
+		Eq("action", "left").
+		Order("action_time", &postgrest.OrderOpts{Ascending: false}).
+		Limit(1, "").Execute()
+	
+	if err != nil {
+		return nil, err
+	}
+	_ = count
+	
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, err
+	}
+	
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no recent left swipes to rewind")
+	}
+	
+	lastSwipe := results[0]
+	targetID := lastSwipe["target_id"].(string)
+	vaultID := lastSwipe["id"].(string)
+
+	updatePayload := map[string]interface{}{"rewound": true}
+	_, _, err = Client.From("swipe_history_vault").Update(updatePayload, "", "exact").Eq("id", vaultID).Execute()
+	if err != nil {
+		fmt.Printf("Warning: failed to mark swipe as rewound: %v\n", err)
+	}
+
+	_, _, err = Client.From("swipes").Delete("", "exact").Eq("swiper_id", deviceID).Eq("swiped_id", targetID).Execute()
+	if err != nil {
+		fmt.Printf("Warning: failed to delete from swipes table: %v\n", err)
+	}
+
+	var profileResults []map[string]interface{}
+	profileData, profileCount, err := Client.From("profiles").Select("*", "exact", false).Eq("id", targetID).Execute()
+	if err != nil {
+		return nil, err
+	}
+	_ = profileCount
+
+	if err := json.Unmarshal(profileData, &profileResults); err == nil && len(profileResults) > 0 {
+		return profileResults[0], nil
+	}
+
+	return nil, fmt.Errorf("failed to load rewound profile")
 }

@@ -443,68 +443,80 @@ export default function RandomChatPage() {
   // 1. PRE-CHAT VERIFICATION & TARGET GENDER SELECTION MODAL
   if (showPreChatModal) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto">
-        <div className="bg-white/[0.03] border border-border w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5">
-          <div className="flex items-center gap-3 border-b border-border pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-pink-600 flex items-center justify-center text-white shadow-lg">
-              <User size={24} />
+      <div className="absolute inset-0 z-40 glass flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto pb-safe">
+        <div className="neu-flat w-full max-w-md rounded-[2rem] p-6 space-y-6">
+          <div className="flex items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--color-divider)' }}>
+            <div className="w-14 h-14 rounded-[1.25rem] btn-signature-gradient flex items-center justify-center text-white shrink-0 shadow-lg">
+              <User size={26} strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight">Identity &amp; Target Setup</h2>
-              <p className="text-xs text-muted font-medium">Verify your profile &amp; choose who to chat with</p>
+              <h2 className="text-lg font-bold tracking-tight" style={{ color: 'var(--color-foreground)' }}>Identity &amp; Target Setup</h2>
+              <p className="text-[11px] font-medium mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Verify your profile &amp; choose who to chat with</p>
             </div>
           </div>
 
-          <div className="bg-surface-elevated border border-border rounded-2xl p-4 space-y-1.5">
-            <span className="text-[10px] font-black uppercase text-muted">Your Current Identity</span>
+          <div className="neu-pressed rounded-[1.5rem] p-4 space-y-2 border" style={{ borderColor: 'var(--color-border)' }}>
+            <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>Your Current Identity</span>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-black text-foreground flex items-center gap-2">
+              <span className="text-[13px] font-bold flex items-center gap-2" style={{ color: 'var(--color-foreground)' }}>
                 👤 {profile?.gender || "Male"} • Age {profile?.age || 22}
               </span>
-              <span className="text-[10px] bg-success/20 text-emerald-300 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+              <span className="text-[11px] font-extrabold px-3 py-1 rounded-full badge-lime">
                 Verified User ✅
               </span>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-wider text-primary block">
+          <div className="space-y-3">
+            <label className="text-[11px] font-black uppercase tracking-wider block" style={{ color: 'var(--color-primary)' }}>
               Who would you like to chat with?
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex gap-2">
               <button
                 onClick={() => setTargetGenderPreference("Female")}
-                className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
+                className={`flex-1 py-2.5 px-2 rounded-xl text-[13px] font-bold text-center transition-all ${
                   targetGenderPreference === "Female"
-                    ? "bg-primary/20 border-primary text-primary shadow-md shadow-primary/20"
-                    : "bg-surface-elevated border-border text-white/60 hover:text-white"
+                    ? "neu-pressed border"
+                    : "neu-flat hover:opacity-80"
                 }`}
+                style={{
+                  color: targetGenderPreference === "Female" ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                  borderColor: targetGenderPreference === "Female" ? 'var(--color-primary)' : 'transparent'
+                }}
               >
                 Female ♀️
               </button>
               <button
                 onClick={() => setTargetGenderPreference("Male")}
-                className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
+                className={`flex-1 py-2.5 px-2 rounded-xl text-[13px] font-bold text-center transition-all ${
                   targetGenderPreference === "Male"
-                    ? "bg-blue-500/20 border-blue-500 text-blue-300 shadow-md shadow-blue-500/20"
-                    : "bg-surface-elevated border-border text-muted hover:text-foreground"
+                    ? "neu-pressed border"
+                    : "neu-flat hover:opacity-80"
                 }`}
+                style={{
+                  color: targetGenderPreference === "Male" ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                  borderColor: targetGenderPreference === "Male" ? 'var(--color-primary)' : 'transparent'
+                }}
               >
                 Male ♂️
               </button>
               <button
                 onClick={() => setTargetGenderPreference("Anyone")}
-                className={`py-3 px-2 rounded-2xl text-xs font-black text-center transition border ${
+                className={`flex-1 py-2.5 px-2 rounded-xl text-[13px] font-bold text-center transition-all ${
                   targetGenderPreference === "Anyone"
-                    ? "bg-purple-500/20 border-purple-500 text-purple-300 shadow-md shadow-purple-500/20"
-                    : "bg-surface-elevated border-border text-muted hover:text-foreground"
+                    ? "neu-pressed border"
+                    : "neu-flat hover:opacity-80"
                 }`}
+                style={{
+                  color: targetGenderPreference === "Anyone" ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                  borderColor: targetGenderPreference === "Anyone" ? 'var(--color-primary)' : 'transparent'
+                }}
               >
                 Anyone 🚻
               </button>
             </div>
             {targetGenderPreference === "Female" && (
-              <p className="text-[11px] text-primary font-medium italic mt-1">
+              <p className="text-[11px] font-medium italic mt-1 leading-relaxed" style={{ color: 'var(--color-primary)' }}>
                 🔒 Strict Safety Rule: You will ONLY be matched with verified Female profiles.
               </p>
             )}
@@ -515,9 +527,9 @@ export default function RandomChatPage() {
               setShowPreChatModal(false);
               setShowWarningModal(true);
             }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-pink-600 to-purple-600 hover:from-rose-600 hover:to-purple-500 text-white font-black text-sm shadow-lg shadow-primary/25 active:scale-95 transition"
+            className="w-full py-3.5 rounded-xl btn-signature-gradient font-bold text-xs tracking-wide active:scale-[0.98] transition-transform uppercase"
           >
-            CONTINUE TO SAFETY WARNING →
+            Continue to Safety Warning →
           </button>
         </div>
       </div>
@@ -527,7 +539,7 @@ export default function RandomChatPage() {
   // 2. WARNING & SAFETY AGREEMENT MODAL
   if (showWarningModal) {
     return (
-      <div className="fixed inset-0 z-[200] bg-background flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto">
+      <div className="absolute inset-0 z-40 bg-background flex items-center justify-center p-4 text-foreground font-sans overflow-y-auto pb-safe">
         <div className="bg-white/[0.03] border border-border w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
           <div className="flex items-center gap-3 border-b border-border pb-3">
             <ShieldAlert size={28} className="text-warning animate-pulse" />
@@ -585,7 +597,7 @@ export default function RandomChatPage() {
 
   if (noActiveUser) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-center px-4">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-7.5rem)] bg-background text-center px-4">
         <div className="w-20 h-20 mb-6 flex items-center justify-center bg-surface-elevated rounded-full">
            <AlertTriangle size={32} className="text-warning" />
         </div>
@@ -603,7 +615,7 @@ export default function RandomChatPage() {
 
   if (isSearching) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-center px-4">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-7.5rem)] bg-background text-center px-4">
         <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-rose-500 animate-spin mb-6"></div>
         <h2 className="text-xl font-black text-foreground mb-1">Searching Random Chat Pool...</h2>
         <p className="text-xs text-muted">Filtering for <span className="text-primary font-bold">{landedVibe ? landedVibe : targetGenderPreference}</span> matches nearby</p>
@@ -621,8 +633,12 @@ export default function RandomChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
-
+    <div className="flex flex-col h-[calc(100dvh-7.5rem)] bg-background text-foreground">
+      {isConnected && (
+        <style>{`
+          #bottom-nav { display: none !important; }
+        `}</style>
+      )}
       <RandomChatHeader 
         partner={partner} 
         onLike={() => handleLikePartner(partner)}

@@ -29,8 +29,10 @@ import {
   Unlock,
   Menu,
   X,
-  Coins
+  Coins,
+  Settings
 } from "lucide-react";
+import AdminSettingsPage from "./settings/page";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -58,7 +60,7 @@ export default function AdminDashboard() {
 
   // Navigation Menu Tabs
   const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "revenue" | "coin_sales" | "feedbacks" | "verifications" | "sub_admins" | "broadcast" | "deleted_accounts"
+    "overview" | "users" | "revenue" | "coin_sales" | "feedbacks" | "verifications" | "sub_admins" | "broadcast" | "deleted_accounts" | "settings"
   >("overview");
 
   // User Filter State
@@ -66,10 +68,15 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Data States
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [users, setUsers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [reports, setReports] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [coinTransactions, setCoinTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -95,13 +102,6 @@ export default function AdminDashboard() {
     ecpmAverage: 0.00,
   });
 
-  // Load Sub-Admins from Live Go Backend
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchSubAdmins();
-    }
-  }, [isAuthenticated]);
-
   const fetchSubAdmins = async () => {
     try {
       const isProd = process.env.NODE_ENV === "production";
@@ -116,6 +116,14 @@ export default function AdminDashboard() {
       console.error("Failed to fetch sub-admins", e);
     }
   };
+
+  // Load Sub-Admins from Live Go Backend
+  useEffect(() => {
+    if (isAuthenticated) {
+      setTimeout(() => fetchSubAdmins(), 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Handle Admin Login
   const handleLogin = async (e: React.FormEvent) => {
@@ -137,6 +145,10 @@ export default function AdminDashboard() {
       
       if (data.success) {
         setIsAuthenticated(true);
+        if (data.token) {
+          sessionStorage.setItem("adminToken", data.token);
+        }
+        
         if (data.role === "master") {
           setAdminRole("master");
           setCurrentAdminName("Master Owner (Full Access)");
@@ -155,6 +167,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    sessionStorage.removeItem("adminToken");
     setPasswordInput("");
     setUsernameInput("");
     toast("🔒 Admin session locked.", "info");
@@ -327,12 +340,14 @@ export default function AdminDashboard() {
     if (userFilter === "active") {
       if (u.is_banned) return false;
       if (!u.last_active) return true; // assume active if no timestamp
+      // eslint-disable-next-line
       const diffHours = (Date.now() - new Date(u.last_active).getTime()) / (1000 * 60 * 60);
       return diffHours <= 72; // active within last 3 days
     }
     if (userFilter === "inactive") {
       if (u.is_banned) return false;
       if (!u.last_active) return false;
+      // eslint-disable-next-line
       const diffHours = (Date.now() - new Date(u.last_active).getTime()) / (1000 * 60 * 60);
       return diffHours > 72;
     }
@@ -417,6 +432,7 @@ export default function AdminDashboard() {
     { id: "deleted_accounts", label: "Deleted Accounts", icon: Trash2 },
     { id: "sub_admins", label: "Lower Admin Profiles", icon: Key },
     { id: "broadcast", label: "Broadcast Alert Engine", icon: Radio },
+    { id: "settings", label: "System Controls & Toggles", icon: Settings },
   ];
 
   return (
@@ -1297,7 +1313,14 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 8: DELETED ACCOUNTS */}
+        {/* TAB 8: SYSTEM CONTROLS & TOGGLES */}
+        {activeTab === "settings" && (
+          <div className="bg-surface-elevated border border-border rounded-3xl overflow-hidden min-h-[600px]">
+             <AdminSettingsPage />
+          </div>
+        )}
+
+        {/* TAB 9: DELETED ACCOUNTS */}
         {activeTab === "deleted_accounts" && (
           <DeletedAccountsTab />
         )}

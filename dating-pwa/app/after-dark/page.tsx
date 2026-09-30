@@ -35,48 +35,130 @@ export default function AfterDarkLoungePage() {
   const [messages, setMessages] = useState<AnonymousMessage[]>([]);
   const [inputMsg, setInputMsg] = useState<string>("");
 
+  const wsRef = useRef<WebSocket | null>(null);
+  const authToken = useUserStore((state) => state.authToken);
+  const deviceId = useUserStore((state) => state.deviceId);
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  const [sessionToken, setSessionToken] = useState<string>("");
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const startSearching = () => {
+  const startSearching = async () => {
     setRoomState("searching");
     setMessages([
-      { id: "1", sender: "system", text: "🔍 Searching for a consensual 18+ partner...", timestamp: "" }
+      { id: Date.now().toString(), sender: "system", text: "🔍 Searching for a consensual 18+ partner...", timestamp: "" }
     ]);
 
-    setTimeout(() => {
-      const matchedGender = targetGender === "Anyone" ? (Math.random() > 0.5 ? "Female" : "Male") : targetGender;
-      setPartnerGender(matchedGender);
-      setPartnerAgeRange("22+");
-      setRoomState("connected");
-      setMessages([
-        { 
-          id: "2", 
-          sender: "system", 
-          text: "🔒 Connected anonymously! No name, no photos, and no GPS location are shared. Screenshot protection is active.", 
-          timestamp: "" 
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/lounge/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`
         },
-        {
-          id: "3",
-          sender: "partner",
-          text: `Hey there! I'm here for some late-night fun and intimate flirting. What's your vibe tonight? 🔥`,
-          timestamp: "Just now"
-        }
-      ]);
-      toast("✨ Connected with a new anonymous partner!", "success");
-    }, 2500);
+        body: JSON.stringify({
+          myGender: myGender,
+          targetGender: targetGender,
+          vibeTag: vibeTag
+        })
+      });
+      const data = await res.json();
+      
+      const newSession = data.data.sessionId;
+      setSessionToken(newSession);
+
+      if (data.data.matched) {
+        handleMatchSuccess(data.data);
+      } else {
+        startPolling(newSession);
+      }
+    } catch (e) {
+      toast("Error joining lounge", "error");
+      setRoomState("idle");
+    }
   };
 
-  const handleNextPartner = () => {
+  const startPolling = (token: string) => {
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/v1/lounge/status?session=${token}`, {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.status === "matched") {
+           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+           handleMatchSuccess(data.data);
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 5000);
+  };
+
+  const handleMatchSuccess = (matchData: any) => {
+    setPartnerGender(matchData.partnerGender || "Anyone");
+    setPartnerAgeRange("21+");
+    setRoomState("connected");
+    setMessages([
+      { 
+        id: Date.now().toString(), 
+        sender: "system", 
+        text: `🔒 Connected anonymously! Partner Vibe: ${matchData.vibeTag}. No name, no photos, and no GPS location are shared. Screenshot protection is active.`, 
+        timestamp: "" 
+      }
+    ]);
+    toast("✨ Connected with a new anonymous partner!", "success");
+
+    const deviceIdStr = deviceId || "anon";
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${matchData.roomId}&device_id=${deviceIdStr}&token=${authToken}`;
+    wsRef.current = new WebSocket(wsUrl);
+    
+    wsRef.current.onmessage = (event) => {
+      try {
+        const incoming = JSON.parse(event.data);
+        if (incoming.content && incoming.sender_id !== deviceIdStr) {
+           setMessages(prev => [...prev, {
+             id: Date.now().toString(),
+             sender: "partner",
+             text: incoming.content,
+             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+           } as AnonymousMessage]);
+        }
+      } catch (e) {}
+    };
+  };
+
+  const handleNextPartner = async () => {
     toast("Disconnecting and hopping to a new anonymous partner...", "info");
+    if (sessionToken) {
+       await fetch(`${BACKEND_URL}/api/v1/lounge/disconnect`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({ sessionToken })
+       });
+    }
+    if (wsRef.current) wsRef.current.close();
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     setMessages([]);
     startSearching();
   };
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
+    if (sessionToken) {
+       await fetch(`${BACKEND_URL}/api/v1/lounge/disconnect`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({ sessionToken })
+       });
+    }
+    if (wsRef.current) wsRef.current.close();
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     toast("Session terminated. All intimate chat logs evaporated from RAM.", "info");
     router.back();
   };
@@ -89,34 +171,26 @@ export default function AfterDarkLoungePage() {
       id: Date.now().toString(),
       sender: "me",
       text: inputMsg.trim(),
-      timestamp: "Just now"
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages((prev) => [...prev, newMsg]);
-    const currentText = inputMsg.trim();
-    setInputMsg("");
-
-    // Simulated Partner Reply
-    if (roomState === "connected") {
-      setTimeout(() => {
-        let replyText = "That sounds super exciting and bold... tell me more about your secret desires! 🤫✨";
-        if (currentText.toLowerCase().includes("fantasy")) {
-          replyText = "My biggest fantasy involves spontaneous midnight getaways with someone brave enough to take the lead 😉🔥";
-        } else if (currentText.toLowerCase().includes("truth or dare")) {
-          replyText = "I choose Dare! Give me a fun, daring question to answer honestly! 🎲💋";
-        }
-        setMessages((prev) => [
-          ...prev,
-          { id: (Date.now() + 1).toString(), sender: "partner", text: replyText, timestamp: "Just now" }
-        ]);
-      }, 2000);
+    
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+       wsRef.current.send(JSON.stringify({
+          sender_id: deviceId || "anon",
+          content: inputMsg.trim(),
+          type: "message"
+       }));
     }
+    
+    setInputMsg("");
   };
 
   // --- 1. AGE & CONSENT SCREEN (18+ Mandatory Opt-In) ---
   if (!hasConsented) {
     return (
-      <div className="fixed inset-0 z-[200] bg-gradient-to-b from-black via-[#15050e] to-[#200512] flex flex-col items-center justify-center p-6 text-foreground font-sans text-center">
+      <div className="fixed inset-0 z-[200] max-w-md mx-auto border-x border-white/5 bg-gradient-to-b from-black via-[#15050e] to-[#200512] flex flex-col items-center justify-center p-6 text-foreground font-sans text-center shadow-2xl">
         <div className="w-20 h-20 rounded-full bg-primary-hover/20 border-2 border-primary/50 flex items-center justify-center mb-6 shadow-[0_0_35px_rgba(244,63,94,0.4)] animate-pulse">
           <Flame size={44} className="text-primary fill-current" />
         </div>
@@ -177,7 +251,7 @@ export default function AfterDarkLoungePage() {
   // --- 2. MATCHMAKING SETUP SCREEN ---
   if (roomState === "idle") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-[#13050c] to-black p-5 flex flex-col text-foreground font-sans">
+      <div className="min-h-screen max-w-md mx-auto border-x border-white/5 bg-gradient-to-b from-black via-[#13050c] to-black p-5 flex flex-col text-foreground font-sans shadow-2xl relative">
         <div className="flex justify-between items-center pb-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Flame size={24} className="text-primary fill-current" />

@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -154,6 +155,41 @@ func ConfirmSafeCheckin(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(map[string]string{"status": "safe_confirmed"})
 }
 
+// GetSosStatus returns the currently active SOS timer if any
+func GetSosStatus(w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var activeSos []map[string]interface{}
+	_, err := db.Client.From("safety_sos_checkins").
+		Select("*", "exact", false).
+		Eq("device_id", deviceID).
+		Eq("status", "active").
+		Limit(1, "").
+		ExecuteTo(&activeSos)
+
+	if err != nil {
+		http.Error(w, "Failed to fetch SOS status", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if len(activeSos) > 0 {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"active": true,
+			"sos":    activeSos[0],
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"active": false,
+	})
+}
+
 type ReportRequest struct {
 	RoomID     string `json:"room_id"`      // Added RoomID to verify interaction
 	OffenderID string `json:"offender_id"`
@@ -267,3 +303,47 @@ func SubmitUserReport(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+// Request struct for blocking user
+type BlockUserRequest struct {
+	BlockedID string `json:"blocked_id"`
+}
+
+// BlockUser handles user blocking logic
+func BlockUser(w http.ResponseWriter, r *http.Request) {
+	blockerID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || blockerID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req BlockUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	if req.BlockedID == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Insert into blocks table
+	_, _, err := db.Client.From("blocks").Insert(map[string]interface{}{
+		"blocker_id": blockerID,
+		"blocked_id": req.BlockedID,
+	}, false, "", "", "exact").Execute()
+
+	if err != nil {
+		http.Error(w, "Failed to block user", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete matches between these users
+	_, _, _ = db.Client.From("matches").Delete("", "exact").Or(fmt.Sprintf("and(user1_id.eq.%s,user2_id.eq.%s),and(user1_id.eq.%s,user2_id.eq.%s)", blockerID, req.BlockedID, req.BlockedID, blockerID), "").Execute()
+	
+	// Delete swipes
+	_, _, _ = db.Client.From("swipes").Delete("", "exact").Or(fmt.Sprintf("and(swiper_id.eq.%s,swiped_id.eq.%s),and(swiper_id.eq.%s,swiped_id.eq.%s)", blockerID, req.BlockedID, req.BlockedID, blockerID), "").Execute()
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}

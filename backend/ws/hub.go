@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"dating-backend/db"
 	"github.com/gorilla/websocket"
 )
 
@@ -41,12 +42,38 @@ type Hub struct {
 }
 
 func NewHub() *Hub {
-	return &Hub{
+	h := &Hub{
 		broadcast:    make(chan []byte),
 		register:     make(chan *Client),
 		unregister:   make(chan *Client),
 		clients:      make(map[*Client]bool),
 		seenMessages: make(map[string]time.Time),
+	}
+
+	// Subscribe to Redis PubSub for cross-server WebSocket scaling
+	go h.listenToRedis()
+
+	return h
+}
+
+func (h *Hub) listenToRedis() {
+	// Wait a moment for Redis to initialize if starting concurrently
+	time.Sleep(1 * time.Second)
+
+	if db.RedisClient == nil {
+		log.Println("⚠️ Redis not found - WebSockets running in local memory mode")
+		return
+	}
+
+	pubsub := db.RedisClient.Subscribe(db.Ctx, "global_ws_chat")
+	defer pubsub.Close()
+
+	ch := pubsub.Channel()
+	log.Println("🚀 WebSocket Hub subscribed to Redis [global_ws_chat]")
+
+	for msg := range ch {
+		// Forward Redis messages directly into the local broadcast channel
+		h.broadcast <- []byte(msg.Payload)
 	}
 }
 

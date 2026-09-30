@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"dating-backend/auth"
+	"dating-backend/db"
 )
 
 // --- 18+ After-Dark Consensual Intimate Lounge Engine ---
@@ -144,9 +145,14 @@ func JoinAfterDarkLounge(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt:     expiresAt,
 		}
 
-		// Save active sessions
+		// Save active sessions in RAM
 		globalLoungePool.active[sessionToken] = session
 		globalLoungePool.active[matchedPartner.SessionID] = partnerSession
+
+		// ✅ Persist session metadata to DB (no PII stored - only session_id, vibe, gender)
+		if err := db.SaveAfterDarkSession(roomID, req.VibeTag, matchedPartner.MyGender, expiresAt); err != nil {
+			log.Printf("⚠️ [AfterDark] DB persist failed (non-fatal): %v", err)
+		}
 
 		// Notify waiting subscriber if channel open
 		if ch, exists := globalLoungePool.subscribers[matchedPartner.SessionID]; exists {
@@ -214,4 +220,56 @@ func DisconnectAfterDarkLounge(w http.ResponseWriter, r *http.Request) {
 		Status:  "evaporated",
 		Message: "Session traces wiped cleanly from memory queue.",
 	})
+}
+
+// GetAfterDarkStatus allows waiting candidates to long-poll or check for a match
+func GetAfterDarkStatus(w http.ResponseWriter, r *http.Request) {
+	sessionToken := r.URL.Query().Get("session")
+	if sessionToken == "" {
+		http.Error(w, "Missing session token", http.StatusBadRequest)
+		return
+	}
+
+	globalLoungePool.mu.Lock()
+	session, exists := globalLoungePool.active[sessionToken]
+	if !exists {
+		globalLoungePool.mu.Unlock()
+		http.Error(w, "Session not found", http.StatusNotFound)
+		return
+	}
+
+	if session.Matched {
+		globalLoungePool.mu.Unlock()
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "matched",
+			Data:   session,
+		})
+		return
+	}
+
+	// Create subscription channel if not exists
+	ch, hasSub := globalLoungePool.subscribers[sessionToken]
+	if !hasSub {
+		ch = make(chan AfterDarkSession, 1)
+		globalLoungePool.subscribers[sessionToken] = ch
+	}
+	globalLoungePool.mu.Unlock()
+
+	// Wait for match or timeout
+	select {
+	case matchedSession := <-ch:
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "matched",
+			Data:   matchedSession,
+		})
+	case <-time.After(5 * time.Second):
+		sendJSONResponse(w, http.StatusOK, ResponsePayload{
+			Status: "waiting",
+			Data: map[string]interface{}{
+				"liveUsers": len(globalLoungePool.waiting),
+			},
+		})
+	case <-r.Context().Done():
+		// Request cancelled
+	}
 }

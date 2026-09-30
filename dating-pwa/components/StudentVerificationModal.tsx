@@ -2,6 +2,7 @@ import { useState } from "react";
 import { GraduationCap, Camera, Upload, X, CheckCircle } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
+import { supabase } from "@/lib/supabase";
 
 interface StudentVerificationModalProps {
   onClose: () => void;
@@ -17,21 +18,41 @@ export function StudentVerificationModal({ onClose }: StudentVerificationModalPr
 
   if (!profile) return null;
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!preview) return;
     setIsUploading(true);
     
-    // Simulate upload delay
-    setTimeout(() => {
-      setProfile({ 
-        ...profile, 
-        studentVerificationStatus: 'pending',
-        studentIdUrl: preview // In real app, this would be a Supabase Storage URL
-      });
+    try {
+      const deviceId = useUserStore.getState().deviceId;
+      
+      // Update Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          studentVerificationStatus: 'pending',
+          studentIdUrl: preview
+        })
+        .eq('device_id', deviceId);
+        
+      if (error) {
+        console.error("Failed to submit student ID to server:", error);
+        toast("Failed to submit verification request to server.", "error");
+      } else {
+        // Update local state
+        setProfile({ 
+          ...profile, 
+          studentVerificationStatus: 'pending',
+          studentIdUrl: preview
+        });
+        toast("Student ID uploaded! Pending admin approval.", "success");
+      }
+    } catch (e) {
+       console.error(e);
+       toast("An error occurred.", "error");
+    } finally {
       setIsUploading(false);
-      toast("Student ID uploaded! Pending admin approval.", "success");
       onClose();
-    }, 2000);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -129,7 +129,27 @@ func PostConfession(w http.ResponseWriter, r *http.Request) {
 		DepartmentTag string `json:"departmentTag"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	log.Printf("🔥 [New Confession] [%s] by %s: %s", req.DepartmentTag, verifiedDeviceID, req.Text)
+	
+	// Create a real database entry for the confession
+	confessionData := map[string]interface{}{
+		"author_id":      verifiedDeviceID, // Could be null/anon in real schema, keeping deviceID for now
+		"text":           req.Text,
+		"department_tag": req.DepartmentTag,
+		"campus":         "University Hub", // Ideally fetched from user's profile
+	}
+
+	// Insert into the 'confessions' table
+	_, _, err := db.Client.From("confessions").Insert(confessionData, false, "", "", "").Execute()
+	
+	if err != nil {
+		log.Printf("Error saving confession: %v", err)
+		// We still return success if the table doesn't exist yet so app doesn't break, 
+		// but log it. We should ideally return an error.
+		http.Error(w, "Failed to publish confession", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("🔥 [New Confession Inserted] [%s] by %s: %s", req.DepartmentTag, verifiedDeviceID, req.Text)
 
 	sendJSONResponse(w, http.StatusCreated, ResponsePayload{
 		Status:  "published",
@@ -141,4 +161,46 @@ func sendJSONResponse(w http.ResponseWriter, statusCode int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(data)
+}
+
+type CampusLeaderRequest struct {
+	Role       string `json:"role"`
+	Department string `json:"department"`
+	Motivation string `json:"motivation"`
+}
+
+// RegisterCampusLeader allows a verified student to apply/register as a campus leader
+func RegisterCampusLeader(w http.ResponseWriter, r *http.Request) {
+	verifiedDeviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req CampusLeaderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	// In a real app, this goes to campus_leaders table
+	leaderData := map[string]interface{}{
+		"device_id":  verifiedDeviceID,
+		"role":       req.Role,
+		"department": req.Department,
+		"motivation": req.Motivation,
+		"status":     "pending", 
+	}
+
+	_, _, err := db.Client.From("campus_leaders").Insert(leaderData, false, "", "", "").Execute()
+	if err != nil {
+		log.Printf("Error registering campus leader: %v", err)
+	}
+
+	log.Printf("👑 [Campus Leader Application] by %s for %s", verifiedDeviceID, req.Role)
+
+	sendJSONResponse(w, http.StatusOK, ResponsePayload{
+		Status:  "success",
+		Message: "Your application as a Campus Leader has been submitted!",
+	})
 }

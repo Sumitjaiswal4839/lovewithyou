@@ -28,10 +28,10 @@ export function BottomNav() {
           <stop offset="100%" stopColor="#E33C38" />
         </linearGradient>
       </svg>
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-white backdrop-blur-xl border-t border-border pb-safe shadow-2xl transition-colors duration-300">
+      <nav id="bottom-nav" className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-surface/95 backdrop-blur-xl border-t border-border pb-safe transition-colors duration-300">
       <div className="flex justify-around items-center h-16">
         {links.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href;
+          const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
           return (
             <button
               key={href}

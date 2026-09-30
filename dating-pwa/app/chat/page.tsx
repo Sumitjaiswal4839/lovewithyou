@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import Image from "next/image";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageCircle, Search, Lock, HeartPulse, Heart, Users, Check, X, Clock } from "lucide-react";
+import { MessageCircle, Search, Lock, HeartPulse, Heart, Users, Check, X, Clock, ChevronRight } from "lucide-react";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { useToast } from "@/components/ui/ToastProvider";
 import { motion } from "framer-motion";
@@ -12,8 +12,8 @@ import { motion } from "framer-motion";
 function ChatListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") as "matches" | "likes" | "friends" || "matches";
-  const [activeTab, setActiveTab] = useState<"matches" | "likes" | "friends">(initialTab);
+  const initialTab = searchParams.get("tab") as "matches" | "likes" | "friends" | "groups" || "matches";
+  const [activeTab, setActiveTab] = useState<"matches" | "likes" | "friends" | "groups">(initialTab);
   
   const matches = useUserStore((state) => state.matches);
   const likes = useUserStore((state) => state.likes);
@@ -233,6 +233,7 @@ function ChatListContent() {
     { id: "matches", label: "My Matches", count: matches.length },
     { id: "likes", label: "Who Liked Me", count: likes.length },
     { id: "friends", label: "Friends", count: friends.length + friendRequests.filter(r => r.status === 'incoming').length },
+    { id: "groups", label: "Group Lounges", count: "🎭" },
   ];
 
   return (
@@ -258,14 +259,15 @@ function ChatListContent() {
         </div>
 
         {/* Tabs - Sleek Design like image_ad2eaf.png */}
-        <div className="flex w-full">
+        <div className="relative">
+          <div className="flex w-full overflow-x-auto no-scrollbar pr-8">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className="relative flex-1 py-3.5 flex justify-center items-center gap-2 transition hover:opacity-80"
+                className="relative shrink-0 whitespace-nowrap px-4 py-3.5 flex justify-center items-center gap-1.5 transition hover:opacity-80"
                 style={{ 
                   color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   fontWeight: isActive ? '800' : '700',
@@ -294,6 +296,11 @@ function ChatListContent() {
               </button>
             );
           })}
+          </div>
+          {/* Scroll Indicator */}
+          <div className="absolute right-0 top-0 bottom-0 w-8 flex items-center justify-end pointer-events-none bg-gradient-to-l from-background to-transparent">
+            <ChevronRight size={16} className="text-muted opacity-50" />
+          </div>
         </div>
       </div>
 
@@ -302,6 +309,20 @@ function ChatListContent() {
          {activeTab === "matches" && renderList(matches, false)}
          {activeTab === "likes" && renderList(likes, true)}
          {activeTab === "friends" && renderFriendsTab()}
+         {activeTab === "groups" && (
+           <div className="flex flex-col items-center justify-center pt-16 pb-10 text-center">
+             <div className="mb-5 w-20 h-20 rounded-3xl flex items-center justify-center text-4xl" style={{ backgroundColor: 'var(--color-primary-soft)' }}>🎭</div>
+             <h3 className="text-lg font-black mb-2" style={{ color: 'var(--color-foreground)' }}>Group Lounges</h3>
+             <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>Join anonymous group chat rooms by vibe — Late Night Talks, Study Lounge, Music Lovers and more.</p>
+             <button
+               onClick={() => router.push('/chat/group')}
+               className="px-8 py-3 rounded-2xl font-extrabold text-white text-sm active:scale-95 transition-all shadow-lg"
+               style={{ background: 'linear-gradient(135deg, var(--color-romantic), var(--color-primary))' }}
+             >
+               Explore Group Lounges →
+             </button>
+           </div>
+         )}
       </div>
       
     </div>

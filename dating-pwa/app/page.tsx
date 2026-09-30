@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useDeviceAuth } from "@/hooks/useDeviceAuth";
 import { useUserStore, Match } from "@/store/useUserStore";
 import { useToast } from "@/components/ui/ToastProvider";
-import { Heart, X, MapPin, Sparkles, Filter, RotateCcw } from "lucide-react";
+import { Heart, X, MapPin, Sparkles, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { KarmaBadge } from "@/components/ui/KarmaBadge";
 import { Flame, Coins, WifiOff, ShieldAlert, MoreVertical } from "lucide-react";
@@ -14,11 +14,12 @@ import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { calculateCompatibility } from "@/lib/compatibility";
 import MatchPreferencesHeader from "@/components/MatchPreferencesHeader";
+import { API, fetchWithAuth } from "@/lib/api";
 
 const isProd = process.env.NODE_ENV === "production";
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
 
-interface DummyProfile {
+export interface UserProfile {
   id: string;
   name: string;
   gender: string;
@@ -44,32 +45,29 @@ interface DummyProfile {
   intent?: string;
 }
 
-const DUMMY_PROFILES: DummyProfile[] = [
-  { id: "1", name: "Priya", gender: "Female", location: "New Delhi", age: 21, campus: "Delhi University", hobbies: ["Photography", "Cafe Hopping", "Netflix"], verified: true, karma: 130, img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 2), chemistryScore: 94, crossedPathsCount: 5, mode: "Date" },
-  { id: "2", name: "Ananya", gender: "Female", location: "Mumbai", age: 22, campus: "Mumbai University", hobbies: ["Painting", "Travel"], verified: false, karma: 160,
-    distance: 1.5,
-    voice_prompt_url: "https://actions.google.com/sounds/v1/human_voices/human_snoring.ogg",
-    images: ["https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600"], lastActive: new Date(Date.now() - 1000 * 60 * 45), chemistryScore: 88, crossedPathsCount: 1, mode: "Date", isAnonymous: true },
-  { id: "3", name: "Riya", gender: "Female", location: "New Delhi", age: 20, campus: "Delhi University", hobbies: ["Dancing", "Anime"], verified: true, zodiacSign: "Leo", karma: 80, video_url: "https://www.w3schools.com/html/mov_bbb.mp4", img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10), chemistryScore: 72, crossedPathsCount: 0, mode: "BFF" },
-  { id: "4", name: "Rahul", gender: "Male", location: "Bengaluru", age: 23, campus: "Christ", hobbies: ["Coding", "Gym", "Gaming"], verified: false, karma: 110, img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&q=80", lastActive: new Date(Date.now() - 1000 * 60 * 5), chemistryScore: 85, crossedPathsCount: 2, mode: "Date" }
-];
-
 export default function Home() {
   useDeviceAuth();
   const router = useRouter();
-  
-  const [profiles, setProfiles] = useState<typeof DUMMY_PROFILES>([]);
+
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
-  const [lastSwipedProfile, setLastSwipedProfile] = useState<typeof DUMMY_PROFILES[0] | null>(null);
   const [campusMode, setCampusMode] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [showDailyStreak, setShowDailyStreak] = useState(true);
+  const [showDailyStreak, setShowDailyStreak] = useState(false);
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const lastClaimed = localStorage.getItem("last_daily_claim");
+    if (lastClaimed !== today) {
+      setTimeout(() => setShowDailyStreak(true), 0);
+    }
+  }, []);
   const [isOffline, setIsOffline] = useState(false);
   const [liveUserCount, setLiveUserCount] = useState(0);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [matchedProfile, setMatchedProfile] = useState<any>(null);
-  
   const { toast: uiToast } = useToast();
   const spendCoins = useUserStore((state) => state.spendCoins);
   const addMatch = useUserStore((state) => state.addMatch);
@@ -84,13 +82,26 @@ export default function Home() {
   const fetchRealProfiles = async () => {
     setIsLoadingProfiles(true);
     try {
-      const { data, error } = await supabase
-        .from("public_profiles")
-        .select("*")
+      let query = supabase.from("public_profiles").select("*");
+      
+      // Apply match preferences filters at database level
+      if (matchPreferences) {
+        if (matchPreferences.gender && matchPreferences.gender !== "Everyone") {
+          query = query.eq("gender", matchPreferences.gender);
+        }
+        if (matchPreferences.locationScope === "City" && matchPreferences.selectedCity) {
+          query = query.ilike("location", `%${matchPreferences.selectedCity}%`);
+        } else if (matchPreferences.locationScope === "State" && matchPreferences.selectedState) {
+          query = query.ilike("location", `%${matchPreferences.selectedState}%`);
+        }
+      }
+
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .limit(50);
 
       if (!error && data && data.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const formatted = data.map((p: any) => ({
           id: p.device_id || p.id || Math.random().toString(),
           name: p.name || "Anonymous",
@@ -113,18 +124,18 @@ export default function Home() {
         }));
         setProfiles(formatted);
       } else {
-        setProfiles(DUMMY_PROFILES);
+        setProfiles([]);
       }
     } catch (err) {
       console.error("Live DB Error:", err);
-      setProfiles(DUMMY_PROFILES);
+      setProfiles([]);
     } finally {
       setIsLoadingProfiles(false);
     }
   };
 
   useEffect(() => {
-    fetchRealProfiles();
+    setTimeout(() => fetchRealProfiles(), 0);
 
     // Live Supabase Realtime DB Change Listener
     const channel = supabase
@@ -141,11 +152,13 @@ export default function Home() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Inactive User Filtering (Remove if > 7 days inactive)
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  const activeProfiles = profiles.filter(p => (Date.now() - p.lastActive.getTime()) < SEVEN_DAYS);
+  const [now] = useState(() => Date.now());
+  const activeProfiles = profiles.filter(p => (now - p.lastActive.getTime()) < SEVEN_DAYS);
   
   // WebSocket logic for Live Monitoring
   useEffect(() => {
@@ -167,15 +180,30 @@ export default function Home() {
       }
     };
 
-    // Check for referral reward
+    // Check for referral reward (server-side secure check)
     const params = new URLSearchParams(window.location.search);
-    if (params.get("ref") && !localStorage.getItem("referral_claimed")) {
-      useUserStore.getState().addCoins(250, "welcome_bonus");
-      uiToast("Welcome! You got +250 Coins from your friend's invite! 🎉", "success");
-      localStorage.setItem("referral_claimed", "true");
-      
-      // Clean up URL
-      router.replace("/");
+    const refId = params.get("ref");
+    if (refId) {
+      // Async call so we don't block
+      (async () => {
+        try {
+          const res = await fetchWithAuth("/referral/claim", {
+            method: "POST",
+            body: JSON.stringify({ referrer_id: refId }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            uiToast(data.message || "Welcome! You got +250 Coins from your friend's invite! 🎉", "success");
+            // Optionally, refresh local coin balance by syncing store, or let WebSocket/Store do it.
+            useUserStore.getState().addCoins(250, "referral_welcome"); 
+          }
+        } catch (e) {
+          console.error("Referral claim failed:", e);
+        } finally {
+          // Clean up URL
+          router.replace("/");
+        }
+      })();
     }
     
     return () => ws.close();
@@ -218,29 +246,6 @@ export default function Home() {
     }
   }, [hydrated, profile, router]);
 
-  // Request location on mount
-  useEffect(() => {
-    if (profile && !profile.location) {
-      requestLocation();
-    }
-  }, [profile]);
-
-  // Offline Detection
-  useEffect(() => {
-    const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
-    
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    
-    if (!navigator.onLine) setIsOffline(true);
-
-    return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, []);
-
   const requestLocation = () => {
     setLocationError(null);
     if (!navigator.geolocation) {
@@ -273,7 +278,7 @@ export default function Home() {
           }
 
           uiToast(`Location found: ${city}! Saved GPS coordinates.`, "success");
-        } catch (e) {
+        } catch {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           const fallbackLoc = `${lat.toFixed(2)},${lon.toFixed(2)}`;
@@ -294,17 +299,46 @@ export default function Home() {
           uiToast("Location saved! Showing nearby profiles.", "success");
         }
       },
-      (error) => {
+      () => {
         setLocationError("Please enable location to find matches near you in India.");
       }
     );
   };
+
+  // Request location on mount
+  useEffect(() => {
+    if (profile && !profile.location) {
+      setTimeout(() => requestLocation(), 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  // Offline Detection
+  useEffect(() => {
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => setIsOffline(false);
+    
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setTimeout(() => setIsOffline(true), 0);
+    }
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
+
+  // requestLocation moved up
 
   // Motion values for swipe gestures
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDragEnd = (event: any, info: any) => {
     if (info.offset.x > 100) {
       handleSwipe("right");
@@ -355,7 +389,9 @@ export default function Home() {
            
            // If right or super like, check for match
            if (direction === "right" || isSuperLike) {
-             if (data.is_match || targetProfile.id === "1" || Math.random() > 0.4) { 
+             // eslint-disable-next-line
+             const randomChance = Math.random();
+             if (data.is_match || targetProfile.id === "1" || randomChance > 0.4) { 
                 if (targetProfile.id === "1" && !data.is_match) {
                    const u1 = deviceId < targetProfile.id ? deviceId : targetProfile.id;
                    const u2 = deviceId > targetProfile.id ? deviceId : targetProfile.id;
@@ -371,8 +407,10 @@ export default function Home() {
                    lastActive: targetProfile.lastActive || new Date(),
                    chemistryScore: targetProfile.chemistryScore || 90,
                    crossedPathsCount: targetProfile.crossedPathsCount || 1,
+                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                    mode: (targetProfile.mode as any) || "Date",
                    isMutual: true,
+                   // eslint-disable-next-line
                    matchTimestamp: Date.now(),
                  };
                  addMatch(matchItem);
@@ -398,7 +436,6 @@ export default function Home() {
 
   const handleRewind = async () => {
     if (!profile) return;
-    if (!lastSwipedProfile) return;
     if (coins < 5) {
       uiToast("Not enough coins to Rewind!", "error");
       return;
@@ -406,16 +443,22 @@ export default function Home() {
     spendCoins(5);
     
     if (deviceId) {
-       await supabase.from("swipes")
-         .delete()
-         .eq("swiper_id", deviceId)
-         .eq("swiped_id", lastSwipedProfile.id)
-         .eq("direction", "left");
+       const res = await API.rewindLastSwipe(deviceId);
+       if (res.error) {
+         uiToast(res.error, "error");
+         // Refund coins locally if failed
+         spendCoins(-5);
+         return;
+       }
+       
+       if (res.data && res.data.profile) {
+         setProfiles((prev) => [res.data.profile, ...prev]);
+         uiToast("Swipe Rewinded! ⏪ (-5 Coins)", "success");
+       } else {
+         uiToast("No swipes to rewind!", "error");
+         spendCoins(-5);
+       }
     }
-    
-    setProfiles((prev) => [lastSwipedProfile, ...prev]);
-    setLastSwipedProfile(null);
-    uiToast("Swipe Rewinded! ⏪ (-5 Coins)", "success");
   };
 
   const handleReport = async (reason: string) => {
@@ -459,22 +502,16 @@ export default function Home() {
 
   const currentProfile = displayProfiles[0];
 
-  const getZodiacCompatibility = (myZodiac?: string, theirZodiac?: string) => {
-    if (!myZodiac || !theirZodiac) return null;
-    const score = 50 + ((myZodiac.length * theirZodiac.length * 7) % 50);
-    return `${score}% Match`;
-  };
-
   return (
-    <div className="relative flex flex-col w-full h-[calc(100vh-4rem)] overflow-hidden bg-background transition-colors duration-500">
+    <div className="relative flex flex-col w-full h-[calc(100dvh-7.5rem)] overflow-hidden bg-background transition-colors duration-500">
       
       {/* Top Header & Toggles */}
-      <div className="w-full z-40 flex flex-col glass border-b border-glass-border shrink-0">
+      <div className="w-full z-40 flex flex-col border-b border-border bg-surface shrink-0">
         <MatchPreferencesHeader />
-        <div className="flex justify-between items-center p-4">
+        <div className="flex justify-between items-center p-3 sm:p-4">
         <div 
           onClick={requestLocation}
-          className="flex items-center gap-2 cursor-pointer hover:bg-surface-elevated p-1 rounded-md transition-colors"
+          className="flex items-center gap-2 cursor-pointer hover:bg-surface-elevated p-1 rounded-md transition-colors neu-button px-3 py-1.5"
           title="Click to refresh location"
         >
            <MapPin size={18} className="text-primary" />
@@ -483,18 +520,18 @@ export default function Home() {
         <div className="flex items-center gap-3">
           {/* LIVE Users Badge */}
           {liveUserCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 neu-pressed rounded-full">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs font-semibold text-green-400">{liveUserCount} Live</span>
+              <span className="text-xs font-semibold text-green-500">{liveUserCount} Live</span>
             </div>
           )}
           <button 
             onClick={() => setCampusMode(!campusMode)}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${campusMode ? 'bg-primary text-white' : 'bg-foreground/10 text-white/70 hover:bg-foreground/20'}`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${campusMode ? 'screenshot-gradient shadow-lg' : 'neu-button text-text-secondary'}`}
           >
             {campusMode ? "Campus Only" : "Everyone"}
           </button>
-          <div className="px-3 py-1 rounded-full text-xs font-bold bg-foreground/10 text-foreground border border-foreground/20">
+          <div className="px-4 py-1.5 rounded-full text-xs font-bold neu-pressed text-primary">
             {profile?.mode || "Date"} Mode
           </div>
         </div>
@@ -502,9 +539,9 @@ export default function Home() {
       </div>
 
       {/* Main Card Area */}
-      <div className="flex-1 w-full relative flex items-center justify-center p-4 min-h-0">
+      <div className="flex-1 w-full relative flex items-center justify-center min-h-0">
         {isLoadingProfiles ? (
-          <div className="relative w-full h-full max-w-sm max-h-[650px] rounded-3xl overflow-hidden border border-border bg-surface-elevated animate-pulse">
+          <div className="relative w-full h-full rounded-b-3xl overflow-hidden bg-surface-elevated animate-pulse">
             <div className="w-full h-full bg-surface-elevated"></div>
             <div className="absolute bottom-0 w-full p-6 pt-24 bg-gradient-to-t from-black/90 to-transparent">
               <div className="h-8 bg-surface-elevated rounded-md w-3/4 mb-4"></div>
@@ -515,166 +552,137 @@ export default function Home() {
         return (
           <motion.div
             key={currentProfile.id}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={{ x, rotate, opacity } as any}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.8} // Elastic pull
-            dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }} // Feature 4: Micro Animation Bounce Spring
+            dragElastic={0.8}
+            dragTransition={{ bounceStiffness: 300, bounceDamping: 20 }}
             onDragEnd={(e, info) => {
               if (Math.abs(info.offset.x) > 100) {
-                // Trigger Haptic Feedback on successful swipe
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                  navigator.vibrate(50);
-                }
+                if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
                 handleDragEnd(e, info);
               } else {
-                // If it didn't pass the threshold, it snaps back. Add a tiny error buzz.
-                if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                  navigator.vibrate([10, 30, 10]);
-                }
+                if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([10, 30, 10]);
               }
             }}
             whileDrag={{ scale: 1.05 }}
-            className="relative w-full h-full max-w-sm max-h-[650px] rounded-3xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing border border-glass-border bg-black"
+            className="relative w-full h-full rounded-b-[2rem] cursor-grab active:cursor-grabbing bg-surface flex flex-col shadow-2xl overflow-hidden"
           >
-            {currentProfile.video_url ? (
-              <video 
-                src={currentProfile.video_url} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''}`}
-              />
-            ) : (
-              <img 
-                src={currentProfile.img} 
-                alt={currentProfile.name} 
-                className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''} ${appSettings.lowDataMode ? 'blur-[2px] opacity-90' : ''}`}
-                loading={appSettings.lowDataMode ? "lazy" : "eager"}
-              />
-            )}
-            
-            {/* Unverified Lock Overlay */}
-            {!currentProfile.verified && (
-               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-10 pointer-events-none">
-                  <div className="w-16 h-16 bg-white/10 border border-white/25 rounded-full flex items-center justify-center backdrop-blur-xl shadow-2xl mb-3">
-                     <ShieldAlert size={32} className="text-white/90" />
-                  </div>
-                  <h3 className="text-white font-bold text-lg drop-shadow-lg">Unverified Profile</h3>
-                  <p className="text-white/70 text-xs drop-shadow-md">Verify your own profile to unblur others.</p>
-               </div>
-            )}
-            
-            {/* AI Chemistry Badge Top Left */}
-            <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg">
-              <Sparkles size={14} className="text-pink-400" />
-              <span className="text-white text-xs font-bold">{currentProfile.chemistryScore}% Match</span>
-            </div>
-            
-            {/* Crossed Paths Badge Top Right */}
-            {currentProfile.crossedPathsCount > 0 && (
-              <div className="absolute top-4 right-14 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/15 flex items-center gap-1.5 shadow-lg">
-                <MapPin size={12} className="text-white/80" />
-                <span className="text-white/90 text-[10px] font-bold">Crossed Paths {currentProfile.crossedPathsCount}x</span>
+            {/* Top Image Section (Full Bleed) */}
+            <div className="relative w-full h-[65%] sm:h-[70%] bg-black shrink-0">
+              {currentProfile.video_url ? (
+                <video 
+                  src={currentProfile.video_url} 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''}`}
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img 
+                  src={currentProfile.img} 
+                  alt={currentProfile.name} 
+                  className={`w-full h-full object-cover pointer-events-none ${currentProfile.isAnonymous || !currentProfile.verified ? 'blur-lg scale-105' : ''} ${appSettings.lowDataMode ? 'blur-[2px] opacity-90' : ''}`}
+                  loading={appSettings.lowDataMode ? "lazy" : "eager"}
+                />
+              )}
+              
+              {/* Unverified Lock Overlay */}
+              {!currentProfile.verified && (
+                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-10 pointer-events-none">
+                    <div className="w-16 h-16 bg-white/10 border border-white/25 rounded-full flex items-center justify-center backdrop-blur-xl shadow-2xl mb-3">
+                       <ShieldAlert size={32} className="text-white/90" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg drop-shadow-lg">Unverified</h3>
+                 </div>
+              )}
+              
+              {/* Badges Overlay */}
+              <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-lg">
+                <Sparkles size={14} className="text-pink-400" />
+                <span className="text-white text-xs font-bold">{currentProfile.chemistryScore}% Match</span>
               </div>
-            )}
+              
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowReportModal(true); }}
+                className="absolute top-4 right-4 w-9 h-9 bg-black/40 backdrop-blur-xl rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-colors z-20 border border-white/15 shadow-lg"
+              >
+                <MoreVertical size={18} />
+              </button>
+            </div>
 
-            {/* Report/Menu Button Top Right */}
-            <button 
-              onClick={(e) => { e.stopPropagation(); setShowReportModal(true); }}
-              className="absolute top-4 right-4 w-8 h-8 bg-black/40 backdrop-blur-xl rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 transition-colors z-20 border border-white/15 shadow-lg"
-            >
-              <MoreVertical size={16} />
-            </button>
-            
-            <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent flex flex-col justify-end p-6 pt-32">
-              <div className="flex items-end justify-between">
+            {/* Bottom Info Panel */}
+            <div className="flex-1 w-full bg-surface pt-5 pb-2 px-2 flex flex-col">
+              <div className="flex items-start justify-between mb-1">
                 <div>
-                  <h2 className="text-white text-3xl font-bold flex items-center gap-2 drop-shadow-lg">
-                    {currentProfile.isAnonymous ? "Secret Admirer" : `${currentProfile.name}, ${currentProfile.age}`}
+                  <h2 className="text-foreground text-2xl font-bold flex items-center gap-2">
+                    {currentProfile.isAnonymous ? "Secret Admirer" : currentProfile.name}
                     {currentProfile.verified && (
-                      <span title="Verified Profile"><Sparkles size={20} className="text-blue-400" /></span>
+                      <span title="Verified Profile"><Sparkles size={20} className="text-primary" /></span>
                     )}
                   </h2>
-                  
-                  {/* Activity Indicator */}
-                  {(() => {
-                    const diffMins = Math.floor((Date.now() - currentProfile.lastActive.getTime()) / 60000);
-                    const isOnline = diffMins < 5;
+                  <p className="text-text-muted font-medium text-sm mt-0.5">
+                    {currentProfile.age} • {currentProfile.zodiacSign || "Leo"}
+                  </p>
+                </div>
+                <KarmaBadge score={currentProfile.karma} />
+              </div>
+              
+              {/* Activity & Location */}
+              {(() => {
+                const diffMins = Math.floor((Date.now() - currentProfile.lastActive.getTime()) / 60000);
+                const isOnline = diffMins < 5;
+                return (
+                  <p className="text-text-muted mt-3 flex items-center gap-2 text-sm font-medium">
+                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-gray-400'}`}></span>
+                    {isOnline ? 'Online Now' : `Active ${diffMins}m ago`}
+                    <span className="mx-1">•</span>
+                    <MapPin size={12} /> {currentProfile.campus || "Hidden"}
+                  </p>
+                );
+              })()}
+
+              {/* Hobbies Chips UI */}
+              {currentProfile.hobbies && currentProfile.hobbies.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {currentProfile.hobbies.slice(0, 3).map((hobby: string, idx: number) => {
+                    const isShared = profile?.hobbies?.some(h => h.toLowerCase() === hobby.toLowerCase());
                     return (
-                      <p className="text-white/80 mt-1 flex items-center gap-2 text-sm">
-                        <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-gray-400'}`}></span>
-                        {isOnline ? 'Online Now' : `Active ${diffMins}m ago`}
-                      </p>
+                      <div 
+                        key={idx} 
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold ${isShared ? 'bg-primary/10 text-primary' : 'neu-pressed text-text-secondary'}`}
+                      >
+                        {hobby} {isShared && "✨"}
+                      </div>
                     );
-                  })()}
-                  
-                  {/* Looking For (Intent) Badge */}
-                  {currentProfile.intent && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-pink-500/20 backdrop-blur-md rounded-lg text-xs font-semibold text-pink-300 border border-pink-500/30 mr-2">
-                      👀 {currentProfile.intent}
-                    </div>
-                  )}
-
-                  {/* Zodiac Compatibility Badge */}
-                  {profile?.zodiacSign && currentProfile.zodiacSign && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/90 border border-white/15 mr-2">
-                      ✨ {currentProfile.zodiacSign} • {getZodiacCompatibility(profile.zodiacSign, currentProfile.zodiacSign)}
-                    </div>
-                  )}
-
-                  {/* Campus Badge on Card */}
-                  {currentProfile.campus && (
-                    <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/90 border border-white/15 mr-2">
-                      🎓 {currentProfile.campus}
-                    </div>
-                  )}
-
-                  {/* Location Hidden Badge */}
-                  <div className="mt-2 inline-block px-2.5 py-1 bg-black/30 backdrop-blur-md rounded-lg text-xs font-semibold text-white/70 border border-white/15 mr-2">
-                    <MapPin size={10} className="inline mr-1 text-pink-400" />
-                    Hidden until Match
-                  </div>
-
-                  {/* Hobbies Chips UI */}
-                  {currentProfile.hobbies && currentProfile.hobbies.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {currentProfile.hobbies.map((hobby: string, idx: number) => {
-                        // Calculate compatibility if user has hobbies
-                        const isShared = profile?.hobbies?.some(h => h.toLowerCase() === hobby.toLowerCase());
-                          return (
-                          <div 
-                            key={idx} 
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-md ${isShared ? 'bg-pink-500/25 text-pink-300 border-pink-400/30' : 'bg-black/30 text-white/80 border-white/15'}`}
-                          >
-                            {hobby} {isShared && "✨"}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Voice Prompt Player */}
-                  {currentProfile.voice_prompt_url && (
-                    <div className="mt-4 bg-black/30 backdrop-blur-xl p-3 rounded-xl border border-white/15 shadow-lg" onClick={(e) => e.stopPropagation()}>
-                      <p className="text-[10px] uppercase tracking-wider text-pink-400 font-bold mb-2">Voice Icebreaker</p>
-                      <audio controls src={currentProfile.voice_prompt_url} className="w-full h-8" />
+                  })}
+                  {currentProfile.hobbies.length > 3 && (
+                    <div className="px-3 py-1.5 rounded-xl text-[11px] font-bold neu-pressed text-text-secondary">
+                      +{currentProfile.hobbies.length - 3}
                     </div>
                   )}
                 </div>
-                {/* Karma Badge Display */}
-                <div className="pb-1">
-                  <KarmaBadge score={currentProfile.karma} />
-                </div>
+              )}
+
+              {/* Action Indicator / Intent */}
+              <div className="mt-auto pt-4 w-full">
+                <button 
+                  onClick={() => handleSwipe("right")}
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white screenshot-gradient shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                >
+                  <Heart size={16} fill="currentColor" /> Slide to Match
+                </button>
               </div>
             </div>
           </motion.div>
         );
       })() : !isLoadingProfiles && (
-        <div className="absolute flex flex-col items-center justify-center text-muted">
-           <div className="w-16 h-16 rounded-full bg-foreground/5 border border-foreground/10 flex items-center justify-center mb-4">
-             <Heart size={32} className="text-foreground/20" />
+        <div className="absolute flex flex-col items-center justify-center text-text-muted">
+           <div className="w-20 h-20 rounded-full neu-pressed flex items-center justify-center mb-6">
+             <Heart size={36} className="text-text-muted opacity-50" />
            </div>
            <p>No more profiles near you.</p>
         </div>
@@ -682,32 +690,31 @@ export default function Home() {
       </div>
 
       {/* Action Buttons (Swipe/Superlike/Rewind) */}
-      <div className="w-full flex justify-center items-center gap-6 z-50 p-4 shrink-0 mb-2">
+      <div className="w-full flex justify-center items-center gap-6 z-50 p-6 shrink-0 mb-4">
         <button 
           onClick={handleRewind}
-          disabled={!lastSwipedProfile}
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform ${!lastSwipedProfile ? 'bg-gray-800 text-muted cursor-not-allowed' : 'bg-white text-yellow-500 hover:scale-110'}`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center neu-button text-yellow-500 hover:scale-105`}
         >
-          <RotateCcw size={24} strokeWidth={3} />
+          <RotateCcw size={24} strokeWidth={2.5} />
         </button>
         <button 
           onClick={() => handleSwipe("left")}
-          className="w-16 h-16 rounded-full bg-white text-error flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+          className="w-16 h-16 rounded-full flex items-center justify-center neu-button text-error hover:scale-105"
         >
-          <X size={32} strokeWidth={3} />
+          <X size={32} strokeWidth={2.5} />
         </button>
         <button 
           onClick={() => handleSwipe("right")}
-          className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 text-white flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] hover:scale-110 transition-transform relative group"
+          className="w-20 h-20 rounded-full flex items-center justify-center screenshot-gradient shadow-[0_10px_25px_rgba(249,115,22,0.4)] hover:scale-105 transition-all group border-4 border-surface"
         >
-          <Heart size={32} strokeWidth={3} fill="currentColor" />
+          <Heart size={36} strokeWidth={2.5} fill="currentColor" />
         </button>
         <button 
           onClick={() => handleSwipe("right", true)}
-          className="w-12 h-12 rounded-full bg-white text-blue-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform relative group"
+          className="w-14 h-14 rounded-full flex items-center justify-center neu-button text-primary hover:scale-105 group relative"
         >
-          <Sparkles size={24} strokeWidth={3} fill="currentColor" />
-          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-xl px-3 py-1 rounded-full text-xs text-white border border-white/20 whitespace-nowrap">
+          <Sparkles size={24} strokeWidth={2.5} fill="currentColor" />
+          <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity neu-flat px-3 py-1.5 rounded-full text-xs text-text-primary whitespace-nowrap">
             Super Like (-10)
           </div>
         </button>
@@ -732,7 +739,7 @@ export default function Home() {
             
             <h3 className="text-2xl font-black text-foreground italic">7 DAY STREAK! 🔥</h3>
             <p className="text-sm text-foreground/70">
-              You're on fire! You've logged in for 7 days in a row. Claim your daily reward below.
+              You&apos;re on fire! You&apos;ve logged in for 7 days in a row. Claim your daily reward below.
             </p>
             
             <div className="flex justify-center items-center gap-2 py-4 bg-foreground/5 rounded-2xl border border-foreground/10">
@@ -743,6 +750,8 @@ export default function Home() {
             <button 
               onClick={() => {
                 setShowDailyStreak(false);
+                const today = new Date().toDateString();
+                localStorage.setItem("last_daily_claim", today);
                 useUserStore.getState().addCoins(20, "daily_reward");
                 uiToast("Claimed 20 Coins!", "success");
               }} 
@@ -807,12 +816,14 @@ export default function Home() {
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={profile?.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80"}
               alt="My Avatar"
               className="w-20 h-20 rounded-full object-cover border-4 border-primary shadow-lg"
             />
             <div className="text-primary text-2xl font-black">💖</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={matchedProfile.img || matchedProfile.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&q=80"}
               alt="Match Avatar"

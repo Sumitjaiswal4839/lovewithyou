@@ -20,7 +20,7 @@ func getClientIP(r *http.Request) string {
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff != "" {
 		ips := strings.Split(xff, ",")
-		return strings.TrimSpace(ips[0])
+		return strings.TrimSpace(ips[len(ips)-1])
 	}
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

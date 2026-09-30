@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
@@ -9,6 +9,9 @@ import { useToast } from "@/components/ui/ToastProvider";
 import SecureImage from "@/components/chat/SecureImage";
 import FlirtGamesSuite from "@/components/chat/FlirtGamesSuite";
 import { API } from "@/lib/api";
+import { CallScreen } from "@/components/CallScreen";
+import ReportUserModal from "@/components/ReportUserModal";
+import { AIIcebreaker } from "@/components/ui/AIIcebreaker";
 
 interface Message {
   id: string;
@@ -17,6 +20,72 @@ interface Message {
   content: string;
   created_at: string;
 }
+
+const MemoizedChatMessage = React.memo(({ 
+  msg, 
+  isMe, 
+  showAvatar, 
+  matchImg 
+}: { 
+  msg: Message, 
+  isMe: boolean, 
+  showAvatar: boolean, 
+  matchImg: string 
+}) => {
+  const isAudio = msg.content.startsWith("[AUDIO]");
+  const isImage = msg.content.startsWith("[IMAGE]");
+  const isDisappearing = msg.content.startsWith("[DISAPPEARING_IMAGE]");
+  
+  return (
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 group`}>
+      {!isMe && (
+        <div className="w-8 flex-shrink-0 mr-2 flex flex-col justify-end">
+          {showAvatar && <img src={matchImg} alt="avatar" className="w-6 h-6 rounded-full object-cover" />}
+        </div>
+      )}
+      
+      <div className={`max-w-[75%] rounded-2xl shadow-sm overflow-hidden ${
+        isMe 
+          ? 'bg-gradient-to-br from-primary-600 to-primary text-white rounded-br-sm' 
+          : 'bg-surface-elevated text-white rounded-bl-sm border border-border'
+      } ${isImage || isDisappearing ? 'p-1' : 'px-4 py-2.5'}`}>
+        
+        {isImage && (
+          <div className="w-full max-w-[200px] aspect-[3/4]">
+            <SecureImage src={msg.content.replace('[IMAGE]', '')} alt="Chat image" />
+          </div>
+        )}
+
+        {isDisappearing && (
+          <div className="w-full max-w-[200px] aspect-[3/4] relative">
+             <div className="w-full h-full bg-black/50 flex flex-col items-center justify-center cursor-pointer hover:bg-surface-elevated transition-colors">
+               <Lock size={32} className="text-primary mb-2" />
+               <span className="text-xs font-bold uppercase tracking-wider text-foreground">Tap to View</span>
+             </div>
+          </div>
+        )}
+
+        {isAudio && (
+          <div className="flex items-center gap-3 min-w-[150px]">
+             <div className="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+               <Mic size={14} className="text-foreground" />
+             </div>
+             <audio src={msg.content.replace("[AUDIO]", "")} controls className="h-8 max-w-[150px] opacity-90 invert grayscale hue-rotate-180" />
+          </div>
+        )}
+
+        {!isImage && !isDisappearing && !isAudio && (
+          <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
+        )}
+        
+        <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-muted'} ${(isImage || isDisappearing) ? 'pr-2 pb-1' : ''}`}>
+          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+    </div>
+  );
+});
+MemoizedChatMessage.displayName = "MemoizedChatMessage";
 
 export default function ChatRoomPage() {
   const router = useRouter();
@@ -39,7 +108,7 @@ export default function ChatRoomPage() {
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [callType, setCallType] = useState<"audio"|"video">("audio");
   const [isIncomingCall, setIsIncomingCall] = useState(false);
-  const [incomingOffer, setIncomingOffer] = useState<any>(null);
+  const [incomingOffer, setIncomingOffer] = useState<unknown>(null);
   const [incomingSignal, setIncomingSignal] = useState<string | undefined>();
   
   // Menu State
@@ -61,13 +130,23 @@ export default function ChatRoomPage() {
   
   const handleMenuAction = async (action: string) => {
     setIsMenuOpen(false);
-    if (action === "unmatch" || action === "report") {
-      if (action === "unmatch") {
+    if (action === "unmatch") {
+      await unmatchUser(matchId);
+      await deleteFriend(matchId);
+      toast("Unmatched with user.", "success");
+      router.back();
+    } else if (action === "block") {
+      try {
+        await API.blockUser(deviceId || "", matchId);
         await unmatchUser(matchId);
         await deleteFriend(matchId);
+        toast("User blocked securely.", "success");
+        router.back();
+      } catch {
+        toast("Failed to block user.", "error");
       }
-      toast(action === "unmatch" ? "Unmatched with user." : "User reported. Thank you.", "success");
-      router.back();
+    } else if (action === "report") {
+      setShowReportModal(true);
     } else if (action === "clear") {
       setMessages([]);
       try {
@@ -76,13 +155,21 @@ export default function ChatRoomPage() {
           .delete()
           .or(`and(sender_id.eq.${deviceId},receiver_id.eq.${matchId}),and(sender_id.eq.${matchId},receiver_id.eq.${deviceId})`);
         toast("Chat deleted permanently.", "success");
-      } catch (e) {
+      } catch {
         toast("Failed to delete chat.", "error");
       }
     }
   };
   const [isTyping, setIsTyping] = useState(false);
   const [isFlirtOpen, setIsFlirtOpen] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isIcebreakerOpen, setIsIcebreakerOpen] = useState(false);
+
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const MESSAGES_PER_PAGE = 30;
 
   // 📸 Automatic Screenshot Blocker & Karma Shaming Deduction
   useEffect(() => {
@@ -104,8 +191,10 @@ export default function ChatRoomPage() {
   };
   
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    if (page === 0) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping, page]);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -150,16 +239,17 @@ export default function ChatRoomPage() {
     }
 
     // Fetch initial messages from Supabase DB
-    const fetchMessages = async () => {
+    const fetchInitialMessages = async () => {
       const { data } = await supabase
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${deviceId},receiver_id.eq.${matchId}),and(sender_id.eq.${matchId},receiver_id.eq.${deviceId})`)
-        .order('created_at', { ascending: true })
-        .limit(50);
+        .order('created_at', { ascending: false })
+        .range(0, MESSAGES_PER_PAGE - 1);
         
       if (data) {
-        setMessages(data);
+        setMessages(data.reverse());
+        setHasMore(data.length === MESSAGES_PER_PAGE);
         if (data.length === 0) {
           setIsTyping(true);
           setTimeout(() => setIsTyping(false), 3000);
@@ -167,7 +257,7 @@ export default function ChatRoomPage() {
       }
     };
 
-    fetchMessages();
+    fetchInitialMessages();
 
     // Subscribe to realtime postgres changes
     const channel = supabase
@@ -193,6 +283,26 @@ export default function ChatRoomPage() {
       supabase.removeChannel(channel);
     };
   }, [deviceId, matchId]);
+
+  const loadMoreMessages = async () => {
+    if (!deviceId || isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    
+    const nextPage = page + 1;
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`and(sender_id.eq.${deviceId},receiver_id.eq.${matchId}),and(sender_id.eq.${matchId},receiver_id.eq.${deviceId})`)
+      .order('created_at', { ascending: false })
+      .range(nextPage * MESSAGES_PER_PAGE, (nextPage + 1) * MESSAGES_PER_PAGE - 1);
+      
+    if (data) {
+      setMessages((prev) => [...data.reverse(), ...prev]);
+      setHasMore(data.length === MESSAGES_PER_PAGE);
+      setPage(nextPage);
+    }
+    setIsLoadingMore(false);
+  };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,39 +342,75 @@ export default function ChatRoomPage() {
     setNewMessage(prev => prev + emoji);
   };
 
-  const sendMockImage = async () => {
-    // This mocks sending a slightly risky image for demonstration
-    if (!deviceId) return;
-    const mockNsfwUrl = "https://images.unsplash.com/photo-1616423640778-28d1b53229bd?w=800&q=80"; // Note: unsplash is SFW but nsfwjs sometimes triggers on skin/bikini
-    const msgContent = `[IMAGE]${mockNsfwUrl}`;
-    
-    const tempMsg: Message = {
-      id: Date.now().toString(),
-      sender_id: deviceId,
-      receiver_id: matchId,
-      content: msgContent,
-      created_at: new Date().toISOString()
-    };
-    
-    setMessages((prev) => [...prev, tempMsg]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-    const { error } = await supabase.from('messages').insert([{
-      sender_id: deviceId,
-      receiver_id: matchId,
-      content: msgContent
-    }]);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !deviceId) return;
 
-    if (error) {
-      toast("Failed to send image", "error");
-      setMessages((prev) => prev.filter(m => m.id !== tempMsg.id));
+    if (file.size > 5 * 1024 * 1024) {
+      toast("Image must be less than 5MB", "error");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    toast("Uploading image...", "success"); // Could show a loading state
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "lovewithyou_preset");
+      
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dpexzhhae";
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      
+      const data = await res.json();
+      
+      if (data.secure_url) {
+        const msgContent = `[IMAGE]${data.secure_url}`;
+        
+        const tempMsg: Message = {
+          id: Date.now().toString(),
+          sender_id: deviceId,
+          receiver_id: matchId,
+          content: msgContent,
+          created_at: new Date().toISOString()
+        };
+        
+        setMessages((prev) => [...prev, tempMsg]);
+
+        const { error } = await supabase.from('messages').insert([{
+          sender_id: deviceId,
+          receiver_id: matchId,
+          content: msgContent
+        }]);
+
+        if (error) {
+          toast("Failed to send image", "error");
+          setMessages((prev) => prev.filter(m => m.id !== tempMsg.id));
+        } else {
+          toast("Image sent!", "success");
+        }
+      }
+    } catch {
+      toast("Failed to upload image", "error");
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const [partnerProfile, setPartnerProfile] = useState<{ name: string; photo_url: string } | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
     const fetchPartnerDetails = async () => {
       if (!matchId) return;
+      setIsLoadingProfile(true);
       const { data } = await supabase
         .from("public_profiles")
         .select("name, photo_url")
@@ -273,6 +419,7 @@ export default function ChatRoomPage() {
       if (data) {
         setPartnerProfile(data);
       }
+      setIsLoadingProfile(false);
     };
     fetchPartnerDetails();
   }, [matchId]);
@@ -280,12 +427,41 @@ export default function ChatRoomPage() {
   const matchName = partnerProfile?.name || (matchId === "1" ? "Priya" : "Single Partner");
   const matchImg = partnerProfile?.photo_url || "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80";
 
+  if (isLoadingProfile) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-surface-elevated sticky top-0 z-20 shadow-md animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/5" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/10" />
+              <div className="space-y-2">
+                <div className="h-3 w-24 bg-white/10 rounded" />
+                <div className="h-2 w-12 bg-white/5 rounded" />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+             <div className="w-8 h-8 rounded-full bg-white/5" />
+             <div className="w-8 h-8 rounded-full bg-white/5" />
+             <div className="w-8 h-8 rounded-full bg-white/5" />
+          </div>
+        </div>
+        <div className="flex-1 p-4 space-y-6 overflow-hidden">
+           <div className="flex justify-start animate-pulse"><div className="w-2/3 max-w-[250px] h-12 bg-surface-elevated rounded-2xl rounded-bl-sm" /></div>
+           <div className="flex justify-end animate-pulse"><div className="w-1/2 max-w-[200px] h-16 bg-primary/20 rounded-2xl rounded-br-sm" /></div>
+           <div className="flex justify-start animate-pulse"><div className="w-3/4 max-w-[280px] h-20 bg-surface-elevated rounded-2xl rounded-bl-sm" /></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-surface-elevated backdrop-blur-md sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2 bg-surface-elevated hover:bg-surface-elevated rounded-full transition-colors text-foreground">
+          <button aria-label="Go back" onClick={() => router.back()} className="p-2 -ml-2 bg-surface-elevated hover:bg-surface-elevated rounded-full transition-colors text-foreground">
             <ArrowLeft size={20} />
           </button>
           
@@ -301,10 +477,35 @@ export default function ChatRoomPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-2 text-muted">
-          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Phone size={18} /></button>
-          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Video size={18} /></button>
-          <button className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><MoreVertical size={18} /></button>
+        <div className="flex items-center gap-2 text-muted relative">
+          <button 
+            aria-label="Audio Call"
+            onClick={() => { setCallType("audio"); setIsIncomingCall(false); setIsCallOpen(true); }}
+            className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Phone size={18} /></button>
+          <button 
+            aria-label="Video Call"
+            onClick={() => { setCallType("video"); setIsIncomingCall(false); setIsCallOpen(true); }}
+            className="p-2 hover:bg-surface-elevated rounded-full transition-colors"><Video size={18} /></button>
+          
+          <button aria-label="More options" onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 hover:bg-surface-elevated rounded-full transition-colors">
+            <MoreVertical size={18} />
+          </button>
+          {isMenuOpen && (
+            <div className="absolute right-0 top-12 mt-2 w-48 bg-surface-elevated border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+              <button onClick={() => { setIsMenuOpen(false); handleMenuAction("unmatch"); }} className="w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors">
+                Unmatch User
+              </button>
+              <button onClick={() => { setIsMenuOpen(false); handleMenuAction("clear"); }} className="w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors">
+                Clear Chat
+              </button>
+              <button onClick={() => { setIsMenuOpen(false); handleMenuAction("block"); }} className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 transition-colors">
+                Block User
+              </button>
+              <button onClick={() => { setIsMenuOpen(false); setShowReportModal(true); }} className="w-full text-left px-4 py-3 text-sm text-error hover:bg-error/10 transition-colors">
+                Report
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -314,6 +515,18 @@ export default function ChatRoomPage() {
           <span className="bg-surface-elevated text-muted text-xs px-3 py-1 rounded-full">You matched today</span>
         </div>
         
+        {hasMore && messages.length > 0 && (
+          <div className="flex justify-center mb-4">
+            <button
+              onClick={loadMoreMessages}
+              disabled={isLoadingMore}
+              className="px-4 py-1.5 text-xs font-semibold bg-surface-elevated text-secondary rounded-full border border-border shadow-sm hover:bg-surface-highlight transition-colors"
+            >
+              {isLoadingMore ? "Loading..." : "Scroll up to load more"}
+            </button>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 opacity-50">
              <p className="text-muted text-sm">Say hi to {matchName}! 👋</p>
@@ -322,58 +535,14 @@ export default function ChatRoomPage() {
           messages.map((msg, index) => {
             const isMe = msg.sender_id === deviceId;
             const showAvatar = !isMe && (index === messages.length - 1 || messages[index + 1]?.sender_id !== msg.sender_id);
-            
-            const isAudio = msg.content.startsWith("[AUDIO]");
-            const isImage = msg.content.startsWith("[IMAGE]");
-            const isDisappearing = msg.content.startsWith("[DISAPPEARING_IMAGE]");
-            
             return (
-              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4 group`}>
-                {!isMe && (
-                  <div className="w-8 flex-shrink-0 mr-2 flex flex-col justify-end">
-                    {showAvatar && <img src={matchImg} alt="avatar" className="w-6 h-6 rounded-full object-cover" />}
-                  </div>
-                )}
-                
-                <div className={`max-w-[75%] rounded-2xl shadow-sm overflow-hidden ${
-                  isMe 
-                    ? 'bg-gradient-to-br from-primary-600 to-primary text-white rounded-br-sm' 
-                    : 'bg-surface-elevated text-white rounded-bl-sm border border-border'
-                } ${isImage || isDisappearing ? 'p-1' : 'px-4 py-2.5'}`}>
-                  
-                  {isImage && (
-                    <div className="w-full max-w-[200px] aspect-[3/4]">
-                      <SecureImage src={msg.content.replace('[IMAGE]', '')} alt="Chat image" />
-                    </div>
-                  )}
-
-                  {isDisappearing && (
-                    <div className="w-full max-w-[200px] aspect-[3/4] relative">
-                       <div className="w-full h-full bg-black/50 flex flex-col items-center justify-center cursor-pointer hover:bg-surface-elevated transition-colors">
-                         <Lock size={32} className="text-primary mb-2" />
-                         <span className="text-xs font-bold uppercase tracking-wider text-foreground">Tap to View</span>
-                       </div>
-                    </div>
-                  )}
-
-                  {isAudio && (
-                    <div className="flex items-center gap-3 min-w-[150px]">
-                       <div className="w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
-                         <Mic size={14} className="text-foreground" />
-                       </div>
-                       <audio src={msg.content.replace("[AUDIO]", "")} controls className="h-8 max-w-[150px] opacity-90 invert grayscale hue-rotate-180" />
-                    </div>
-                  )}
-
-                  {!isImage && !isDisappearing && !isAudio && (
-                    <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
-                  )}
-                  
-                  <p className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-200' : 'text-muted'} ${(isImage || isDisappearing) ? 'pr-2 pb-1' : ''}`}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
+              <MemoizedChatMessage
+                key={msg.id}
+                msg={msg}
+                isMe={isMe}
+                showAvatar={showAvatar}
+                matchImg={matchImg}
+              />
             );
           })
         )}
@@ -397,8 +566,8 @@ export default function ChatRoomPage() {
       <div className="p-3 bg-background border-t border-glass-border pb-safe">
         
         {(() => {
-          const outgoingRequest = friendRequests.find(r => r.id === matchId && r.status === "outgoing");
-          const incomingRequest = friendRequests.find(r => r.id === matchId && r.status === "incoming");
+          const outgoingRequest = friendRequests.find((r: any) => r.id === matchId && r.status === "outgoing");
+          const incomingRequest = friendRequests.find((r: any) => r.id === matchId && r.status === "incoming");
           
           if (outgoingRequest) {
             return (
@@ -425,21 +594,26 @@ export default function ChatRoomPage() {
 
           return (
             <>
+              {/* AI Icebreaker Panel - collapsible */}
+              {isIcebreakerOpen && (
+                <div className="mb-2 animate-fade-in">
+                  <AIIcebreaker
+                    matchName={matchName}
+                    matchHobbies={[]}
+                    onGenerate={(opener) => {
+                      setNewMessage(opener);
+                      setIsIcebreakerOpen(false);
+                      toast("✨ AI Icebreaker ready! Hit Send!", "success");
+                    }}
+                  />
+                </div>
+              )}
+
               {/* AI Wingman & Game Triggers */}
               <div className="flex items-center gap-2 mb-2.5 px-1 overflow-x-auto no-scrollbar">
                 <button
                   type="button"
-                  onClick={() => {
-                    const openers = [
-                      `Hey ${matchName}! My AI Wingman noticed we both share awesome vibes. What's your top campus hangout spot? ✨`,
-                      `If you could instantly skip one exam paper this semester, which subject would it be? 📚🚀`,
-                      `Truth or Dare time! Pick one to break the ice! 🎲😎`,
-                      `Hey! What song is on loop in your playlist this week? 🎵✨`
-                    ];
-                    const picked = openers[Math.floor(Math.random() * openers.length)];
-                    setNewMessage(picked);
-                    toast("✨ AI Wingman loaded a high-conversion icebreaker!", "success");
-                  }}
+                  onClick={() => setIsIcebreakerOpen(!isIcebreakerOpen)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/40 hover:border-purple-400 text-[11px] font-bold text-purple-300 shadow-md transition-all shrink-0 active:scale-95"
                 >
                   <Sparkles size={14} className="text-pink-400 animate-pulse" /> AI Wingman Coach
@@ -472,16 +646,26 @@ export default function ChatRoomPage() {
                   placeholder={`Message ${matchName}...`}
                   className="flex-1 bg-transparent border-none text-foreground outline-none py-3 text-sm placeholder:text-muted"
                 />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
                 <button 
                   type="button" 
-                  onClick={sendMockImage}
-                  className="p-3 bg-surface-elevated hover:bg-surface-elevated text-secondary rounded-full transition-colors flex-shrink-0"
-                  title="Send Image (Mock)"
+                  aria-label="Upload Image"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className={`p-3 bg-surface-elevated hover:bg-surface-elevated text-secondary rounded-full transition-colors flex-shrink-0 ${isUploadingImage ? "opacity-50 animate-pulse" : ""}`}
+                  title="Upload Image"
                 >
                   <ImageIcon size={18} />
                 </button>
                 <button 
                   type="submit" 
+                  aria-label="Send message"
                   disabled={!newMessage.trim()}
                   className={`p-3 rounded-full flex-shrink-0 transition-all ${
                     newMessage.trim() 
@@ -498,6 +682,7 @@ export default function ChatRoomPage() {
                  {['❤️', '😂', '🔥', '👀', '✨', '🥺', '💯', '🥂'].map(emoji => (
                    <button 
                      key={emoji} 
+                     aria-label={`Send emoji ${emoji}`}
                      onClick={() => sendEmoji(emoji)}
                      className="text-2xl hover:scale-125 transition-transform active:scale-95"
                    >
@@ -516,6 +701,30 @@ export default function ChatRoomPage() {
         onClose={() => setIsFlirtOpen(false)}
         onSendMessage={(txt) => { setNewMessage(txt); setIsFlirtOpen(false); }}
       />
+
+      {isCallOpen && (
+        <CallScreen 
+          isOpen={isCallOpen}
+          onClose={() => { setIsCallOpen(false); setIncomingSignal(undefined); setIncomingOffer(null); }}
+          partnerName={matchName}
+          partnerImg={matchImg}
+          targetId={matchId}
+          deviceId={deviceId || ""}
+          roomId={callRoomId}
+          callType={callType}
+          isIncoming={isIncomingCall}
+          incomingOffer={incomingOffer}
+          onSendSignal={handleSendWebRTCSignal}
+          incomingSignal={incomingSignal}
+        />
+      )}
+
+      {showReportModal && (
+        <ReportUserModal 
+          offenderId={matchId} 
+          onClose={() => setShowReportModal(false)} 
+        />
+      )}
     </div>
   );
 }

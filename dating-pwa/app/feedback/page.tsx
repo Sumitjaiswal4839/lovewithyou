@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquareHeart, ArrowLeft, ShieldAlert, CreditCard, HelpCircle, Smartphone } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
-import { supabase } from "@/lib/supabase";
+import { API } from "@/lib/api";
 import { useUserStore } from "@/store/useUserStore";
 
 export default function FeedbackPage() {
@@ -24,16 +24,15 @@ export default function FeedbackPage() {
     }
     
     setIsSubmitting(true);
-    const { error } = await supabase.from('feedbacks').insert([{ 
-      message: feedbackText,
-      category: category,
-      device_id: deviceId || "anonymous",
-      transaction_id: transactionId || null,
-      created_at: new Date().toISOString()
-    }]);
+    const res = await API.submitFeedback(
+      deviceId || "anonymous",
+      feedbackText,
+      category,
+      transactionId || undefined
+    );
     
-    if (error) {
-      toast(`Failed to send feedback: ${error.message}`, "error");
+    if (res.error) {
+      toast(`Failed to send feedback: ${res.error}`, "error");
     } else {
       toast("Feedback sent successfully! Thank you.", "success");
       setFeedbackText("");

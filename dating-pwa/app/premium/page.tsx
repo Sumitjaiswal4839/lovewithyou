@@ -22,6 +22,7 @@ export default function PremiumPage() {
   const toggleAdFree = useUserStore((state) => state.toggleAdFree);
   const matchPreferences = useUserStore((state) => state.matchPreferences);
   const updateMatchPreferences = useUserStore((state) => state.updateMatchPreferences);
+  const isPremiumSubscriber = useUserStore((state) => state.isPremiumSubscriber);
 
   const isStudent = profile?.isStudent || profile?.studentVerificationStatus === 'verified';
   const [selectedTier, setSelectedTier] = useState<string>("Gold");
@@ -55,6 +56,10 @@ export default function PremiumPage() {
   ];
 
   const handleClaimCashback = () => {
+    if (!isPremiumSubscriber) {
+      toast("🔒 Cashback Vault is a Premium feature! Subscribe to Plus, Gold or Platinum to earn & claim cashback.", "error");
+      return;
+    }
     const claimed = claimCashback();
     if (claimed > 0) {
       toast(`🎁 Claimed ${claimed} Cashback Coins back into your main wallet!`, "success");
@@ -87,6 +92,7 @@ export default function PremiumPage() {
 
     const loadRazorpayScript = () => {
       return new Promise((resolve) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((window as any).Razorpay) {
           resolve(true);
           return;
@@ -99,34 +105,80 @@ export default function PremiumPage() {
       });
     };
 
-    loadRazorpayScript().then((loaded) => {
+    loadRazorpayScript().then(async (loaded) => {
       if (!loaded) {
         toast("Razorpay SDK failed to load. Check network connection.", "error");
         return;
       }
 
-      const options = {
-        key: razorpayKey,
-        amount: finalPrice * 100, // amount in paise
-        currency: "INR",
-        name: "LoveWithYou Dating",
-        description: `Purchase ${packName} (${coinAmount} Coins)`,
-        image: "/favicon.png",
-        handler: async function (response: any) {
-          toast(`🎉 Payment Successful! Razorpay Tx ID: ${response.razorpay_payment_id || 'rzp_paid'}`, "success");
-          addCoinsLocal(coinAmount);
-        },
-        prefill: {
-          name: profile?.name || "Single User",
-          email: "user@lovewithyou.app",
-        },
-        theme: {
-          color: "#f43f5e",
-        },
-      };
+      try {
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+        const res = await fetch(`${BACKEND_URL}/payments/create-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${useUserStore.getState().authToken}`
+          },
+          body: JSON.stringify({ amount_inr: finalPrice }),
+        });
 
-      const paymentObject = new (window as any).Razorpay(options);
-      paymentObject.open();
+        if (!res.ok) {
+          toast("Failed to initialize payment order.", "error");
+          return;
+        }
+
+        const data = await res.json();
+        const orderId = data.order_id;
+
+        const options = {
+          key: razorpayKey,
+          amount: finalPrice * 100, // amount in paise
+          currency: "INR",
+          name: "LoveWithYou Dating",
+          description: `Purchase ${packName} (${coinAmount} Coins)`,
+          image: "/favicon.png",
+          order_id: orderId,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          handler: async function (response: any) {
+            try {
+              const verifyRes = await fetch(`${BACKEND_URL}/payments/verify`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${useUserStore.getState().authToken}`
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+              if (verifyRes.ok) {
+                const data = await verifyRes.json();
+                toast(`🎉 ${data.coins_added} coins added!`, "success");
+                addCoinsLocal(data.coins_added || coinAmount);
+              } else {
+                toast("Payment verification failed. Contact support with your payment ID.", "error");
+              }
+            } catch {
+              toast("Network error during verification. Your payment is safe — contact support if coins don't appear.", "error");
+            }
+          },
+          prefill: {
+            name: profile?.name || "Single User",
+            email: "user@lovewithyou.app",
+          },
+          theme: {
+            color: "#f43f5e",
+          },
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const paymentObject = new (window as any).Razorpay(options);
+        paymentObject.open();
+      } catch {
+        toast("Failed to connect to payment server.", "error");
+      }
     });
   };
 
@@ -198,7 +250,15 @@ export default function PremiumPage() {
           </div>
         </div>
         {/* 1. CASHBACK COINS REFUND SYSTEM BANNER */}
-        <div className="bg-gradient-to-r from-pink-500/15 via-primary/10 to-purple-500/15 border border-primary/30 rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className={`bg-gradient-to-r from-pink-500/15 via-primary/10 to-purple-500/15 border rounded-3xl p-5 shadow-lg relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isPremiumSubscriber ? 'border-primary/30' : 'border-border opacity-70'}`}>
+          {!isPremiumSubscriber && (
+            <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-3xl flex items-center justify-center z-10">
+              <div className="text-center">
+                <div className="text-2xl mb-1">🔒</div>
+                <p className="text-xs font-bold text-foreground">Premium Subscribers Only</p>
+              </div>
+            </div>
+          )}
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/20 px-2.5 py-0.5 rounded-full border border-primary/30 inline-flex items-center gap-1">
               <Gift size={12} /> 10% Partial Refund System
@@ -207,7 +267,7 @@ export default function PremiumPage() {
               💰 Cashback Coins Vault
             </h3>
             <p className="text-xs text-secondary leading-relaxed font-normal">
-              Earn 10% automatic coin cashback on every purchase or coin action! Accumulated: <span className="text-amber-300 font-black">{cashbackVault} Coins 🪙</span>
+              Earn 10% automatic coin cashback on every purchase or coin action! Accumulated: <span className="text-amber-300 font-black">{isPremiumSubscriber ? `${cashbackVault} Coins 🪙` : "Subscribe to unlock"}</span>
             </p>
           </div>
 
@@ -215,7 +275,7 @@ export default function PremiumPage() {
             onClick={handleClaimCashback}
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-primary to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs shadow-md active:scale-95 transition shrink-0"
           >
-            CLAIM CASHBACK ({cashbackVault} 🪙)
+            {isPremiumSubscriber ? `CLAIM CASHBACK (${cashbackVault} 🪙)` : "🔒 LOCKED"}
           </button>
         </div>
 

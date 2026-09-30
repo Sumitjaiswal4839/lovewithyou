@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, User, Heart, UserPlus, MapPin, AlertTriangle, UserCircle2, MoreVertical, History, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useUserStore } from "@/store/useUserStore";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface RandomChatHeaderProps {
@@ -36,9 +37,13 @@ export default function RandomChatHeader({
 }: RandomChatHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const authToken = useUserStore((state) => state.authToken);
+  const deviceId = useUserStore((state) => state.deviceId);
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
   
   const [minutesOnline, setMinutesOnline] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [sosActive, setSosActive] = useState(false);
 
   useEffect(() => {
     if (!isConnected) return;
@@ -125,6 +130,35 @@ export default function RandomChatHeader({
 
       {/* Action Bar */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 pb-2.5 pt-0.5">
+        <button 
+          onClick={async () => {
+            if (sosActive) {
+               setSosActive(false);
+               toast("SOS Timer deactivated.", "info");
+               return;
+            }
+            try {
+              const res = await fetch(`${BACKEND_URL}/api/v1/safety/sos-timer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+                body: JSON.stringify({ deviceId, locationName: "Anonymous", emergencyContact: "System", durationMinutes: 15 })
+              });
+              if (res.ok) {
+                setSosActive(true);
+                toast("SOS Timer Started! Check-in required in 15m", "success");
+              }
+            } catch (e) {
+              toast("Failed to start SOS Timer", "error");
+            }
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black transition whitespace-nowrap shrink-0 ${
+            sosActive ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-surface-elevated border-border text-white hover:bg-surface-elevated'
+          }`}
+        >
+          <Shield size={14} /> 
+          {sosActive ? "SOS Timer On ⏱️" : "Start SOS Timer"}
+        </button>
+
         <button 
           onClick={onLike}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black transition whitespace-nowrap shrink-0 ${

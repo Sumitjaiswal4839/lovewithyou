@@ -6,6 +6,7 @@ import (
 	"dating-backend/middleware"
 	"dating-backend/ws"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // SetupRoutes registers all REST and WebSocket endpoints
@@ -54,6 +57,16 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.Use(middleware.IdempotencyMiddleware)
 	// Maintenance Mode Check
 	r.Use(middleware.MaintenanceMiddleware)
+	// Prometheus Metrics
+	r.Use(middleware.PrometheusMiddleware)
+	// Sentry Crash Tracking
+	r.Use(middleware.SentryMiddleware)
+
+	// Expose Prometheus Metrics Endpoint
+	r.Handle("/metrics", promhttp.Handler())
+	
+	// Expose Swagger UI
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	// WebSocket
 	r.HandleFunc("/ws", auth.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +77,7 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/auth/device", DeviceAuth).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/daily-reward", auth.AuthMiddleware(ClaimDailyReward)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/payments/verify", auth.AuthMiddleware(VerifyRazorpayPayment)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/payments/create-order", auth.AuthMiddleware(CreateRazorpayOrder)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/spend", auth.AuthMiddleware(SpendCoins)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/coins/earn", auth.AuthMiddleware(EarnCoins)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/coins/history/{device_id}", auth.AuthMiddleware(GetCoinHistory)).Methods(http.MethodGet, http.MethodOptions)
@@ -80,11 +94,13 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/radar/ping", auth.AuthMiddleware(RadarPing)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/campus/crush", auth.AuthMiddleware(SecretCrush)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/campus/confessions", auth.AuthMiddleware(PostConfession)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/campus/leader", auth.AuthMiddleware(RegisterCampusLeader)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/p2p/webrtc-signal", auth.AuthMiddleware(WebRTCSignalExchange(hub))).Methods(http.MethodPost, http.MethodOptions)
 	
 	// V1 After-Dark 18+ Anonymous Intimate Lounge
 	r.HandleFunc("/api/v1/lounge/join", auth.AuthMiddleware(middleware.RequireVerifiedAdult(JoinAfterDarkLounge))).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/lounge/disconnect", auth.AuthMiddleware(DisconnectAfterDarkLounge)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/lounge/status", auth.AuthMiddleware(GetAfterDarkStatus)).Methods(http.MethodGet, http.MethodOptions)
 
 	// V1 Romance, Discovery & Gamification Suite
 	r.HandleFunc("/api/v1/random-chat/join", auth.AuthMiddleware(JoinRandomChat)).Methods(http.MethodPost, http.MethodOptions)
@@ -100,13 +116,18 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	r.HandleFunc("/api/v1/profile/vip-halo", auth.AuthMiddleware(ActivateVipHalo)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/rewards/daily-slot", auth.AuthMiddleware(SpinDailyCupidSlot)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/leaderboard/top-connectors", auth.AuthMiddleware(GetLeaderboardVibeKings)).Methods(http.MethodGet, http.MethodOptions)
+	r.HandleFunc("/api/v1/referral/generate", auth.AuthMiddleware(GenerateReferral)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/referral/claim", auth.AuthMiddleware(ClaimReferral)).Methods(http.MethodPost, http.MethodOptions)
 
 	// V1 Safety & High-Concurrency Infrastructure
 	r.HandleFunc("/api/v1/safety/verify-smile", auth.AuthMiddleware(VerifyFaceCatfishBuster)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/sos-timer", auth.AuthMiddleware(StartSosCheckinTimer)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/sos-confirm", auth.AuthMiddleware(ConfirmSafeCheckin)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/sos-status", auth.AuthMiddleware(GetSosStatus)).Methods(http.MethodGet, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/screenshot-violation", auth.AuthMiddleware(ReportScreenshotViolation)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/safety/report", auth.AuthMiddleware(SubmitUserReport)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/safety/block", auth.AuthMiddleware(BlockUser)).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/api/v1/feedback", auth.AuthMiddleware(SubmitFeedback)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/push/broadcast", auth.AuthMiddleware(BroadcastPushNotification)).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/api/v1/redis/pubsub/publish", auth.AuthMiddleware(RedisPubSubClusterBroadcast)).Methods(http.MethodPost, http.MethodOptions)
 
@@ -132,6 +153,8 @@ func SetupRoutes(hub *ws.Hub) *mux.Router {
 	adminRouter.HandleFunc("/reports", GetPendingReports).Methods(http.MethodGet, http.MethodOptions)
 	adminRouter.HandleFunc("/reports/resolve", ResolveReport).Methods(http.MethodPost, http.MethodOptions)
 	adminRouter.HandleFunc("/maintenance", ToggleMaintenanceMode).Methods(http.MethodPost, http.MethodOptions)
+	adminRouter.HandleFunc("/settings/features", GetFeatureFlags).Methods(http.MethodGet, http.MethodOptions)
+	adminRouter.HandleFunc("/settings/features", UpdateFeatureFlags).Methods(http.MethodPost, http.MethodOptions)
 	
 	// User Management (VIP & Coins)
 	adminRouter.HandleFunc("/users/{device_id}", AdminSearchUser).Methods(http.MethodGet, http.MethodOptions)
@@ -353,6 +376,10 @@ func SpendCoins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deviceID := r.Context().Value(auth.DeviceIDKey).(string)
+	if req.Amount <= 0 {
+		http.Error(w, "amount must be positive", http.StatusBadRequest)
+		return
+	}
 
 	_, err := db.UpdateCoinsAtomic(deviceID, -req.Amount, desc)
 	if err != nil {
@@ -437,7 +464,18 @@ func SearchUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(profiles)
+	var publicProfiles []PublicProfileDTO
+	for _, p := range profiles {
+		publicProfiles = append(publicProfiles, PublicProfileDTO{
+			DeviceID: p.DeviceID,
+			Name:     p.Name,
+			Bio:      p.Bio,
+			Age:      p.Age,
+			PhotoURL: p.PhotoURL,
+		})
+	}
+
+	json.NewEncoder(w).Encode(publicProfiles)
 }
 
 // Define a safe DTO
@@ -561,4 +599,135 @@ func MarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+}
+
+// Request struct for feedback submission
+type SubmitFeedbackRequest struct {
+	Message       string `json:"message"`
+	Category      string `json:"category"`
+	TransactionID string `json:"transaction_id,omitempty"`
+}
+
+// SubmitFeedback allows users to submit feedback/support tickets via backend
+func SubmitFeedback(w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req SubmitFeedbackRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Message == "" || req.Category == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Insert into feedbacks table
+	feedbackData := map[string]interface{}{
+		"device_id":      deviceID,
+		"message":        req.Message,
+		"category":       req.Category,
+		"transaction_id": req.TransactionID,
+	}
+
+	_, _, err := db.Client.From("feedbacks").Insert(feedbackData, false, "", "", "exact").Execute()
+	if err != nil {
+		http.Error(w, "Failed to submit feedback", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+// GenerateReferral generates a new referral code for a user
+func GenerateReferral(w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Just use the first 8 chars of their device ID or generate random as their unique code
+	code := fmt.Sprintf("REF-%s", deviceID)
+	if len(code) > 12 {
+		code = code[:12]
+	}
+
+	// Insert into DB (if it exists, Postgres will handle constraints if any, or it might just insert)
+	_, _, err := db.Client.From("referrals").Insert(map[string]interface{}{
+		"referrer_id": deviceID,
+		"code":        code,
+		"status":      "active",
+		"reward_amount": 50,
+	}, false, "", "", "").Execute()
+
+	if err != nil {
+		log.Println("Error generating referral:", err)
+		// It might already exist, so just return the code anyway
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"code": code, "message": "Code generated successfully"})
+}
+
+// ClaimReferral processes a referral claim
+func ClaimReferral(w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok || deviceID == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		ReferrerID string `json:"referrer_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.ReferrerID == "" || req.ReferrerID == deviceID {
+		http.Error(w, "Invalid referrer", http.StatusBadRequest)
+		return
+	}
+
+	// Insert into referral_claims table. If it already exists for this deviceID, it will fail (requires DB unique constraint on claimer_id)
+	// Or we can just check if claimed
+	var existing []map[string]interface{}
+	_, err := db.Client.From("referrals").Select("*", "exact", false).Eq("claimer_id", deviceID).ExecuteTo(&existing)
+	if err == nil && len(existing) > 0 {
+		http.Error(w, "Referral already claimed by this device", http.StatusBadRequest)
+		return
+	}
+
+	// Record the claim
+	_, _, err = db.Client.From("referrals").Insert(map[string]interface{}{
+		"referrer_id": req.ReferrerID,
+		"claimer_id":  deviceID,
+		"status":      "completed",
+		"reward_amount": 250,
+	}, false, "", "", "").Execute()
+	
+	if err != nil {
+		log.Println("Error recording referral claim:", err)
+		http.Error(w, "Failed to claim referral", http.StatusInternalServerError)
+		return
+	}
+
+	// Reward the Referrer (100 coins)
+	db.UpdateCoinsAtomic(req.ReferrerID, 100, "Referral Bonus (Friend joined)")
+	// Reward the Claimer (250 coins)
+	db.UpdateCoinsAtomic(deviceID, 250, "Referral Welcome Bonus")
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Referral claimed successfully. You got 250 coins!",
+	})
 }

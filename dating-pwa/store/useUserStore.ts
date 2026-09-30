@@ -104,6 +104,7 @@ interface UserState {
   coins: number;
   coinHistory: CoinTransaction[];
   cashbackVault: number;
+  isPremiumSubscriber: boolean;
   adFreeEnabled: boolean;
   locationEnabled: boolean;
   matches: Match[];
@@ -204,7 +205,8 @@ export const useUserStore = create<UserState>()(
       isAuthenticated: false,
       profile: null,
       coins: 100,
-      cashbackVault: 15,
+      cashbackVault: 0,
+      isPremiumSubscriber: false,
       adFreeEnabled: false,
       locationEnabled: false,
       appSettings: {
@@ -450,13 +452,16 @@ const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://l
       },
       claimCashback: () => {
         const state = get();
-        const claimed = state.cashbackVault;
-        if (claimed > 0) {
-          set({
-            coins: state.coins + claimed,
-            cashbackVault: 0
-          });
+        // Only premium subscribers can claim cashback
+        if (!state.isPremiumSubscriber) {
+          return -1; // Signal: not a subscriber
         }
+        const claimed = state.cashbackVault;
+        if (claimed <= 0) return 0;
+        set((s) => ({
+          coins: s.coins + claimed,
+          cashbackVault: 0
+        }));
         return claimed;
       },
       toggleAdFree: () => set((state) => ({ adFreeEnabled: !state.adFreeEnabled })),

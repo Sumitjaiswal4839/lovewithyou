@@ -10,8 +10,10 @@ import (
 	"dating-backend/db"
 	"dating-backend/workers"
 	"dating-backend/ws"
+	_ "dating-backend/docs"
 
 	"github.com/joho/godotenv"
+	"github.com/getsentry/sentry-go"
 )
 
 func main() {
@@ -21,8 +23,22 @@ func main() {
 		log.Println("No .env file found or failed to load, reading from environment variables")
 	}
 
+	// Initialize Sentry
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DSN"),
+		TracesSampleRate: 1.0,
+	})
+	if err != nil {
+		log.Printf("Sentry initialization failed: %v\n", err)
+	}
+	// Flush buffered events before the program terminates
+	defer sentry.Flush(2 * time.Second)
+
 	// Initialize Supabase Database
 	db.InitSupabase()
+	
+	// Initialize Redis
+	db.InitRedis()
 
 	// Initialize WebSocket Hub
 	hub := ws.NewHub()
@@ -30,6 +46,19 @@ func main() {
 
 	// Start the SOS Background Cron Worker
 	workers.StartSOSMonitor()
+
+	// Start After Dark Session Cleanup Worker (runs every hour)
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := db.CleanupExpiredAfterDarkSessions(); err != nil {
+				log.Printf("⚠️ [AfterDark Cleanup] Failed to purge expired sessions: %v", err)
+			} else {
+				log.Println("🧹 [AfterDark Cleanup] Expired anonymous sessions purged from DB.")
+			}
+		}
+	}()
 
 	// Setup API Routes
 	router := api.SetupRoutes(hub)

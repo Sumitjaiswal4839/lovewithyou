@@ -7,14 +7,83 @@ import (
 	"dating-backend/db"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type PaymentVerifyReq struct {
 	OrderID   string `json:"razorpay_order_id"`
 	PaymentID string `json:"razorpay_payment_id"`
 	Signature string `json:"razorpay_signature"`
+}
+
+type OrderCreateReq struct {
+	Amount int `json:"amount_inr"`
+}
+
+func CreateRazorpayOrder(w http.ResponseWriter, r *http.Request) {
+	deviceID, ok := r.Context().Value(auth.DeviceIDKey).(string)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req OrderCreateReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	keyID := os.Getenv("RAZORPAY_KEY_ID")
+	secret := os.Getenv("RAZORPAY_KEY_SECRET")
+	if keyID == "" || secret == "" {
+		http.Error(w, "server configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	// 1. Create Order via Razorpay API
+	url := "https://api.razorpay.com/v1/orders"
+	payload := fmt.Sprintf(`{"amount":%d,"currency":"INR","receipt":"receipt_%s"}`, req.Amount*100, deviceID)
+	httpReq, _ := http.NewRequest("POST", url, strings.NewReader(payload))
+	httpReq.SetBasicAuth(keyID, secret)
+	httpReq.Header.Add("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(httpReq)
+	if err != nil || res.StatusCode != 200 {
+		http.Error(w, "failed to create razorpay order", http.StatusInternalServerError)
+		return
+	}
+	defer res.Body.Close()
+
+	body, _ := io.ReadAll(res.Body)
+	var rzpResp map[string]interface{}
+	json.Unmarshal(body, &rzpResp)
+
+	orderID, _ := rzpResp["id"].(string)
+
+	// 2. Insert into payment_orders table
+	orderData := map[string]interface{}{
+		"order_id":   orderID,
+		"device_id":  deviceID,
+		"amount_inr": req.Amount,
+		"status":     "created",
+	}
+	_, _, err = db.Client.From("payment_orders").Insert(orderData, false, "", "", "").Execute()
+	if err != nil {
+		log.Printf("Error inserting order: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Return the order_id to the client
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"order_id": orderID,
+	})
 }
 
 func VerifyRazorpayPayment(w http.ResponseWriter, r *http.Request) {

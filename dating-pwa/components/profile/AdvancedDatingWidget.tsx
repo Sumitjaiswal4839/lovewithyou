@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Clock, RotateCcw, ScanFace, Zap, MapPin, PhoneCall, Quote } from "lucide-react";
 import { API } from "@/lib/api";
@@ -24,12 +24,40 @@ export default function AdvancedDatingWidget() {
 
   // 3. Emergency SOS Check-in Timer States
   const [sosActive, setSosActive] = useState(false);
-  const [sosLocation, setSosLocation] = useState("Starbucks Cafe, Connaught Place");
-  const [sosPhone, setSosPhone] = useState("friend@example.com");
+  const [sosLocation, setSosLocation] = useState("");
+  const [sosPhone, setSosPhone] = useState("");
+
+  useEffect(() => {
+    if (deviceId) {
+      API.getSosStatus(deviceId).then(res => {
+        if (res?.active) {
+          setSosActive(true);
+          if (res.sos?.location_name) setSosLocation(res.sos.location_name);
+          if (res.sos?.emergency_contact) setSosPhone(res.sos.emergency_contact);
+        }
+      });
+    }
+  }, [deviceId]);
 
   // 4. Finish My Sentence Teasers States
-  const [sentencePrompt, setSentencePrompt] = useState("On our first weekend together, we are eating at...");
+  const [sentencePrompt, setSentencePrompt] = useState("");
   const [sentenceSaved, setSentenceSaved] = useState(true);
+
+  // 5. Referrals
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [generatingReferral, setGeneratingReferral] = useState(false);
+
+  const handleGenerateReferral = async () => {
+    setGeneratingReferral(true);
+    const res = await API.generateReferral(deviceId || "me");
+    if (res?.code) {
+      setReferralCode(res.code);
+      toast("Referral code generated! Share it to earn coins.", "success");
+    } else {
+      toast("Failed to generate code.", "error");
+    }
+    setGeneratingReferral(false);
+  };
 
   const handleSpinCupidSlot = async () => {
     setSpinningSlot(true);
@@ -276,6 +304,40 @@ export default function AdvancedDatingWidget() {
         >
           {sentenceSaved ? "Saved to Profile ✅" : "Save Prompt Teaser"}
         </button>
+      </div>
+
+      {/* 5. Invite Friends & Referrals */}
+      <div className="bg-white/[0.03] border border-border hover:border-white/20 rounded-3xl p-5 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1 flex-1">
+            <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+               Invite & Earn 🪙
+            </span>
+            <h4 className="text-sm font-black text-foreground flex items-center gap-1.5">
+              Referral Program
+            </h4>
+            <p className="text-xs text-muted leading-relaxed">
+              Invite friends to LoveWithYou and earn 50 Coins when they sign up using your code!
+            </p>
+          </div>
+
+          <div className="shrink-0 flex flex-col gap-2 w-full sm:w-auto">
+            {referralCode ? (
+              <div className="bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-2xl text-center">
+                <span className="text-xs text-indigo-300 font-bold block mb-1">Your Code:</span>
+                <span className="text-sm font-black text-white tracking-widest">{referralCode}</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerateReferral}
+                disabled={generatingReferral}
+                className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 transition"
+              >
+                {generatingReferral ? "Generating..." : "Get Invite Code"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

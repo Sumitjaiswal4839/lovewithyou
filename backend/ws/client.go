@@ -64,7 +64,16 @@ func (c *Client) readPump() {
 			}
 		}
 
-		c.hub.broadcast <- message
+		// Publish to Redis for multi-server scaling
+		if db.RedisClient != nil {
+			err := db.RedisClient.Publish(db.Ctx, "global_ws_chat", string(message)).Err()
+			if err != nil {
+				log.Println("Redis publish error:", err)
+				c.hub.broadcast <- message // Fallback
+			}
+		} else {
+			c.hub.broadcast <- message
+		}
 	}
 }
 

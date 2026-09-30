@@ -43,6 +43,75 @@ func ResolveReport(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+// 4. Get Feature Flags
+func GetFeatureFlags(w http.ResponseWriter, r *http.Request) {
+	// Default flags returned if DB has no entry yet
+	defaultFlags := map[string]interface{}{
+		"chat_enabled":           true,
+		"radar_enabled":          true,
+		"confessions_enabled":    true,
+		"after_dark_enabled":     true,
+		"coins_purchase_enabled": true,
+		"student_verify_enabled": true,
+		"maintenance_mode":       false,
+	}
+
+	if db.Client == nil {
+		// No DB connection — return defaults
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(defaultFlags)
+		return
+	}
+
+	data, _, err := db.Client.From("site_settings").Select("setting_value", "exact", false).Eq("setting_key", "maintenance_flags").Execute()
+	if err != nil {
+		// DB error — return defaults
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(defaultFlags)
+		return
+	}
+
+	var results []struct {
+		Value map[string]interface{} `json:"setting_value"`
+	}
+	if err := json.Unmarshal(data, &results); err != nil || len(results) == 0 {
+		// Row not in DB yet — insert defaults and return them
+		db.Client.From("site_settings").Insert(map[string]interface{}{
+			"setting_key":   "maintenance_flags",
+			"setting_value": defaultFlags,
+		}, false, "", "", "exact").Execute()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(defaultFlags)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results[0].Value)
+}
+
+// 5. Update Feature Flags
+func UpdateFeatureFlags(w http.ResponseWriter, r *http.Request) {
+	var req map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	if db.Client != nil {
+		_, _, err := db.Client.From("site_settings").Update(map[string]interface{}{
+			"setting_value": req,
+		}, "", "exact").Eq("setting_key", "maintenance_flags").Execute()
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 // 3. Toggle Maintenance Mode
 func ToggleMaintenanceMode(w http.ResponseWriter, r *http.Request) {
 	var req struct {

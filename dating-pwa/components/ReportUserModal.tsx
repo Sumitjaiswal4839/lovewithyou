@@ -5,6 +5,8 @@ import { useState } from "react";
 // But to prevent breaking, let's use the standard fetch block with authorization header if needed.
 // Based on user snippet:
 import { fetchWithAuth } from "@/lib/api"; 
+import { BaseModal } from "@/components/ui/BaseModal";
+import { Flag } from "lucide-react";
 
 export default function ReportUserModal({ offenderId, onClose }: { offenderId: string, onClose: () => void }) {
   const [reason, setReason] = useState("");
@@ -22,7 +24,7 @@ export default function ReportUserModal({ offenderId, onClose }: { offenderId: s
       });
       setSuccess(true);
       setTimeout(onClose, 2000); // Close modal after 2 seconds
-    } catch (error) {
+    } catch {
       alert("Failed to submit report. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -31,19 +33,25 @@ export default function ReportUserModal({ offenderId, onClose }: { offenderId: s
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div className="bg-[#1A1C23] p-6 rounded-xl border border-green-500 text-center">
+      <BaseModal isOpen={true} onClose={onClose} zIndex={80}>
+        <div className="p-6 text-center">
           <p className="text-green-500 text-lg font-bold">Report Submitted ✅</p>
           <p className="text-gray-400 text-sm mt-2">Our trust & safety team will review this shortly.</p>
         </div>
-      </div>
+      </BaseModal>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1A1C23] p-6 rounded-xl w-full max-w-sm border border-gray-800">
-        <h2 className="text-xl font-bold text-red-500 mb-4">Report User 🚩</h2>
+    <BaseModal 
+      isOpen={true} 
+      onClose={onClose} 
+      title="Report User 🚩" 
+      icon={<Flag size={20} className="text-red-500" />}
+      headerGradient="from-red-900/40 to-surface-elevated"
+      zIndex={80}
+    >
+      <div className="p-6">
         <textarea 
           className="w-full bg-[#0F1014] text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
           rows={4}
@@ -62,6 +70,6 @@ export default function ReportUserModal({ offenderId, onClose }: { offenderId: s
           </button>
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 }

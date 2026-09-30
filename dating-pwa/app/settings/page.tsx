@@ -14,7 +14,8 @@ import {
   Bell, 
   Volume2,
   HardDrive,
-  Zap
+  Zap,
+  Check
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useState, useEffect } from "react";
@@ -28,7 +29,8 @@ export default function SettingsPage() {
   const setProfile = useUserStore((state) => state.setProfile);
   const setDeviceId = useUserStore((state) => state.setDeviceId);
   const deviceId = useUserStore((state) => state.deviceId);
-  const { theme, setTheme } = useTheme();
+  const globalUpdateSettings = useUserStore((state) => state.updateSettings);
+  const { theme, setTheme, accentTheme, setAccentTheme } = useTheme();
 
   // Settings State
   const [isMounted, setIsMounted] = useState(false);
@@ -67,6 +69,9 @@ export default function SettingsPage() {
     if ('hapticsEnabled' in updates) setSoundHaptics(updates.hapticsEnabled);
     if ('distanceUnit' in updates) setDistanceUnit(updates.distanceUnit);
     if ('lowDataMode' in updates) setDataSaver(updates.lowDataMode);
+    
+    // Sync to backend via Zustand store
+    globalUpdateSettings(updates);
   };
 
   useEffect(() => {
@@ -198,11 +203,11 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
       {/* Top Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-black/70 backdrop-blur-xl sticky top-0 z-30">
+      <div className="flex items-center justify-between h-14 px-4 border-b border-border bg-surface/95 backdrop-blur-xl sticky top-0 z-30 pt-safe">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => router.back()} 
-            className="p-2 bg-surface-elevated hover:bg-surface-elevated rounded-full text-foreground transition active:scale-95"
+            className="p-1.5 -ml-1 bg-transparent hover:bg-surface-elevated rounded-xl text-foreground transition active:scale-95"
           >
             <ArrowLeft size={18} />
           </button>
@@ -226,7 +231,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Matching &amp; Chat</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl overflow-hidden divide-y divide-divider">
+          <div className="bg-surface-elevated rounded-2xl overflow-hidden divide-y divide-border">
             <button onClick={() => setActiveModal("alarm")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
               <span className="text-xs font-bold text-foreground">Alarm setting</span>
               <div className="flex items-center gap-2">
@@ -275,12 +280,64 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">App Preferences</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl overflow-hidden divide-y divide-divider">
+          <div className="bg-surface-elevated rounded-2xl overflow-hidden divide-y divide-border">
             <div className="flex items-center justify-between p-4">
               <span className="text-xs font-bold text-foreground">Dark Mode</span>
               <input type="checkbox" checked={theme === "dark"} onChange={(e) => setTheme(e.target.checked ? "dark" : "light")} className="w-5 h-5 accent-primary cursor-pointer" />
             </div>
 
+            <div className="p-4 space-y-3">
+              <span className="text-xs font-bold text-foreground">Accent Theme Color</span>
+              <div className="flex gap-3">
+                {[
+                  { id: 'rose', color: 'bg-[#b91c1c]' },
+                  { id: 'purple', color: 'bg-[#6d28d9]' },
+                  { id: 'emerald', color: 'bg-[#10b981]' },
+                  { id: 'amber', color: 'bg-[#f59e0b]' }
+                ].map((themeOpt) => (
+                  <button 
+                    key={themeOpt.id}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    onClick={() => setAccentTheme(themeOpt.id as any)}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${themeOpt.color} ${
+                      accentTheme === themeOpt.id 
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-[#09090b]' 
+                        : 'hover:scale-110'
+                    }`}
+                  >
+                    {accentTheme === themeOpt.id && (
+                      <div className="w-4 h-4 rounded-full border-[1.5px] border-black flex items-center justify-center">
+                        <Check size={10} className="text-black" strokeWidth={3} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
+              <span className="text-xs font-bold text-foreground">App Language Settings</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted">System defaults</span>
+                <ChevronRight size={16} className="text-muted" />
+              </div>
+            </button>
+
+            <button className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
+              <span className="text-xs font-bold text-foreground">App Font Size</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted">10</span>
+                <ChevronRight size={16} className="text-muted" />
+              </div>
+            </button>
+
+            <button className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
+              <span className="text-xs font-bold text-foreground">Photo Picker</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted">Classic Photo Picker</span>
+                <ChevronRight size={16} className="text-muted" />
+              </div>
+            </button>
           </div>
         </div>
 
@@ -291,7 +348,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Premium</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl overflow-hidden divide-y divide-divider">
+          <div className="bg-surface-elevated rounded-2xl overflow-hidden divide-y divide-border">
             <button onClick={() => router.push("/premium")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
               <span className="text-xs font-bold text-foreground">PREMIUM Subscription Information</span>
               <ChevronRight size={16} className="text-muted" />
@@ -316,7 +373,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Privacy &amp; Security Shield</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl p-4 space-y-4">
+          <div className="bg-surface-elevated rounded-2xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-xs font-bold text-foreground flex items-center gap-2">
@@ -399,7 +456,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Performance &amp; Storage Cleaner</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl p-4 space-y-4">
+          <div className="bg-surface-elevated rounded-2xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-xs font-bold text-foreground flex items-center gap-2">
@@ -439,7 +496,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Data management</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl overflow-hidden divide-y divide-divider">
+          <div className="bg-surface-elevated rounded-2xl overflow-hidden divide-y divide-border">
             <button onClick={() => setActiveModal("blocked")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
               <span className="text-xs font-bold text-foreground">Block friend management</span>
               <div className="flex items-center gap-2">
@@ -465,9 +522,19 @@ export default function SettingsPage() {
             <h3 className="text-sm font-black text-foreground tracking-tight">Policy &amp; Account</h3>
           </div>
 
-          <div className="bg-white/[0.03] border border-border rounded-3xl overflow-hidden divide-y divide-divider">
+          <div className="bg-surface-elevated rounded-2xl overflow-hidden divide-y divide-border">
             <button onClick={() => setActiveModal("child_safety")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
               <span className="text-xs font-bold text-foreground">Child Safety Policy</span>
+              <ChevronRight size={16} className="text-muted" />
+            </button>
+            
+            <button onClick={() => router.push("/terms")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
+              <span className="text-xs font-bold text-foreground">Terms of Service</span>
+              <ChevronRight size={16} className="text-muted" />
+            </button>
+            
+            <button onClick={() => router.push("/privacy")} className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated transition text-left">
+              <span className="text-xs font-bold text-foreground">Privacy Policy</span>
               <ChevronRight size={16} className="text-muted" />
             </button>
 
@@ -526,6 +593,19 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+
+
+
+        {/* LOGOUT */}
+        <div className="pt-6 pb-4">
+          <button onClick={() => {
+            setProfile(null as any);
+            setDeviceId("");
+            router.push("/setup");
+          }} className="w-full py-3 rounded-2xl bg-surface-elevated border border-border text-foreground font-black text-xs transition active:scale-95">
+            Sign Out
+          </button>
         </div>
 
       </div>

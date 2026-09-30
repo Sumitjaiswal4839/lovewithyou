@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Lock, Calendar, Users, ChevronRight, Zap, Heart, Flame, Send, MessageCircle, Sparkles, UserPlus, ShieldCheck, ThumbsUp, Tag, Percent, CheckCircle2 } from "lucide-react";
+import { GraduationCap, Lock, Calendar, Users, ChevronRight, Zap, Heart, Flame, Send, UserPlus, ShieldCheck, Tag, Percent, CheckCircle2, Plus, X, Crown } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
+
+import { supabase } from "@/lib/supabase";
 
 interface Confession {
   id: string;
@@ -20,21 +22,60 @@ export default function CampusPage() {
   const router = useRouter();
   const { toast } = useToast();
   const profile = useUserStore((state) => state.profile);
+  const authToken = useUserStore((state) => state.authToken);
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
   
   const [activeTab, setActiveTab] = useState<"hub" | "crush" | "confessions">("hub");
   const [crushHandle, setCrushHandle] = useState<string>("");
   const [savedCrushes, setSavedCrushes] = useState<string[]>(["Rohit_Vibe24"]);
   const [newConfessionText, setNewConfessionText] = useState<string>("");
-  const [confessionTag, setConfessionTag] = useState<string>("CS Department");
+  const [confessionTag, setConfessionTag] = useState<string>("All / General");
 
-  const [confessions, setConfessions] = useState<Confession[]>([
-    { id: "c1", text: "To the girl in denim jacket sitting at the central coffee canteen today: your smile instantly brightened my mood! ☕✨", tag: "Library Hub", time: "2h ago", likes: 24, liked: false },
-    { id: "c2", text: "Who was that guy playing guitar during the hostel break? You totally rocked that acoustic solo! 🎸", tag: "Music Society", time: "5h ago", likes: 41, liked: true },
-    { id: "c3", text: "Best luck to everyone in Third Year Engineering for tomorrow's lab evaluations! Let's crush this! 🚀", tag: "CS Department", time: "1d ago", likes: 18, liked: false },
+  const [confessions, setConfessions] = useState<Confession[]>([]);
+  
+  const [studyGroups, setStudyGroups] = useState([
+    { id: 1, name: "Late Night Coders", members: 124, emoji: "💻", active: 14, tag: "CS Dept" },
+    { id: 2, name: "Anime Otakus", members: 89, emoji: "🍙", active: 8, tag: "All Campus" },
+    { id: 3, name: "Startup & Founders Circle", members: 56, emoji: "🚀", active: 6, tag: "MBA/Tech" },
+    { id: 4, name: "Acoustic Guitar Jams", members: 42, emoji: "🎸", active: 9, tag: "Arts Hub" },
   ]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupEmoji, setNewGroupEmoji] = useState("✨");
+  const [newGroupTag, setNewGroupTag] = useState("General");
+  
+  const [showLeaderModal, setShowLeaderModal] = useState(false);
+  const [leaderRole, setLeaderRole] = useState("Ambassador");
+  const [leaderDept, setLeaderDept] = useState("");
+  const [leaderMotiv, setLeaderMotiv] = useState("");
+
+  const isVerifiedStudent = profile?.isStudent && profile?.studentVerificationStatus === 'verified';
+
+  useEffect(() => {
+    const fetchConfessions = async () => {
+      if (!isVerifiedStudent) return;
+      const { data, error } = await supabase
+        .from('confessions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (!error && data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setConfessions(data.map((c: any) => ({
+          id: c.id?.toString() || Math.random().toString(),
+          text: c.text,
+          tag: c.department_tag || c.campus || "General",
+          time: new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          likes: c.likes || 0,
+          liked: false,
+        })));
+      }
+    };
+    fetchConfessions();
+  }, [isVerifiedStudent]);
 
   // If not a student or not verified, show lock screen with Guidelines
-  const isVerifiedStudent = profile?.isStudent && profile?.studentVerificationStatus === 'verified';
 
   if (!isVerifiedStudent) {
     return (
@@ -85,11 +126,28 @@ export default function CampusPage() {
         >
           Verify Student ID Now
         </button>
+
+        {/* DEV BYPASS */}
+        <button 
+          onClick={() => {
+             if (profile) {
+               useUserStore.getState().setProfile({
+                 ...profile,
+                 isStudent: true,
+                 studentVerificationStatus: 'verified'
+               });
+               toast("Dev Bypass: Student mode unlocked!", "success");
+             }
+          }}
+          className="w-full max-w-xs py-3 mt-3 rounded-2xl bg-surface-elevated border border-border text-xs text-muted font-bold hover:text-foreground transition"
+        >
+          [DEV] Bypass Lock Screen
+        </button>
       </div>
     );
   }
 
-  const handleAddCrush = (e: React.FormEvent) => {
+  const handleAddCrush = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!crushHandle.trim()) return;
     if (savedCrushes.length >= 3) {
@@ -100,25 +158,69 @@ export default function CampusPage() {
       toast("User is already in your Secret Crush lock box!", "info");
       return;
     }
-    setSavedCrushes((prev) => [...prev, crushHandle.trim()]);
-    setCrushHandle("");
-    toast(`💘 Added to Secret Crush! If they secretly add your handle too, an instant match unlocks!`, "success");
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/campus/crush`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ crush_handle: crushHandle.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedCrushes((prev) => [...prev, crushHandle.trim()]);
+        setCrushHandle("");
+        
+        if (data.mutualMatch) {
+          toast(`💘 IT'S A MATCH! They added you too! Check your inbox!`, "success");
+        } else {
+          toast(`💘 Added to Secret Crush! If they secretly add your handle too, an instant match unlocks!`, "success");
+        }
+      } else {
+        toast("Failed to add secret crush.", "error");
+      }
+    } catch {
+      toast("Network error.", "error");
+    }
   };
 
-  const handlePostConfession = (e: React.FormEvent) => {
+  const handlePostConfession = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newConfessionText.trim()) return;
-    const newEntry: Confession = {
-      id: Date.now().toString(),
-      text: newConfessionText.trim(),
-      tag: confessionTag || "General",
-      time: "Just now",
-      likes: 1,
-      liked: true,
-    };
-    setConfessions((prev) => [newEntry, ...prev]);
-    setNewConfessionText("");
-    toast("🔥 Your anonymous campus confession has been published!", "success");
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/campus/confessions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          text: newConfessionText.trim(),
+          departmentTag: confessionTag || "General",
+        }),
+      });
+
+      if (res.ok) {
+        const newEntry: Confession = {
+          id: Date.now().toString(),
+          text: newConfessionText.trim(),
+          tag: confessionTag || "General",
+          time: "Just now",
+          likes: 0,
+          liked: false,
+        };
+        setConfessions((prev) => [newEntry, ...prev]);
+        setNewConfessionText("");
+        toast("🔥 Your anonymous campus confession has been published!", "success");
+      } else {
+        toast("Failed to post confession.", "error");
+      }
+    } catch {
+      toast("Network error.", "error");
+    }
   };
 
   const toggleLike = (id: string) => {
@@ -134,7 +236,7 @@ export default function CampusPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background pb-24 overflow-y-auto text-foreground font-sans">
+    <div className="flex flex-col min-h-screen max-w-md mx-auto border-x border-border/10 bg-background pb-24 overflow-y-auto text-foreground font-sans relative shadow-2xl">
       {/* Header */}
       <div className="bg-background/90 p-5 pt-8 sticky top-0 z-20 backdrop-blur-xl border-b border-border">
         <div className="flex justify-between items-center mb-2">
@@ -195,6 +297,25 @@ export default function CampusPage() {
                 </button>
               </div>
 
+              {/* Campus Leader Banner */}
+              <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-rose-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-2 opacity-10">
+                  <Crown size={64} />
+                </div>
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40">
+                    <Crown size={20} className="text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Become a Campus Leader 👑</h3>
+                    <p className="text-[10px] text-secondary">Organize fests, moderate & earn VIP perks!</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowLeaderModal(true)} className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-xl shrink-0 shadow-lg relative z-10 transition">
+                  Apply
+                </button>
+              </div>
+
               {/* Events Section */}
               <section>
                 <div className="flex items-center justify-between mb-4 px-1">
@@ -207,6 +328,7 @@ export default function CampusPage() {
                 <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
                   <div className="min-w-[240px] bg-surface-elevated border border-border rounded-2xl overflow-hidden shadow-lg hover:border-indigo-500/50 transition">
                     <div className="h-28 bg-primary/20 relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" alt="Fest" className="w-full h-full object-cover mix-blend-overlay" />
                       <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-foreground font-bold">
                         Oct 14 • Auditorium
@@ -228,6 +350,7 @@ export default function CampusPage() {
 
                   <div className="min-w-[240px] bg-surface-elevated border border-border rounded-2xl overflow-hidden shadow-lg hover:border-indigo-500/50 transition">
                     <div className="h-28 bg-indigo-500/20 relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80" alt="Music" className="w-full h-full object-cover mix-blend-overlay" />
                       <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-foreground font-bold">
                         Oct 20 • Campus Ground
@@ -250,18 +373,21 @@ export default function CampusPage() {
 
               {/* Student Communities */}
               <section>
-                <h2 className="text-foreground font-bold text-base flex items-center gap-2 mb-4 px-1">
-                  <Users size={18} className="text-blue-400" /> Study &amp; Chill Hangouts
-                </h2>
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-foreground font-bold text-base flex items-center gap-2">
+                    <Users size={18} className="text-blue-400" /> Study &amp; Chill Hangouts
+                  </h2>
+                  <button 
+                    onClick={() => setShowCreateGroup(true)}
+                    className="flex items-center gap-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded-lg text-[11px] font-bold hover:bg-indigo-500/30 transition"
+                  >
+                    <Plus size={12} /> New Group
+                  </button>
+                </div>
                 
                 <div className="space-y-3">
-                  {[
-                    { name: "Late Night Coders", members: 124, emoji: "💻", active: 14, tag: "CS Dept" },
-                    { name: "Anime Otakus", members: 89, emoji: "🍙", active: 8, tag: "All Campus" },
-                    { name: "Startup & Founders Circle", members: 56, emoji: "🚀", active: 6, tag: "MBA/Tech" },
-                    { name: "Acoustic Guitar Jams", members: 42, emoji: "🎸", active: 9, tag: "Arts Hub" },
-                  ].map((room, i) => (
-                    <div key={i} className="bg-surface-elevated border border-border p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-surface-elevated hover:border-indigo-500/30 transition shadow">
+                  {studyGroups.map((room) => (
+                    <div key={room.id} className="bg-surface-elevated border border-border p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-surface-elevated hover:border-indigo-500/30 transition shadow">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-surface-elevated rounded-xl flex items-center justify-center text-2xl border border-border">
                           {room.emoji}
@@ -274,7 +400,7 @@ export default function CampusPage() {
                           </div>
                         </div>
                       </div>
-                      <button className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center hover:bg-indigo-500 text-foreground transition">
+                      <button className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center hover:bg-indigo-500 hover:text-white text-foreground transition">
                         <ChevronRight size={18} />
                       </button>
                     </div>
@@ -372,6 +498,7 @@ export default function CampusPage() {
                     onChange={(e) => setConfessionTag(e.target.value)}
                     className="bg-background text-secondary text-[11px] px-2 py-1 rounded border border-white/20 focus:outline-none"
                   >
+                    <option value="All / General">All / General</option>
                     <option value="CS Department">CS Department</option>
                     <option value="Medical Hub">Medical Hub</option>
                     <option value="Library Circle">Library Circle</option>
@@ -424,6 +551,173 @@ export default function CampusPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* CREATE GROUP MODAL */}
+      <AnimatePresence>
+        {showCreateGroup && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 shadow-2xl relative">
+              <button onClick={() => setShowCreateGroup(false)} className="absolute top-4 right-4 p-1.5 bg-surface-elevated text-muted hover:text-foreground rounded-full transition">
+                <X size={16} />
+              </button>
+              <h3 className="text-base font-black text-foreground mb-4">Create Hangout Group</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-secondary mb-1 block">Group Name</label>
+                  <input 
+                    type="text" 
+                    value={newGroupName} 
+                    onChange={(e) => setNewGroupName(e.target.value)} 
+                    placeholder="e.g. Design Thinkers" 
+                    className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                
+                <div className="flex gap-3">
+                  <div className="w-1/3">
+                    <label className="text-xs font-bold text-secondary mb-1 block">Emoji</label>
+                    <input 
+                      type="text" 
+                      value={newGroupEmoji} 
+                      onChange={(e) => setNewGroupEmoji(e.target.value)} 
+                      maxLength={2}
+                      className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-center text-xl focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="w-2/3">
+                    <label className="text-xs font-bold text-secondary mb-1 block">Tag / Category</label>
+                    <input 
+                      type="text" 
+                      value={newGroupTag} 
+                      onChange={(e) => setNewGroupTag(e.target.value)} 
+                      placeholder="e.g. Design"
+                      className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    if(!newGroupName.trim()) {
+                       toast("Group name is required!", "error");
+                       return;
+                    }
+                    const newGroup = {
+                      id: Date.now(),
+                      name: newGroupName,
+                      members: 1,
+                      emoji: newGroupEmoji || "✨",
+                      active: 1,
+                      tag: newGroupTag || "General"
+                    };
+                    setStudyGroups([newGroup, ...studyGroups]);
+                    setNewGroupName("");
+                    setNewGroupEmoji("✨");
+                    setNewGroupTag("General");
+                    setShowCreateGroup(false);
+                    toast("✨ Hangout group created successfully!", "success");
+                  }}
+                  className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-black text-xs text-white shadow-lg transition"
+                >
+                  Create & Join
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CAMPUS LEADER MODAL */}
+      <AnimatePresence>
+        {showLeaderModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-surface border border-border w-full max-w-sm rounded-3xl p-5 shadow-2xl relative">
+              <button onClick={() => setShowLeaderModal(false)} className="absolute top-4 right-4 p-1.5 bg-surface-elevated text-muted hover:text-foreground rounded-full transition">
+                <X size={16} />
+              </button>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <Crown size={20} className="text-amber-400" />
+                <h3 className="text-base font-black text-foreground">Campus Leader Application</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-secondary mb-1 block">Role Interest</label>
+                  <select 
+                    value={leaderRole}
+                    onChange={(e) => setLeaderRole(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-sm focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="Ambassador">Campus Ambassador</option>
+                    <option value="Event Organizer">Event Organizer</option>
+                    <option value="Community Moderator">Community Moderator</option>
+                    <option value="Tech Lead">Tech / Design Lead</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-secondary mb-1 block">Department / Major</label>
+                  <input 
+                    type="text" 
+                    value={leaderDept} 
+                    onChange={(e) => setLeaderDept(e.target.value)} 
+                    placeholder="e.g. B.Tech Computer Science" 
+                    className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-sm focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-secondary mb-1 block">Why you?</label>
+                  <textarea 
+                    value={leaderMotiv} 
+                    onChange={(e) => setLeaderMotiv(e.target.value)} 
+                    placeholder="I have organized 3 fests and I want to bring a better dating culture..." 
+                    rows={3}
+                    className="w-full px-3 py-2.5 rounded-xl bg-surface-elevated border border-border text-foreground text-xs focus:outline-none focus:border-amber-500 resize-none"
+                  />
+                </div>
+
+                <button 
+                  onClick={async () => {
+                    if(!leaderDept.trim() || !leaderMotiv.trim()) {
+                       toast("Please fill all fields!", "error");
+                       return;
+                    }
+                    try {
+                      const res = await fetch(`${BACKEND_URL}/api/v1/campus/leader`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${authToken}`,
+                        },
+                        body: JSON.stringify({
+                          role: leaderRole,
+                          department: leaderDept,
+                          motivation: leaderMotiv,
+                        })
+                      });
+                      
+                      if (res.ok) {
+                        toast("👑 Application submitted! Admin will review soon.", "success");
+                        setShowLeaderModal(false);
+                      } else {
+                        toast("Failed to submit application.", "error");
+                      }
+                    } catch (err) {
+                      toast("Network error.", "error");
+                    }
+                  }}
+                  className="w-full py-3 mt-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 rounded-2xl font-black text-xs text-white shadow-lg shadow-amber-500/20 transition"
+                >
+                  Submit Application
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

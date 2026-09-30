@@ -25,7 +25,11 @@ export default function MidnightRoulettePage() {
   const [liveSquadsCount, setLiveSquadsCount] = useState<number>(0);
   const [noActiveSquad, setNoActiveSquad] = useState<boolean>(false);
   const [matchedPartnerSquad, setMatchedPartnerSquad] = useState<string | null>(null);
+  const [squadRoomId, setSquadRoomId] = useState<string | null>(null);
+  const [squadMessages, setSquadMessages] = useState<Array<{ sender: string; text: string; time: string }>>([]);
+  const [squadChatMsg, setSquadChatMsg] = useState<string>("");
   const squadPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const squadWsRef = useRef<WebSocket | null>(null);
   const squadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Roulette States
@@ -109,14 +113,50 @@ export default function MidnightRoulettePage() {
   const handleSquadMatchSuccess = (matchData: any) => {
     setIsSearchingSquad(false);
     setMatchedPartnerSquad(matchData.partnerSquad);
+    setSquadRoomId(matchData.squadRoomId);
     setSquadReady(true);
     toast(`👯‍♂️ 2v2 Squad matched with '${matchData.partnerSquad}'! Entering room...`, "success");
+
+    // Connect to WebSocket room
+    const isProd = process.env.NODE_ENV === "production";
+    const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+    const authToken = useUserStore.getState().authToken;
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${matchData.squadRoomId}&device_id=${deviceId}&token=${authToken}`;
+    
+    const ws = new WebSocket(wsUrl);
+    squadWsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const raw = JSON.parse(event.data);
+        if (raw.type === "message" || raw.type === "group-message") {
+           const text = raw.content || raw.text;
+           const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+           setSquadMessages(prev => [...prev, { sender: raw.sender_id === deviceId ? "me" : "Squad Member", text, time }]);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+  };
+
+  const handleSendSquadMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!squadChatMsg.trim() || !squadWsRef.current) return;
+    
+    squadWsRef.current.send(JSON.stringify({ 
+       type: "group-message",
+       content: squadChatMsg,
+       sender_id: deviceId 
+    }));
+    setSquadChatMsg("");
   };
 
   useEffect(() => {
     return () => {
       if (squadPollIntervalRef.current) clearInterval(squadPollIntervalRef.current);
       if (squadTimeoutRef.current) clearTimeout(squadTimeoutRef.current);
+      if (squadWsRef.current) squadWsRef.current.close();
     };
   }, []);
 
@@ -320,17 +360,40 @@ export default function MidnightRoulettePage() {
                   <h3 className="text-xl font-extrabold text-foreground">Squad &apos;{squadName}&apos; Ready!</h3>
                   <p className="text-xs text-purple-300 mt-1">Team: <span className="font-bold text-foreground">You & {friendTag}</span></p>
                 </div>
-                <div className="p-4 rounded-2xl bg-surface-elevated border border-border space-y-2 text-left">
-                  <p className="text-xs text-success font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Matched with Squad: &quot;{matchedPartnerSquad}&quot;
-                  </p>
-                  <p className="text-[11px] text-muted">4-Way WebRTC audio & group chat room ready!</p>
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-black/40 rounded-2xl h-48 border border-white/5 shadow-inner">
+                  {squadMessages.length === 0 && (
+                     <div className="text-center text-xs text-muted mt-10">Room created. Start chatting with {matchedPartnerSquad}!</div>
+                  )}
+                  {squadMessages.map((m, idx) => (
+                    <div key={idx} className={`flex flex-col ${m.sender === "me" ? "items-end" : "items-start"}`}>
+                      <span className="text-[10px] text-purple-300 font-semibold mb-0.5 px-1">{m.sender === "me" ? "You" : m.sender}</span>
+                      <div className={`px-3 py-2 rounded-2xl text-xs max-w-[85%] shadow-md ${
+                        m.sender === "me" ? "bg-purple-600 text-white rounded-br-none" : "bg-surface-elevated text-foreground border border-white/10 rounded-bl-none"
+                      }`}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                <form onSubmit={handleSendSquadMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={squadChatMsg}
+                    onChange={(e) => setSquadChatMsg(e.target.value)}
+                    placeholder="Message the squad..."
+                    className="flex-1 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-xs text-foreground outline-none focus:border-purple-500"
+                  />
+                  <button type="submit" className="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl text-white font-bold text-xs flex items-center gap-1 shadow-lg">
+                    <Send size={14} />
+                  </button>
+                </form>
+
                 <button
-                  onClick={() => router.push("/chat/group")}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 font-black text-foreground shadow-lg hover:brightness-110 flex items-center justify-center gap-2"
+                  onClick={() => { setSquadReady(false); squadWsRef.current?.close(); }}
+                  className="w-full py-2.5 mt-2 rounded-2xl bg-surface-elevated text-error border border-error/20 font-bold text-xs"
                 >
-                  Enter 4-Way Squad Lounge 🎙️✨
+                  Leave Squad Lounge ❌
                 </button>
               </motion.div>
             )}

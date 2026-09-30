@@ -52,8 +52,27 @@ export default function BlindDatePage() {
   const [liveUsersCount, setLiveUsersCount] = useState(0);
   const [noActiveUser, setNoActiveUser] = useState(false);
   const [matchedPartnerId, setMatchedPartnerId] = useState<string | null>(null);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (unlocked && matchedPartnerId && !partnerProfile) {
+      const isProd = process.env.NODE_ENV === "production";
+      const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
+      const authToken = useUserStore.getState().authToken;
+
+      fetch(`${BACKEND_URL}/profile/${matchedPartnerId}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+         if (data.profile) setPartnerProfile(data.profile);
+      })
+      .catch(console.error);
+    }
+  }, [unlocked, matchedPartnerId, partnerProfile]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -62,10 +81,6 @@ export default function BlindDatePage() {
         setTimeLeft((prev) => {
           if (prev === 120) {
             toast("Partner whispers: 'Your voice sounds amazing!' 💕", "info");
-          }
-          if (prev === 90 && !partnerYes) {
-            setPartnerYes(true);
-            toast("Partner tapped YES to unlock photos! Tap YES to confirm mutual reveal!", "success");
           }
           return prev - 1;
         });
@@ -79,10 +94,24 @@ export default function BlindDatePage() {
     if (!inCall || !deviceId) return;
 
     const partnerId = matchedPartnerId || "anon_partner";
+    const roomIdStr = activeRoomId || `blind_${deviceId}_${partnerId}`;
     const isProd = process.env.NODE_ENV === "production";
     const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || (isProd ? "https://lovewithyou.onrender.com" : "http://localhost:8080"))?.replace(/\/+$/, "");
     const authToken = useUserStore.getState().authToken;
-    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/api/v1/p2p/webrtc-signal?device_id=${deviceId}&partner_id=${partnerId}&token=${authToken}`;
+    const wsUrl = `${BACKEND_URL.replace("http", "ws")}/ws?room_id=${roomIdStr}&device_id=${deviceId}&token=${authToken}`;
+
+    const sendSignal = async (payload: any) => {
+       await fetch(`${BACKEND_URL}/api/v1/p2p/webrtc-signal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            roomId: roomIdStr,
+            targetId: partnerId,
+            signalData: JSON.stringify(payload),
+            channelType: "audio"
+          })
+       });
+    };
 
     const initWebRTC = async () => {
       try {
@@ -106,27 +135,37 @@ export default function BlindDatePage() {
         };
 
         peerConnection.current.onicecandidate = (event) => {
-          if (event.candidate && wsSignaling.current?.readyState === WebSocket.OPEN) {
-            wsSignaling.current.send(
-              JSON.stringify({ type: "ice-candidate", candidate: event.candidate })
-            );
+          if (event.candidate) {
+            sendSignal({ type: "ice-candidate", candidate: event.candidate });
           }
         };
 
         wsSignaling.current.onmessage = async (message) => {
           try {
-            const data = JSON.parse(message.data);
-            if (!peerConnection.current) return;
+            const raw = JSON.parse(message.data);
+            
+            // Check if it's a room broadcast (YES vote)
+            if (raw.type === "yes-vote" && raw.sender_id !== deviceId) {
+              setPartnerYes(true);
+              toast("Partner tapped YES! Tap YES to confirm mutual reveal!", "success");
+              return;
+            }
 
-            if (data.type === "offer") {
-              await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
-              const answer = await peerConnection.current.createAnswer();
-              await peerConnection.current.setLocalDescription(answer);
-              wsSignaling.current?.send(JSON.stringify({ type: "answer", sdp: answer }));
-            } else if (data.type === "answer") {
-              await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            } else if (data.type === "ice-candidate") {
-              await peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+            // Check if it's WebRTC Signal from POST endpoint
+            if (raw.signalData) {
+              const data = JSON.parse(raw.signalData);
+              if (!peerConnection.current) return;
+
+              if (data.type === "offer") {
+                await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                const answer = await peerConnection.current.createAnswer();
+                await peerConnection.current.setLocalDescription(answer);
+                sendSignal({ type: "answer", sdp: answer });
+              } else if (data.type === "answer") {
+                await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+              } else if (data.type === "ice-candidate") {
+                await peerConnection.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+              }
             }
           } catch (e) {
             console.error("WebRTC Signaling Error:", e);
@@ -137,9 +176,10 @@ export default function BlindDatePage() {
         if (deviceId > partnerId) {
           const offer = await peerConnection.current.createOffer();
           await peerConnection.current.setLocalDescription(offer);
-          wsSignaling.current.onopen = () => {
-            wsSignaling.current?.send(JSON.stringify({ type: "offer", sdp: offer }));
-          };
+          // Small delay to ensure WS is connected before sending signal
+          setTimeout(() => {
+            sendSignal({ type: "offer", sdp: offer });
+          }, 1000);
         }
       } catch (err) {
         console.warn("Audio Permission / WebRTC Error:", err);
@@ -158,6 +198,7 @@ export default function BlindDatePage() {
   const handleMatchSuccess = (matchData: any) => {
     setIsSearching(false);
     setMatchedPartnerId(matchData.partnerId);
+    setActiveRoomId(matchData.roomId);
     setInCall(true);
     setTimeLeft(180);
     setMyYes(false);
@@ -236,7 +277,11 @@ export default function BlindDatePage() {
 
   const handleTapYes = () => {
     setMyYes(true);
-    if (partnerYes || myYes) {
+    if (wsSignaling.current && wsSignaling.current.readyState === WebSocket.OPEN) {
+      wsSignaling.current.send(JSON.stringify({ sender_id: deviceId, type: "yes-vote" }));
+    }
+
+    if (partnerYes) {
       setUnlocked(true);
       toast("🎉 Mutual YES confirmed! Profile Photo & True Name Unlocked!", "success");
     } else {
@@ -430,14 +475,21 @@ export default function BlindDatePage() {
                   </>
                 ) : (
                   <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center justify-center p-4 text-center">
-                    <div className="w-28 h-28 rounded-full border-2 border-emerald-400 bg-indigo-600 flex items-center justify-center shadow-lg text-4xl font-extrabold">
-                      👩‍🦰
-                    </div>
+                    {partnerProfile?.photos?.[0] ? (
+                       // eslint-disable-next-line @next/next/no-img-element
+                       <img src={partnerProfile.photos[0]} alt="Partner" className="w-28 h-28 rounded-full border-2 border-emerald-400 object-cover shadow-lg" />
+                    ) : (
+                      <div className="w-28 h-28 rounded-full border-2 border-emerald-400 bg-indigo-600 flex items-center justify-center shadow-lg text-4xl font-extrabold">
+                        👩‍🦰
+                      </div>
+                    )}
                     <span className="mt-3 bg-success/20 border border-emerald-500/50 text-emerald-300 text-[10px] px-3 py-0.5 rounded-full font-bold">
                       ✨ Unlocked Profile!
                     </span>
-                    <h3 className="text-xl font-black text-foreground mt-1">Aanya Sharma, 21</h3>
-                    <p className="text-xs text-secondary">Delhi University Hub</p>
+                    <h3 className="text-xl font-black text-foreground mt-1">
+                      {partnerProfile?.name || "Anonymous User"}, {partnerProfile?.age || 21}
+                    </h3>
+                    <p className="text-xs text-secondary">{partnerProfile?.location || "Unknown Hub"}</p>
                   </motion.div>
                 )}
               </div>

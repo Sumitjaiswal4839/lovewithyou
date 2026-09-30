@@ -1,13 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co";
 const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  "";
+  "dummy-key";
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Supabase URL or Key is missing from environment variables!");
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn("Supabase URL or Key is missing from environment variables! Using dummy values for build.");
 }
 
 import { useUserStore } from "@/store/useUserStore";

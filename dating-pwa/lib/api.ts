@@ -157,9 +157,10 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionToken }),
       });
+      if (!response.ok) throw new Error("Disconnect failed");
       return await response.json();
-    } catch {
-      return { status: "evaporated_from_ram" };
+    } catch (error) {
+      return { error: "NETWORK_ERROR: Failed to leave After-Dark Lounge." };
     }
   },
 
@@ -171,8 +172,9 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deviceId, vibe }),
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "simulated_audio_match", expiresInSeconds: 180 }; }
+    } catch (error) { return { error: "NETWORK_ERROR: Failed to start blind audio match." }; }
   },
 
   async syncHeartbeat(roomId: string, senderId: string) {
@@ -182,8 +184,9 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId, senderId, tapTimestamp: Date.now() }),
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "haptic_vibration_simulated" }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to sync heartbeat." }; }
   },
 
   async startDoubleDateSquad(leaderId: string, friendTag: string, squadName: string) {
@@ -193,8 +196,9 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leaderId, friendTag, squadName }),
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "squad_ready", data: { squadRoomId: "squad_room_offline" } }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to start double date squad." }; }
   },
 
   async rewindLastSwipe(deviceId: string) {
@@ -203,8 +207,33 @@ export const API = {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "rewound_offline" }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to rewind swipe." }; }
+  },
+
+  async blockUser(deviceId: string, blockedId: string) {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/block`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
+        body: JSON.stringify({ blocked_id: blockedId })
+      });
+      if (!res.ok) throw new Error("API Failed");
+      return await res.json();
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to block user." }; }
+  },
+
+  async submitFeedback(deviceId: string, message: string, category: string, transactionId?: string) {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
+        body: JSON.stringify({ message, category, transaction_id: transactionId })
+      });
+      if (!res.ok) throw new Error("API Failed");
+      return await res.json();
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to submit feedback." }; }
   },
 
   async playFlirtGame(roomId: string, gameType: string, action: string, wager: number) {
@@ -214,8 +243,9 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roomId, gameType, action, wager }),
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "game_simulated", data: { dare: "Send your cutest goofball smile!" } }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to play flirt game." }; }
   },
 
   async broadcastPheromonePulse(senderId: string, latitude: number, longitude: number) {
@@ -225,8 +255,9 @@ export const API = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ senderId, latitude, longitude, broadcastMsg: "Someone attractive within 3km just boosted their radar!" }),
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "pulse_sent_simulated" }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to broadcast radar pulse." }; }
   },
 
   async activateVipHalo(deviceId: string) {
@@ -235,28 +266,26 @@ export const API = {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Device-Id": deviceId },
       });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "halo_activated", expiresAt: new Date(Date.now() + 86400000).toISOString() }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to activate VIP Halo." }; }
   },
 
   async spinDailyCupidSlot() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/rewards/daily-slot`, { method: "POST" });
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch { return { status: "prize_won", data: { prize: "15 Free Coins 🪙" } }; }
+    } catch (e) { return { error: "NETWORK_ERROR: Failed to spin cupid slot." }; }
   },
 
   async getTopConnectorsLeaderboard() {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/leaderboard/top-connectors`);
+      if (!res.ok) throw new Error("API Failed");
       return await res.json();
-    } catch {
-      return { 
-        data: [
-          { alias: "Ayesha M.", campus: "Delhi University Hub", rating: 980, badge: "👑 Platinum Vibe Queen" },
-          { alias: "Rohan S.", campus: "IIT Tech Center", rating: 945, badge: "👑 Platinum Vibe King" }
-        ] 
-      }; 
+    } catch (e) {
+      return { error: "NETWORK_ERROR: Failed to fetch leaderboard." };
     }
   },
 
@@ -272,7 +301,7 @@ export const API = {
       return await res.json();
     } catch (e) {
       console.error("🚨 CRITICAL: Catfish API Failed:", e);
-      throw new Error("NETWORK_ERROR: Verification fail ho gayi hai. Phir se try karein.");
+      return { error: "NETWORK_ERROR: Verification fail ho gayi hai. Phir se try karein." };
     }
   },
 
@@ -287,7 +316,33 @@ export const API = {
       return await res.json();
     } catch (e) {
       console.error("🚨 CRITICAL: SOS Timer API Failed to reach server:", e);
-      throw new Error("NETWORK_ERROR: Tumhara SOS timer set NAHI hua hai. Kripya apna network check karein.");
+      return { error: "NETWORK_ERROR: Tumhara SOS timer set NAHI hua hai. Kripya apna network check karein." };
+    }
+  },
+
+  async getSosStatus(deviceId: string) {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/safety/sos-status`, {
+        method: "GET",
+        headers: { "X-Device-Id": deviceId }
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      return { error: "NETWORK_ERROR", active: false };
+    }
+  },
+
+  async generateReferral(deviceId: string) {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/referral/generate`, {
+        method: "POST",
+        headers: { "X-Device-Id": deviceId }
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      return { error: "NETWORK_ERROR" };
     }
   },
 
@@ -301,7 +356,7 @@ export const API = {
       return await res.json();
     } catch (e) {
       console.error("🚨 CRITICAL: SOS Confirm API Failed to reach server:", e);
-      throw new Error("NETWORK_ERROR: Tumhara SOS checkin confirm NAHI hua hai.");
+      return { error: "NETWORK_ERROR: Tumhara SOS checkin confirm NAHI hua hai." };
     }
   },
 
@@ -316,7 +371,7 @@ export const API = {
       return await res.json();
     } catch (e) {
       console.error("🚨 CRITICAL: Screenshot Violation API Failed:", e);
-      throw new Error("NETWORK_ERROR: Violation report fail ho gaya.");
+      return { error: "NETWORK_ERROR: Violation report fail ho gaya." };
     }
   },
 
